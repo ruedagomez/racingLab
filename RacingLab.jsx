@@ -1,0 +1,432 @@
+import { useState, useEffect } from "react";
+
+const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap');`;
+
+const CSS = `
+${FONTS}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --r:#e8192c;--r2:rgba(232,25,44,0.1);--r3:rgba(232,25,44,0.25);
+  --blk:#0b0b0b;--txt:#111;--mid:#737373;--faint:#b0b0b0;
+  --bdr:#e2e2e2;--bg:#f3f3f1;--wh:#fff;
+}
+html,body{height:100%;font-family:'Barlow',sans-serif;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes scaleX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes dot{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* ── LOGIN ── */
+.lw{display:flex;min-height:100vh;animation:fadeIn .35s ease;}
+.ll{
+  width:42%;background:var(--blk);position:relative;
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:52px 48px;overflow:hidden;
+}
+.ll::before{content:'';position:absolute;top:0;right:0;width:3px;height:100%;background:var(--r);}
+.ll::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(255,255,255,.055) 1px,transparent 1px);
+  background-size:26px 26px;
+}
+.ll-logo{position:relative;z-index:1;animation:fadeUp .6s ease .15s both;}
+.ll-eyebrow{
+  font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.28em;color:var(--r);text-transform:uppercase;margin-bottom:18px;
+}
+.ll-brand{font-family:'Bebas Neue',sans-serif;font-size:104px;line-height:.83;color:var(--wh);letter-spacing:-1px;}
+.ll-brand span{color:var(--r);}
+.ll-sub{margin-top:28px;font-size:13px;font-weight:300;color:rgba(255,255,255,.38);line-height:1.7;letter-spacing:.02em;}
+.ll-bottom{position:relative;z-index:1;animation:fadeUp .6s ease .35s both;}
+.ll-line{width:36px;height:2px;background:var(--r);margin-bottom:12px;transform-origin:left;animation:scaleX .6s ease .8s both;}
+.ll-foot{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:.16em;color:rgba(255,255,255,.22);text-transform:uppercase;}
+.lr{flex:1;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:48px;animation:fadeIn .5s ease .1s both;}
+.lf{width:100%;max-width:390px;animation:fadeUp .6s ease .25s both;}
+.lf-title{font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:700;color:var(--txt);letter-spacing:.03em;margin-bottom:5px;}
+.lf-sub{font-size:13px;color:var(--mid);margin-bottom:40px;}
+.fg{margin-bottom:22px;}
+.fl{display:block;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.2em;color:var(--mid);text-transform:uppercase;margin-bottom:8px;}
+.fi{
+  width:100%;height:50px;padding:0 16px;background:var(--wh);
+  border:1.5px solid var(--bdr);border-radius:4px;
+  font-family:'Barlow',sans-serif;font-size:15px;color:var(--txt);
+  outline:none;transition:border-color .2s,box-shadow .2s;
+}
+.fi:focus{border-color:var(--r);box-shadow:0 0 0 3px var(--r2);}
+.fe{margin-top:8px;font-size:12px;color:var(--r);font-weight:500;}
+.btn-in{
+  width:100%;height:52px;background:var(--r);color:var(--wh);
+  border:none;border-radius:4px;cursor:pointer;margin-top:10px;
+  font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;
+  transition:background .2s,transform .15s,box-shadow .2s;
+}
+.btn-in:hover{background:#c8151f;transform:translateY(-1px);box-shadow:0 8px 22px var(--r3);}
+.btn-in:active{transform:translateY(0);}
+.lf-hint{margin-top:20px;font-size:12px;color:var(--faint);text-align:center;font-family:'JetBrains Mono',monospace;}
+
+/* ── DASHBOARD ── */
+.dr{min-height:100vh;background:var(--bg);animation:fadeIn .35s ease;}
+
+/* NAV */
+.nav{
+  height:62px;background:var(--wh);border-bottom:1px solid var(--bdr);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 40px;position:sticky;top:0;z-index:100;
+  box-shadow:0 1px 6px rgba(0,0,0,.05);
+}
+.nav-left{display:flex;align-items:center;gap:14px;}
+.nb{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--txt);letter-spacing:.5px;line-height:1;}
+.nb span{color:var(--r);}
+.ndiv{width:1px;height:22px;background:var(--bdr);}
+.ns{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--mid);text-transform:uppercase;}
+.nav-right{display:flex;align-items:center;gap:14px;}
+.nav-av{width:34px;height:34px;border-radius:50%;background:var(--r);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--wh);letter-spacing:.05em;flex-shrink:0;}
+.nav-ui{line-height:1.25;}
+.nav-un{font-size:13px;font-weight:600;color:var(--txt);}
+.nav-ur{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--r);text-transform:uppercase;}
+.nav-user{display:flex;align-items:center;gap:9px;}
+.btn-out{
+  height:33px;padding:0 14px;background:transparent;border:1.5px solid var(--bdr);
+  border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-size:11px;
+  font-weight:700;letter-spacing:.1em;color:var(--mid);text-transform:uppercase;
+  cursor:pointer;transition:all .2s;
+}
+.btn-out:hover{border-color:var(--r);color:var(--r);}
+
+/* HERO */
+.hero{background:var(--blk);padding:56px 40px;position:relative;overflow:hidden;}
+.hero::before{
+  content:'RACING LAB';position:absolute;right:-12px;top:50%;transform:translateY(-50%);
+  font-family:'Bebas Neue',sans-serif;font-size:200px;color:rgba(255,255,255,.025);
+  pointer-events:none;white-space:nowrap;letter-spacing:4px;
+}
+.hero::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(255,255,255,.04) 1px,transparent 1px);
+  background-size:28px 28px;
+}
+.hi{max-width:1200px;margin:0 auto;position:relative;z-index:1;}
+.he{
+  font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.28em;color:var(--r);text-transform:uppercase;margin-bottom:14px;
+  animation:fadeUp .5s ease .1s both;
+  display:flex;align-items:center;gap:8px;
+}
+.he::before{content:'';display:inline-block;width:22px;height:1.5px;background:var(--r);}
+.ht{
+  font-family:'Bebas Neue',sans-serif;font-size:80px;color:var(--wh);
+  letter-spacing:.5px;line-height:.88;animation:fadeUp .5s ease .16s both;
+}
+.hstats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-top:52px;animation:fadeUp .5s ease .24s both;}
+.hs{
+  background:rgba(255,255,255,.055);padding:26px 28px;
+  border-left:3px solid transparent;transition:all .3s;cursor:default;
+}
+.hs:hover{background:rgba(255,255,255,.085);border-left-color:var(--r);}
+.hs-lbl{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.22em;color:rgba(255,255,255,.3);text-transform:uppercase;margin-bottom:10px;}
+.hs-val{font-family:'Bebas Neue',sans-serif;font-size:40px;color:var(--wh);letter-spacing:1px;line-height:1;}
+.hs-sub{font-size:11px;color:rgba(255,255,255,.28);font-weight:300;margin-top:5px;}
+.hs-badge{
+  display:inline-block;margin-top:8px;
+  font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;
+  letter-spacing:.15em;text-transform:uppercase;padding:3px 8px;border-radius:2px;
+  background:rgba(232,25,44,.2);color:var(--r);
+}
+
+/* CONTENT */
+.dc{max-width:1200px;margin:0 auto;padding:48px 40px 32px;}
+.sh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:32px;padding-bottom:18px;border-bottom:1px solid var(--bdr);}
+.st{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:900;letter-spacing:.1em;color:var(--txt);text-transform:uppercase;}
+.sc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);}
+
+/* GRID */
+.mg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+
+/* CARD */
+.mc{
+  background:var(--wh);border:1px solid var(--bdr);border-radius:6px;
+  padding:26px 22px 22px;cursor:pointer;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;min-height:176px;
+  transition:transform .25s,box-shadow .25s,border-color .25s;
+  border-left:3px solid transparent;
+}
+.mc::after{
+  content:attr(data-num);position:absolute;right:-8px;bottom:-16px;
+  font-family:'Bebas Neue',sans-serif;font-size:88px;color:rgba(0,0,0,.04);
+  line-height:1;pointer-events:none;user-select:none;
+}
+.mc:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,.09);border-color:transparent;border-left-color:var(--r);}
+.mc.disabled{cursor:default;}
+.mc.disabled:hover{transform:none;box-shadow:none;border-color:var(--bdr);border-left-color:transparent;}
+.cn{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:var(--faint);letter-spacing:.05em;margin-bottom:10px;}
+.cname{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;color:var(--txt);line-height:1.2;letter-spacing:.02em;flex:1;margin-bottom:8px;}
+.cdesc{font-size:12px;color:var(--mid);line-height:1.5;margin-bottom:16px;}
+.cs{display:inline-flex;align-items:center;gap:5px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;border-radius:2px;}
+.s-active{background:#f0fdf4;color:#15803d;}
+.s-dev{background:#fff4e6;color:#c2410c;}
+.s-soon{background:#f5f5f5;color:#a3a3a3;}
+.cs-dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.s-active .cs-dot{animation:dot 2s infinite;}
+
+.mc:nth-child(1){animation:cardIn .4s ease .08s both}
+.mc:nth-child(2){animation:cardIn .4s ease .11s both}
+.mc:nth-child(3){animation:cardIn .4s ease .14s both}
+.mc:nth-child(4){animation:cardIn .4s ease .17s both}
+.mc:nth-child(5){animation:cardIn .4s ease .20s both}
+.mc:nth-child(6){animation:cardIn .4s ease .23s both}
+.mc:nth-child(7){animation:cardIn .4s ease .26s both}
+.mc:nth-child(8){animation:cardIn .4s ease .29s both}
+.mc:nth-child(9){animation:cardIn .4s ease .32s both}
+.mc:nth-child(10){animation:cardIn .4s ease .35s both}
+.mc:nth-child(11){animation:cardIn .4s ease .38s both}
+.mc:nth-child(12){animation:cardIn .4s ease .41s both}
+.mc:nth-child(13){animation:cardIn .4s ease .44s both}
+.mc:nth-child(14){animation:cardIn .4s ease .47s both}
+
+/* FOOTER */
+.ft{border-top:1px solid var(--bdr);padding:24px 40px;display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:16px auto 0;}
+.ft-b{font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--faint);letter-spacing:1px;}
+.ft-b span{color:var(--r);}
+.ft-i{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);letter-spacing:.06em;}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:32px;right:32px;background:var(--blk);color:var(--wh);
+  padding:14px 20px 14px 16px;border-radius:4px;border-left:3px solid var(--r);
+  font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;
+  letter-spacing:.04em;animation:toastIn .3s ease;z-index:1000;
+  box-shadow:0 8px 24px rgba(0,0,0,.2);max-width:320px;
+  display:flex;align-items:center;gap:10px;
+}
+.toast-icon{font-size:16px;}
+
+/* RESPONSIVE */
+@media(max-width:1100px){.mg{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:800px){
+  .lw{flex-direction:column;}
+  .ll{width:100%;padding:36px 32px;min-height:auto;}
+  .ll-brand{font-size:72px;}
+  .lr{padding:36px 32px;}
+  .mg{grid-template-columns:repeat(2,1fr);}
+  .nav{padding:0 20px;}
+  .hero{padding:40px 20px;}
+  .ht{font-size:60px;}
+  .hstats{grid-template-columns:repeat(2,1fr);}
+  .dc{padding:36px 20px 24px;}
+  .ns{display:none;}
+  .ft{padding:20px;}
+}
+@media(max-width:480px){
+  .ll{display:none;}
+  .mg{grid-template-columns:1fr;}
+  .hstats{grid-template-columns:1fr;}
+}
+`;
+
+const MODULES = [
+  { id:"01", name:"Plantilla",             desc:"Gestión de jugadores, dorsales y fichas",           status:"active" },
+  { id:"02", name:"Cuerpo Técnico",        desc:"Staff, roles y responsabilidades del cuerpo técnico", status:"active" },
+  { id:"03", name:"Preparación Física",    desc:"Cargas, periodización y seguimiento del fitness",   status:"dev"    },
+  { id:"04", name:"Tercera RFEF · Grupo X",desc:"Clasificación, jornadas y estadísticas de liga",   status:"active" },
+  { id:"05", name:"Performance FC",        desc:"Métricas de rendimiento individual y colectivo",    status:"dev"    },
+  { id:"06", name:"Entrenamientos",        desc:"Planificación de sesiones y microciclos",           status:"dev"    },
+  { id:"07", name:"Análisis",              desc:"Vídeo, datos y reportes post-partido",              status:"active" },
+  { id:"08", name:"Sanciones",             desc:"Control de amonestaciones y expulsiones",           status:"dev"    },
+  { id:"09", name:"Scouting",              desc:"Seguimiento y prospección de jugadores",            status:"soon"   },
+  { id:"10", name:"Cantera",               desc:"Equipos base y desarrollo de jóvenes talentos",    status:"soon"   },
+  { id:"11", name:"Calendario",            desc:"Vista unificada de partidos y entrenamientos",      status:"dev"    },
+  { id:"12", name:"Comunicación",          desc:"Avisos internos, convocatorias y novedades",        status:"soon"   },
+  { id:"13", name:"Documentación",         desc:"Informes, actas y archivos del club",               status:"soon"   },
+  { id:"14", name:"Accesos",               desc:"Gestión de usuarios, roles y permisos del sistema", status:"soon"   },
+];
+
+const STATUS = {
+  active: { label:"Activo",          cls:"s-active" },
+  dev:    { label:"En desarrollo",   cls:"s-dev"    },
+  soon:   { label:"Próximamente",    cls:"s-soon"   },
+};
+
+const TOAST_MSG = {
+  active: (n) => `${n} — cargando módulo…`,
+  dev:    (n) => `${n} — en desarrollo`,
+  soon:   (n) => `${n} — próximamente disponible`,
+};
+
+export default function RacingLab() {
+  const [screen, setScreen]   = useState("login");
+  const [user, setUser]       = useState("");
+  const [pass, setPass]       = useState("");
+  const [err, setErr]         = useState("");
+  const [toast, setToast]     = useState(null);
+
+  const login = () => {
+    if (user.toLowerCase() === "admin" && pass === "admin") {
+      setScreen("dashboard");
+    } else {
+      setErr("Credenciales incorrectas. Inténtalo de nuevo.");
+    }
+  };
+
+  const logout = () => { setScreen("login"); setUser(""); setPass(""); setErr(""); };
+
+  const showToast = (mod) => {
+    setToast({ msg: TOAST_MSG[mod.status](mod.name), type: mod.status });
+    setTimeout(() => setToast(null), 3200);
+  };
+
+  return (
+    <>
+      <style>{CSS}</style>
+      {screen === "login"
+        ? <Login user={user} setUser={setUser} pass={pass} setPass={setPass} err={err} setErr={setErr} onLogin={login} />
+        : <Dashboard onLogout={logout} onModule={showToast} />
+      }
+      {toast && (
+        <div className="toast">
+          <span className="toast-icon">{toast.type === "active" ? "⚡" : toast.type === "dev" ? "🔧" : "🔒"}</span>
+          {toast.msg}
+        </div>
+      )}
+    </>
+  );
+}
+
+function Login({ user, setUser, pass, setPass, err, setErr, onLogin }) {
+  const key = (e) => { if (e.key === "Enter") onLogin(); };
+  return (
+    <div className="lw">
+      <div className="ll">
+        <div className="ll-logo">
+          <div className="ll-eyebrow">Sistema de Gestión Técnica</div>
+          <div className="ll-brand">RACING<br /><span>LAB</span></div>
+          <div className="ll-sub">
+            Racing Club Portuense<br />
+            Tercera Federación · Grupo X<br />
+            Temporada 2026 / 27
+          </div>
+        </div>
+        <div className="ll-bottom">
+          <div className="ll-line" />
+          <div className="ll-foot">El Puerto de Santa María · Cádiz</div>
+        </div>
+      </div>
+      <div className="lr">
+        <div className="lf">
+          <div className="lf-title">Acceso al sistema</div>
+          <div className="lf-sub">Introduce tus credenciales para continuar</div>
+
+          <div className="fg">
+            <label className="fl">Usuario</label>
+            <input className="fi" type="text" placeholder="admin"
+              value={user}
+              onChange={e => { setUser(e.target.value); setErr(""); }}
+              onKeyDown={key}
+            />
+          </div>
+          <div className="fg">
+            <label className="fl">Contraseña</label>
+            <input className="fi" type="password" placeholder="••••••••"
+              value={pass}
+              onChange={e => { setPass(e.target.value); setErr(""); }}
+              onKeyDown={key}
+            />
+            {err && <div className="fe">{err}</div>}
+          </div>
+
+          <button className="btn-in" onClick={onLogin}>Iniciar sesión →</button>
+          <div className="lf-hint">admin / admin</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Dashboard({ onLogout, onModule }) {
+  return (
+    <div className="dr">
+      <nav className="nav">
+        <div className="nav-left">
+          <div className="nb">RACING <span>LAB</span></div>
+          <div className="ndiv" />
+          <div className="ns">Temporada 2026 / 27</div>
+        </div>
+        <div className="nav-right">
+          <div className="nav-user">
+            <div className="nav-av">AD</div>
+            <div className="nav-ui">
+              <div className="nav-un">Administrador</div>
+              <div className="nav-ur">Admin</div>
+            </div>
+          </div>
+          <button className="btn-out" onClick={onLogout}>Salir</button>
+        </div>
+      </nav>
+
+      <section className="hero">
+        <div className="hi">
+          <div className="he">Racing Club Portuense · Tercera RFEF Grupo X</div>
+          <div className="ht">TEMPORADA<br />2026 / 27</div>
+          <div className="hstats">
+            {[
+              { lbl:"Próximo Partido", val:"—", sub:"Sin confirmar", badge:null },
+              { lbl:"Clasificación",  val:"—", sub:"Temporada no iniciada", badge:null },
+              { lbl:"Plantilla",      val:"—", sub:"Por configurar", badge:null },
+              { lbl:"Sesiones",       val:"—", sub:"Temporada no iniciada", badge:null },
+            ].map((s,i) => (
+              <div className="hs" key={i}>
+                <div className="hs-lbl">{s.lbl}</div>
+                <div className="hs-val">{s.val}</div>
+                <div className="hs-sub">{s.sub}</div>
+                {s.badge && <div className="hs-badge">{s.badge}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="dc">
+        <div className="sh">
+          <div className="st">Módulos del Sistema</div>
+          <div className="sc">{MODULES.length} módulos · v1.0</div>
+        </div>
+        <div className="mg">
+          {MODULES.map(m => {
+            const s = STATUS[m.status];
+            const disabled = m.status !== "active";
+            return (
+              <div
+                key={m.id}
+                className={`mc${disabled ? " disabled" : ""}`}
+                data-num={m.id}
+                onClick={() => onModule(m)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => e.key === "Enter" && onModule(m)}
+                aria-label={`${m.name} – ${s.label}`}
+              >
+                <div>
+                  <div className="cn">{m.id}</div>
+                  <div className="cname">{m.name}</div>
+                  <div className="cdesc">{m.desc}</div>
+                </div>
+                <div className={`cs ${s.cls}`}>
+                  <div className="cs-dot" />
+                  {s.label}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <footer className="ft">
+        <div className="ft-b">RACING <span>LAB</span></div>
+        <div className="ft-i">Racing Club Portuense · Tercera Federación · 2026/27</div>
+      </footer>
+    </div>
+  );
+}
