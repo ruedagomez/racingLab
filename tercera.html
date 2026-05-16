@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Tercera RFEF · Grupo X · Racing Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --r:#e8192c;--r2:rgba(232,25,44,.1);--r3:rgba(232,25,44,.22);
+  --blk:#0b0b0b;--txt:#111;--mid:#6b6b6b;--faint:#b0b0b0;
+  --bdr:#e2e2e2;--bg:#f3f3f1;--wh:#fff;
+  --green:#15803d;--green-bg:#f0fdf4;
+  --amber:#c2410c;--amber-bg:#fff4e6;
+  --gray-bg:#f5f5f5;--gray-txt:#737373;
+}
+html,body{min-height:100%;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--txt);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes dot{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── NAV ── */
+.nav{height:62px;background:var(--wh);border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;padding:0 40px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(0,0,0,.05);}
+.nav-left{display:flex;align-items:center;gap:14px;}
+.back{display:flex;align-items:center;gap:6px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--mid);text-transform:uppercase;text-decoration:none;padding:6px 10px;border:1.5px solid var(--bdr);border-radius:4px;transition:all .2s;cursor:pointer;background:transparent;}
+.back:hover{border-color:var(--r);color:var(--r);}
+.back svg{width:12px;height:12px;stroke:currentColor;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.ndiv{width:1px;height:22px;background:var(--bdr);}
+.nb{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--txt);letter-spacing:.5px;line-height:1;}
+.nb span{color:var(--r);}
+.nav-badge{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.16em;color:rgba(255,255,255,.9);text-transform:uppercase;background:var(--r);padding:3px 9px;border-radius:2px;}
+
+/* ── HERO ── */
+.hero{background:var(--blk);padding:52px 40px 48px;position:relative;overflow:hidden;}
+.hero::before{content:'GRUPO X';position:absolute;right:-8px;top:50%;transform:translateY(-50%);font-family:'Bebas Neue',sans-serif;font-size:220px;color:rgba(255,255,255,.022);pointer-events:none;white-space:nowrap;letter-spacing:6px;}
+.hero::after{content:'';position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,rgba(255,255,255,.038) 1px,transparent 1px);background-size:26px 26px;}
+.hi{max-width:1280px;margin:0 auto;position:relative;z-index:1;}
+.he{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.28em;color:var(--r);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;animation:fadeUp .5s ease .05s both;}
+.he::before{content:'';display:inline-block;width:22px;height:1.5px;background:var(--r);}
+.ht{font-family:'Bebas Neue',sans-serif;font-size:76px;color:var(--wh);letter-spacing:.5px;line-height:.88;animation:fadeUp .5s ease .1s both;}
+.hero-meta{display:flex;gap:32px;margin-top:36px;animation:fadeUp .5s ease .18s both;}
+.hm{border-left:2px solid rgba(255,255,255,.1);padding-left:18px;}
+.hm-l{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.22em;color:rgba(255,255,255,.28);text-transform:uppercase;margin-bottom:5px;}
+.hm-v{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--wh);letter-spacing:.04em;}
+.hm-v.red{color:var(--r);}
+
+/* ── WRAPPER ── */
+.wrap{max-width:1280px;margin:0 auto;padding:0 40px;}
+
+/* ── SECTION HEADER ── */
+.sh{display:flex;align-items:baseline;justify-content:space-between;padding:44px 0 26px;border-bottom:1px solid var(--bdr);margin-bottom:32px;}
+.st{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;letter-spacing:.12em;color:var(--txt);text-transform:uppercase;}
+.sc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);}
+
+/* ── EQUIPOS GRID ── */
+.teams-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px;}
+.team-card{background:var(--wh);border:1px solid var(--bdr);border-left:3px solid transparent;border-radius:6px;padding:22px 16px 18px;display:flex;flex-direction:column;align-items:center;text-align:center;cursor:pointer;transition:transform .22s,box-shadow .22s,border-color .22s;position:relative;overflow:hidden;}
+.team-card::after{content:attr(data-i);position:absolute;right:-4px;bottom:-10px;font-family:'Bebas Neue',sans-serif;font-size:60px;color:rgba(0,0,0,.04);line-height:1;pointer-events:none;}
+.team-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.08);border-left-color:var(--r);}
+.team-card.home{border-left-color:var(--r);background:linear-gradient(135deg,rgba(232,25,44,.04) 0%,var(--wh) 60%);}
+.team-card.home:hover{box-shadow:0 10px 28px var(--r3);}
+.team-card.tbd{opacity:.55;cursor:default;}
+.team-card.tbd:hover{transform:none;box-shadow:none;border-left-color:transparent;}
+.shield-wrap{width:56px;height:64px;margin-bottom:14px;flex-shrink:0;}
+.team-name{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--txt);line-height:1.25;letter-spacing:.02em;}
+.team-name.home-name{color:var(--r);}
+.home-pill{display:inline-block;margin-top:6px;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:2px 7px;border-radius:2px;background:var(--r2);color:var(--r);}
+.team-tw{margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--faint);transition:color .2s;}
+.team-card:hover .team-tw{color:var(--r);}
+
+/* Card animation stagger */
+.team-card:nth-child(1){animation:cardIn .35s ease .04s both}
+.team-card:nth-child(2){animation:cardIn .35s ease .07s both}
+.team-card:nth-child(3){animation:cardIn .35s ease .10s both}
+.team-card:nth-child(4){animation:cardIn .35s ease .13s both}
+.team-card:nth-child(5){animation:cardIn .35s ease .16s both}
+.team-card:nth-child(6){animation:cardIn .35s ease .19s both}
+.team-card:nth-child(7){animation:cardIn .35s ease .22s both}
+.team-card:nth-child(8){animation:cardIn .35s ease .25s both}
+.team-card:nth-child(9){animation:cardIn .35s ease .28s both}
+.team-card:nth-child(10){animation:cardIn .35s ease .31s both}
+.team-card:nth-child(11){animation:cardIn .35s ease .34s both}
+.team-card:nth-child(12){animation:cardIn .35s ease .37s both}
+.team-card:nth-child(13){animation:cardIn .35s ease .40s both}
+.team-card:nth-child(14){animation:cardIn .35s ease .43s both}
+.team-card:nth-child(15){animation:cardIn .35s ease .46s both}
+.team-card:nth-child(16){animation:cardIn .35s ease .49s both}
+.team-card:nth-child(17){animation:cardIn .35s ease .52s both}
+.team-card:nth-child(18){animation:cardIn .35s ease .55s both}
+.team-card:nth-child(19){animation:cardIn .35s ease .58s both}
+.team-card:nth-child(20){animation:cardIn .35s ease .61s both}
+
+/* ── 2-COL LAYOUT ── */
+.two-col{display:grid;grid-template-columns:1fr 360px;gap:28px;align-items:start;}
+
+/* ── NEWS ── */
+.news-list{display:flex;flex-direction:column;gap:14px;}
+.news-card{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;padding:0;overflow:hidden;display:flex;cursor:pointer;transition:transform .2s,box-shadow .2s;border-left:3px solid transparent;}
+.news-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.07);border-left-color:var(--r);}
+.news-img{width:110px;flex-shrink:0;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.news-img svg{opacity:.18;}
+.news-body{padding:16px 18px;flex:1;}
+.news-tag{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--r);margin-bottom:7px;}
+.news-title{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--txt);line-height:1.3;margin-bottom:8px;letter-spacing:.01em;}
+.news-meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);}
+.news-placeholder{background:var(--wh);border:1.5px dashed var(--bdr);border-radius:6px;padding:32px;text-align:center;color:var(--faint);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;}
+
+/* loading */
+.loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:28px;color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:12px;}
+.spin{width:16px;height:16px;border:2px solid var(--bdr);border-top-color:var(--r);border-radius:50%;animation:spin .7s linear infinite;}
+
+/* ── SOCIAL SIDEBAR ── */
+.social-col{display:flex;flex-direction:column;gap:20px;}
+.social-block{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;overflow:hidden;}
+.social-hd{padding:14px 18px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--txt);}
+.social-hd svg{width:15px;height:15px;flex-shrink:0;}
+.twitter-wrap{padding:0;min-height:400px;}
+
+/* ── FOOTER ── */
+.ft{border-top:1px solid var(--bdr);padding:24px 40px;display:flex;align-items:center;justify-content:space-between;max-width:1280px;margin:40px auto 0;}
+.ft-b{font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--faint);letter-spacing:1px;}
+.ft-b span{color:var(--r);}
+.ft-i{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){.teams-grid{grid-template-columns:repeat(4,1fr);}.two-col{grid-template-columns:1fr 320px;}}
+@media(max-width:900px){.teams-grid{grid-template-columns:repeat(3,1fr);}.two-col{grid-template-columns:1fr;}.social-col{order:-1;}}
+@media(max-width:600px){.teams-grid{grid-template-columns:repeat(2,1fr);}.nav{padding:0 16px;}.wrap{padding:0 16px;}.hero{padding:36px 16px;}.ht{font-size:56px;}.hero-meta{flex-wrap:wrap;gap:18px;}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-left">
+    <button class="back" onclick="window.location.href='index.html'">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Volver
+    </button>
+    <div class="ndiv"></div>
+    <div class="nb">RACING <span>LAB</span></div>
+  </div>
+  <div class="nav-badge">Tercera RFEF · Grupo X</div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hi">
+    <div class="he">Temporada 2026 / 27</div>
+    <div class="ht">TERCERA RFEF<br/>GRUPO X</div>
+    <div class="hero-meta">
+      <div class="hm">
+        <div class="hm-l">Equipos</div>
+        <div class="hm-v red">20</div>
+      </div>
+      <div class="hm">
+        <div class="hm-l">Jornadas</div>
+        <div class="hm-v">38</div>
+      </div>
+      <div class="hm">
+        <div class="hm-l">Jornada actual</div>
+        <div class="hm-v">—</div>
+      </div>
+      <div class="hm">
+        <div class="hm-l">Ascenso directo</div>
+        <div class="hm-v">Top 2</div>
+      </div>
+      <div class="hm">
+        <div class="hm-l">Playoff ascenso</div>
+        <div class="hm-v">3º – 6º</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EQUIPOS -->
+<div class="wrap">
+  <div class="sh">
+    <div class="st">Equipos del Grupo</div>
+    <div class="sc">20 equipos · Temporada 2026/27</div>
+  </div>
+  <div class="teams-grid" id="teamsGrid"></div>
+</div>
+
+<!-- ACTUALIDAD + SOCIAL -->
+<div class="wrap">
+  <div class="sh">
+    <div class="st">Actualidad &amp; Redes</div>
+    <div class="sc">Últimas noticias · @Tercerarfefinfo</div>
+  </div>
+  <div class="two-col">
+
+    <!-- NEWS -->
+    <div>
+      <div id="newsFeed">
+        <div class="loading"><div class="spin"></div>Cargando noticias…</div>
+      </div>
+    </div>
+
+    <!-- SOCIAL SIDEBAR -->
+    <div class="social-col">
+      <div class="social-block">
+        <div class="social-hd">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.7 5.5 4.3 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/>
+          </svg>
+          @Tercerarfefinfo
+        </div>
+        <div class="twitter-wrap">
+          <a class="twitter-timeline"
+             data-lang="es"
+             data-height="520"
+             data-theme="light"
+             data-chrome="noheader nofooter noborders transparent"
+             href="https://twitter.com/Tercerarfefinfo">
+             Cargando tweets…
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="ft">
+  <div class="ft-b">RACING <span>LAB</span></div>
+  <div class="ft-i">Racing Club Portuense · Tercera Federación · 2026/27</div>
+</div>
+
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<script>
+/* ─── SHIELD SVG ─────────────────────────────────────── */
+function shield(color1, color2, initials) {
+  const c2 = color2 || color1;
+  return `<svg viewBox="0 0 60 70" xmlns="http://www.w3.org/2000/svg" width="56" height="64">
+    <defs>
+      <clipPath id="cp_${initials.replace(/\s/g,'')}">
+        <path d="M30 3 L57 13 L57 37 C57 53 43 64 30 67 C17 64 3 53 3 37 L3 13 Z"/>
+      </clipPath>
+    </defs>
+    <path d="M30 3 L57 13 L57 37 C57 53 43 64 30 67 C17 64 3 53 3 37 L3 13 Z"
+          fill="${color1}" stroke="rgba(0,0,0,.15)" stroke-width="1.5"/>
+    <rect x="30" y="3" width="27" height="64"
+          fill="${c2}" clip-path="url(#cp_${initials.replace(/\s/g,'')})"/>
+    <text x="30" y="43" text-anchor="middle" fill="white"
+          font-family="'Bebas Neue',sans-serif" font-size="17"
+          style="text-shadow:0 1px 3px rgba(0,0,0,.4)">${initials}</text>
+  </svg>`;
+}
+
+function shieldGray(initials) {
+  return `<svg viewBox="0 0 60 70" xmlns="http://www.w3.org/2000/svg" width="56" height="64">
+    <path d="M30 3 L57 13 L57 37 C57 53 43 64 30 67 C17 64 3 53 3 37 L3 13 Z"
+          fill="#d1d5db" stroke="rgba(0,0,0,.1)" stroke-width="1.5"/>
+    <text x="30" y="43" text-anchor="middle" fill="#9ca3af"
+          font-family="'Bebas Neue',sans-serif" font-size="13">?</text>
+  </svg>`;
+}
+
+/* ─── TEAMS DATA ─────────────────────────────────────── */
+const TEAMS = [
+  { name:"Racing Club Portuense", short:"RCP",  c1:"#e8192c", c2:"#ffffff", tw:"@racingportuense", home:true  },
+  { name:"Sevilla FC C",          short:"SFC",  c1:"#d32f2f", c2:"#ffffff", tw:"@sevillafc"                  },
+  { name:"Real Betis C",          short:"RBB",  c1:"#1a7c3e", c2:"#ffffff", tw:"@realbetis"                  },
+  { name:"Xerez DFC",             short:"XDF",  c1:"#1a3a7c", c2:"#ffffff", tw:"@xerezdfc"                   },
+  { name:"Dos Hermanas 1971",     short:"DH",   c1:"#c0392b", c2:"#1a3a7c", tw:"@doshermanas1971"            },
+  { name:"Club Atlético Central", short:"CAC",  c1:"#1a3a7c", c2:"#ffffff", tw:"@atleticocentral"            },
+  { name:"Bollullos CF",          short:"BCF",  c1:"#e8192c", c2:"#000000", tw:"@bollulloscf"                },
+  { name:"AD Ceuta FC B",         short:"CEU",  c1:"#1a7c3e", c2:"#ffffff", tw:"@adceutafc"                  },
+  { name:"RB Linense",            short:"RBL",  c1:"#1a1a1a", c2:"#ffffff", tw:"@rblinense"                  },
+  { name:"Cádiz CF Mirandilla",   short:"CDZ",  c1:"#f5c518", c2:"#003087", tw:"@cadizcf"                   },
+  { name:"Conil CF",              short:"CNL",  c1:"#e8192c", c2:"#ffffff", tw:"@conilcf"                    },
+  { name:"Córdoba CF B",          short:"COR",  c1:"#1a7c3e", c2:"#ffffff", tw:"@cordobacf"                  },
+  { name:"Utrera",                short:"UTR",  c1:"#e8192c", c2:"#000000", tw:"@cf_utrera"                  },
+  { name:"CD Pozoblanco",         short:"POZ",  c1:"#e8192c", c2:"#ffffff", tw:"@cdpozoblanco"               },
+  { name:"Chiclana CF",           short:"CHI",  c1:"#e8192c", c2:"#000000", tw:"@chiclana_cf"                },
+  { name:"San Roque de Lepe",     short:"SRL",  c1:"#003087", c2:"#ffffff", tw:"@sanroquelepe"               },
+  { name:"Atlético Onubense",     short:"AON",  c1:"#e8192c", c2:"#ffffff", tw:"@atleticoonubense"           },
+  { name:"Salerm Puente Genil",   short:"SPG",  c1:"#e8192c", c2:"#1a1a1a", tw:"@salermpuentegenil"         },
+  { name:"Por confirmar",         short:"?",    tbd:true                                                       },
+  { name:"Por confirmar",         short:"?",    tbd:true                                                       },
+];
+
+/* ─── RENDER TEAMS ───────────────────────────────────── */
+const grid = document.getElementById('teamsGrid');
+TEAMS.forEach((t, i) => {
+  const div = document.createElement('div');
+  div.className = 'team-card' + (t.home ? ' home' : '') + (t.tbd ? ' tbd' : '');
+  div.setAttribute('data-i', String(i + 1).padStart(2, '0'));
+
+  const shieldHTML = t.tbd
+    ? shieldGray('?')
+    : shield(t.c1, t.c2, t.short);
+
+  div.innerHTML = `
+    <div class="shield-wrap">${shieldHTML}</div>
+    <div class="team-name${t.home ? ' home-name' : ''}">${t.name}</div>
+    ${t.home ? '<div class="home-pill">Nuestro equipo</div>' : ''}
+    ${t.tw && !t.tbd ? `<div class="team-tw">${t.tw}</div>` : ''}
+  `;
+
+  if (!t.tbd && t.tw) {
+    div.onclick = () => window.open('https://twitter.com/' + t.tw.replace('@',''), '_blank');
+  }
+
+  grid.appendChild(div);
+});
+
+/* ─── NEWS VIA RSS2JSON ──────────────────────────────── */
+const RSS_SOURCES = [
+  { url: 'https://www.rfef.es/rss/noticias', label: 'RFEF' },
+  { url: 'https://www.estadiodeportivo.com/feed/', label: 'Estadio Deportivo' },
+  { url: 'https://www.lavozdelsur.es/feed/', label: 'La Voz del Sur' },
+];
+
+async function loadNews() {
+  const feed = document.getElementById('newsFeed');
+
+  // Intentamos el primer feed disponible
+  for (const src of RSS_SOURCES) {
+    try {
+      const api = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(src.url)}&count=8`;
+      const res = await fetch(api, { signal: AbortSignal.timeout(6000) });
+      const data = await res.json();
+
+      if (data.status === 'ok' && data.items && data.items.length > 0) {
+        renderNews(data.items, src.label);
+        return;
+      }
+    } catch(e) { /* continuar con siguiente fuente */ }
+  }
+
+  // Fallback: placeholder
+  renderPlaceholder();
+}
+
+function renderNews(items, source) {
+  const feed = document.getElementById('newsFeed');
+  feed.innerHTML = '';
+  const list = document.createElement('div');
+  list.className = 'news-list';
+
+  items.slice(0, 6).forEach(item => {
+    const date = item.pubDate
+      ? new Date(item.pubDate).toLocaleDateString('es-ES', {day:'2-digit',month:'short',year:'numeric'})
+      : '—';
+
+    const card = document.createElement('div');
+    card.className = 'news-card';
+    card.onclick = () => window.open(item.link, '_blank');
+
+    const thumb = item.thumbnail || item.enclosure?.link || '';
+
+    card.innerHTML = `
+      <div class="news-img" style="${thumb ? `background:url('${thumb}') center/cover;` : ''}">
+        ${!thumb ? `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>` : ''}
+      </div>
+      <div class="news-body">
+        <div class="news-tag">${source}</div>
+        <div class="news-title">${item.title}</div>
+        <div class="news-meta">${date}</div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+
+  feed.appendChild(list);
+}
+
+function renderPlaceholder() {
+  const feed = document.getElementById('newsFeed');
+  const list = document.createElement('div');
+  list.className = 'news-list';
+
+  const placeholders = [
+    { tag:'Tercera RFEF', title:'Calendario de la temporada 2026/27 pendiente de publicación oficial', date:'Próximamente' },
+    { tag:'Racing Portuense', title:'El Racing Club Portuense inicia la pretemporada para el salto a Tercera RFEF', date:'Jun 2026' },
+    { tag:'Grupo X', title:'Presentación de los 20 equipos que disputarán el Grupo X en la temporada 2026/27', date:'Jul 2026' },
+  ];
+
+  placeholders.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'news-card';
+    card.style.opacity = '.7';
+    card.innerHTML = `
+      <div class="news-img">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      </div>
+      <div class="news-body">
+        <div class="news-tag">${p.tag}</div>
+        <div class="news-title">${p.title}</div>
+        <div class="news-meta">${p.date} · Placeholder</div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+
+  const note = document.createElement('div');
+  note.className = 'news-placeholder';
+  note.textContent = 'Feed de noticias · Configura la fuente RSS en el código';
+  list.appendChild(note);
+
+  document.getElementById('newsFeed').innerHTML = '';
+  document.getElementById('newsFeed').appendChild(list);
+}
+
+loadNews();
+</script>
+</body>
+</html>
