@@ -464,7 +464,7 @@ function nav(id,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(el) el.classList.add('active');
   document.getElementById('page-title').textContent =
-    {p-squad:'Plantilla','p-inactive':'Bajas','p-stats':'Estadísticas'}[id]||'Plantilla';
+    {'p-squad':'Plantilla','p-inactive':'Bajas','p-stats':'Estadísticas'}[id]||'Plantilla';
   document.getElementById('btn-add-player').style.display = id==='p-squad'?'':'none';
   renderPage(id);
 }
