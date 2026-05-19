@@ -287,7 +287,7 @@ function Dashboard({ onLogout }) {
             const dis = m.status !== "active";
             return (
               <div key={m.id} className={`mc${dis?" disabled":""}`} data-num={m.id}
-                onClick={() => m.id === "04" ? window.location.href="tercera.html" : m.id === "05" ? window.location.href="performance.html" : m.id === "01" ? window.location.href="asistencia.html" : showToast(m)} role="button" tabIndex={0}
+                onClick={() => m.id === "04" ? window.location.href="tercera.html" : m.id === "05" ? window.location.href="performance.html" : m.id === "01" ? window.location.href="plantilla.html" : showToast(m)} role="button" tabIndex={0}
                 onKeyDown={e => e.key==="Enter" && showToast(m)}>
                 <div>
                   <div className="cn">{m.id}</div>
@@ -319,10 +319,10 @@ function Dashboard({ onLogout }) {
 }
 
 function App() {
-  const [screen, setScreen] = useState("login");
+  const [screen, setScreen] = useState(sessionStorage.getItem("rl_auth")==="1"?"dashboard":"login");
   return screen === "login"
-    ? <Login onLogin={() => setScreen("dashboard")} />
-    : <Dashboard onLogout={() => setScreen("login")} />;
+    ? <Login onLogin={() => { sessionStorage.setItem("rl_auth","1"); setScreen("dashboard"); }} />
+    : <Dashboard onLogout={() => { sessionStorage.removeItem("rl_auth"); setScreen("login"); }} />;
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
