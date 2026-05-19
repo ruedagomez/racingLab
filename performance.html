@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Performance FC · Racing Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --r:#e8192c;--r2:rgba(232,25,44,.09);--r3:rgba(232,25,44,.18);
+  --blk:#0b0b0b;--txt:#111;--mid:#6b6b6b;--faint:#b0b0b0;
+  --bdr:#e2e2e2;--bg:#f3f3f1;--wh:#fff;
+  --fit:#15803d;--fit-bg:#f0fdf4;
+  --caut:#c2410c;--caut-bg:#fff7ed;
+  --inj:#dc2626;--inj-bg:#fef2f2;
+  --sidebar:240px;
+}
+html,body{height:100%;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--txt);}
+button{font-family:inherit;cursor:pointer;border:none;outline:none;}
+input,select,textarea{font-family:inherit;outline:none;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes dot{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── LAYOUT ── */
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--sidebar);flex-shrink:0;background:var(--blk);
+  display:flex;flex-direction:column;position:relative;z-index:10;
+  border-right:3px solid var(--r);
+}
+.sidebar::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(255,255,255,.03) 1px,transparent 1px);
+  background-size:22px 22px;
+}
+.sb-brand{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.07);position:relative;z-index:1;}
+.sb-back{
+  display:flex;align-items:center;gap:6px;margin-bottom:16px;
+  font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.14em;color:rgba(255,255,255,.28);text-transform:uppercase;
+  cursor:pointer;background:none;border:none;padding:0;transition:color .2s;
+}
+.sb-back:hover{color:var(--r);}
+.sb-back svg{width:10px;height:10px;stroke:currentColor;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.sb-name{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--wh);letter-spacing:.5px;line-height:1;}
+.sb-name span{color:var(--r);}
+.sb-sub{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;color:rgba(255,255,255,.25);text-transform:uppercase;margin-top:4px;}
+.sb-nav{flex:1;padding:12px 10px;overflow-y:auto;position:relative;z-index:1;}
+.sb-section{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.2em;color:rgba(255,255,255,.2);text-transform:uppercase;padding:14px 10px 5px;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:9px 10px;
+  border-radius:4px;cursor:pointer;transition:all .18s;
+  font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;
+  letter-spacing:.04em;color:rgba(255,255,255,.4);margin-bottom:1px;border-left:2px solid transparent;
+}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.8);}
+.nav-item.active{background:rgba(232,25,44,.12);color:var(--wh);border-left-color:var(--r);}
+.nav-icon{width:18px;text-align:center;font-size:13px;flex-shrink:0;}
+.nav-badge{margin-left:auto;font-size:9px;background:var(--r);color:var(--wh);padding:2px 6px;border-radius:10px;font-weight:700;}
+.sb-foot{padding:14px 18px;border-top:1px solid rgba(255,255,255,.07);position:relative;z-index:1;}
+.sb-foot-txt{font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.2);letter-spacing:.04em;}
+
+/* ── MAIN ── */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+
+/* ── TOP BAR ── */
+.topbar{
+  height:58px;background:var(--wh);border-bottom:1px solid var(--bdr);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 36px;flex-shrink:0;position:sticky;top:0;z-index:50;
+  box-shadow:0 1px 4px rgba(0,0,0,.04);
+}
+.topbar-title{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;letter-spacing:.1em;color:var(--txt);text-transform:uppercase;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.tb-pill{
+  font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;padding:4px 10px;border-radius:2px;
+  background:var(--r2);color:var(--r);
+}
+
+/* ── PAGES ── */
+.page{display:none;padding:32px 36px 48px;animation:fadeUp .3s ease;}
+.page.active{display:block;}
+
+/* ── SECTION HEADER ── */
+.sh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid var(--bdr);}
+.st{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;letter-spacing:.1em;color:var(--txt);text-transform:uppercase;}
+.sc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);}
+.sh-actions{display:flex;gap:8px;align-items:center;}
+
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:28px;}
+.kpi{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;padding:18px 16px;border-left:3px solid transparent;transition:border-color .2s;}
+.kpi:hover{border-left-color:var(--r);}
+.kpi .kv{font-family:'Bebas Neue',sans-serif;font-size:42px;color:var(--txt);line-height:1;letter-spacing:.5px;}
+.kpi .kv.red{color:var(--r);}
+.kpi .kv.green{color:var(--fit);}
+.kpi .kv.amber{color:var(--caut);}
+.kpi .kl{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);margin-top:3px;}
+.kpi .ks{font-size:11px;color:var(--faint);margin-top:2px;}
+
+/* ── CARDS ── */
+.card{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;padding:20px;}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);margin-bottom:14px;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;transition:all .18s;cursor:pointer;}
+.btn-primary{background:var(--r);color:var(--wh);border:none;}
+.btn-primary:hover{background:#c8151f;box-shadow:0 4px 12px var(--r3);}
+.btn-ghost{background:transparent;border:1.5px solid var(--bdr);color:var(--mid);}
+.btn-ghost:hover{border-color:var(--r);color:var(--r);}
+.btn-danger{background:transparent;border:1.5px solid rgba(220,38,38,.25);color:var(--inj);}
+.btn-danger:hover{background:var(--inj-bg);}
+.btn-sm{padding:4px 10px;font-size:11px;}
+.btn-update{background:transparent;border:1.5px solid var(--bdr);color:var(--mid);padding:4px 10px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-radius:4px;cursor:pointer;transition:all .18s;}
+.btn-update:hover{border-color:#2563eb;color:#2563eb;}
+
+/* ── STATUS ── */
+.status{display:inline-flex;align-items:center;gap:5px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;padding:3px 8px;border-radius:2px;}
+.status::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.s-fit{background:var(--fit-bg);color:var(--fit);}
+.s-fit::before{background:var(--fit);animation:dot 2s infinite;}
+.s-caut{background:var(--caut-bg);color:var(--caut);}
+.s-caut::before{background:var(--caut);}
+.s-inj{background:var(--inj-bg);color:var(--inj);}
+.s-inj::before{background:var(--inj);}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.tbl th{padding:9px 12px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);border-bottom:1.5px solid var(--bdr);background:var(--wh);position:sticky;top:0;z-index:2;}
+.tbl td{padding:9px 12px;border-bottom:1px solid rgba(226,226,226,.6);}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:rgba(232,25,44,.025);}
+.tbl .dn{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--faint);width:36px;}
+.tbl .nm{font-weight:600;color:var(--txt);}
+.tbl .nm small{display:block;font-size:11px;font-weight:400;color:var(--faint);}
+
+/* ── FILTER TABS ── */
+.ftabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;}
+.ftab{padding:5px 12px;border-radius:3px;border:1.5px solid var(--bdr);background:transparent;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);cursor:pointer;transition:all .18s;}
+.ftab:hover{border-color:var(--r);color:var(--r);}
+.ftab.active{background:var(--r);border-color:var(--r);color:var(--wh);}
+
+/* ── INJURY CARDS ── */
+.inj-card{background:var(--wh);border:1px solid var(--bdr);border-left:4px solid var(--inj);border-radius:6px;margin-bottom:14px;overflow:hidden;}
+.inj-card.discharged{border-left-color:var(--fit);opacity:.7;}
+.inj-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;flex-wrap:wrap;gap:10px;cursor:pointer;}
+.inj-head:hover{background:rgba(0,0,0,.015);}
+.inj-player{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--txt);letter-spacing:.02em;}
+.inj-tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.inj-tag{font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 8px;border-radius:2px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;}
+.t-muscular{background:#fff7ed;color:#c2410c;}
+.t-ligamentosa{background:#fef2f2;color:#dc2626;}
+.t-tendinosa{background:#f5f3ff;color:#7c3aed;}
+.t-osea{background:#eff6ff;color:#1d4ed8;}
+.t-contusion{background:#f0f9ff;color:#0369a1;}
+.t-sobrecarga{background:#f0fdf4;color:#15803d;}
+.t-sev{background:#f5f5f5;color:var(--mid);}
+.inj-body{padding:0 18px 16px;}
+.inj-meta{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px;}
+.inj-mi{font-size:11px;color:var(--mid);}
+.inj-mi strong{display:block;font-size:13px;font-weight:600;color:var(--txt);}
+.prog-wrap{margin-bottom:14px;}
+.prog-row{margin-bottom:8px;}
+.prog-lbl{display:flex;justify-content:space-between;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:4px;}
+.prog-bar{height:5px;background:var(--bg);border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:3px;transition:width .8s ease;}
+.pf-rtt{background:var(--caut);}
+.pf-rtp{background:var(--r);}
+.pf-done{background:var(--fit);}
+/* Timeline */
+.inj-timeline{border-top:1px solid var(--bdr);margin-top:8px;padding-top:12px;}
+.tl-title{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.tl-item{display:flex;gap:12px;margin-bottom:10px;position:relative;}
+.tl-item::before{content:'';position:absolute;left:7px;top:18px;bottom:-10px;width:1px;background:var(--bdr);}
+.tl-item:last-child::before{display:none;}
+.tl-dot{width:16px;height:16px;border-radius:50%;background:var(--wh);border:2px solid var(--bdr);flex-shrink:0;margin-top:2px;}
+.tl-dot.origin{border-color:var(--inj);background:var(--inj-bg);}
+.tl-dot.update{border-color:#2563eb;background:#eff6ff;}
+.tl-dot.discharge{border-color:var(--fit);background:var(--fit-bg);}
+.tl-content{flex:1;}
+.tl-date{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);margin-bottom:3px;}
+.tl-note{font-size:12px;color:var(--txt);line-height:1.5;}
+.tl-meta{font-size:11px;color:var(--mid);margin-top:3px;}
+.inj-actions{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--bdr);background:rgba(0,0,0,.015);}
+
+/* ── AVAIL GRID ── */
+.avail-grid{display:grid;grid-template-columns:160px repeat(7,1fr);gap:1px;background:var(--bdr);border-radius:6px;overflow:hidden;font-size:12px;}
+.avail-cell{background:var(--wh);padding:7px 8px;text-align:center;}
+.avail-cell.hdr{background:var(--bg);font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);}
+.avail-cell.nm{text-align:left;font-weight:600;background:var(--bg);}
+.adot{width:10px;height:10px;border-radius:50%;margin:0 auto;}
+
+/* ── BAR CHART ── */
+.bar-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.bar-lbl{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;width:110px;color:var(--mid);flex-shrink:0;}
+.bar-track{flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding:0 6px;font-size:9px;font-weight:700;color:rgba(255,255,255,.8);transition:width .6s ease;}
+.bar-pct{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mid);width:36px;text-align:right;flex-shrink:0;}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);}
+.overlay.open{display:flex;}
+.modal{background:var(--wh);border:1px solid var(--bdr);border-radius:8px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 24px 60px rgba(0,0,0,.15);}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;padding-bottom:14px;border-bottom:1px solid var(--bdr);}
+.modal-head h3{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--txt);}
+.modal-close{background:none;border:none;font-size:22px;color:var(--faint);cursor:pointer;line-height:1;padding:0;}
+.modal-close:hover{color:var(--txt);}
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--mid);margin-bottom:6px;}
+.form-control{width:100%;background:var(--bg);border:1.5px solid var(--bdr);border-radius:4px;color:var(--txt);padding:10px 12px;font-size:13px;transition:border-color .18s;}
+.form-control:focus{border-color:var(--r);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--bdr);}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:28px;right:28px;background:var(--blk);color:var(--wh);padding:12px 18px 12px 14px;border-radius:4px;border-left:3px solid var(--r);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.04em;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px;animation:fadeUp .3s ease;}
+.toast.ok{border-left-color:var(--fit);}
+.toast.err{border-left-color:var(--inj);}
+
+/* ── DASHBOARD 2-COL ── */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.dash-item{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bdr);}
+.dash-item:last-child{border-bottom:none;}
+.dash-name{font-weight:600;font-size:13px;}
+.dash-sub{font-size:11px;color:var(--mid);margin-top:1px;}
+
+/* ── TESTS ── */
+.test-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:24px;}
+.test-card{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;padding:14px;cursor:pointer;transition:transform .2s,box-shadow .2s;border-left:3px solid transparent;}
+.test-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.07);}
+.test-card.verde{border-left-color:var(--fit);}
+.test-card.ambar{border-left-color:var(--caut);}
+.test-card.rojo{border-left-color:var(--inj);}
+.test-card.none{border-left-color:var(--bdr);opacity:.5;}
+.tc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.tc-name{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--txt);line-height:1.2;}
+.tc-date{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--faint);}
+.risk-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:2px;}
+.risk-dot.verde{background:var(--fit);}
+.risk-dot.ambar{background:var(--caut);}
+.risk-dot.rojo{background:var(--inj);}
+.risk-dot.none{background:var(--faint);}
+.tm-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;}
+.tm-lbl{color:var(--mid);}
+.tm-v{font-weight:600;}
+.tm-v.ok{color:var(--fit);}
+.tm-v.warn{color:var(--caut);}
+.tm-v.bad{color:var(--inj);}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .sidebar{display:none;}
+  .dash-grid{grid-template-columns:1fr;}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:600px){
+  .page{padding:20px 16px 36px;}
+  .topbar{padding:0 16px;}
+  .form-row,.form-row-3{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-brand">
+      <button class="sb-back" onclick="window.location.href='../index.html'">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Volver al Lab
+      </button>
+      <div class="sb-name">RACING <span>LAB</span></div>
+      <div class="sb-sub">Performance FC</div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-section">Principal</div>
+      <div class="nav-item active" onclick="showSection('s-dashboard',this)">
+        <span class="nav-icon">◉</span>Dashboard
+      </div>
+      <div class="nav-item" onclick="showSection('s-plantilla',this)">
+        <span class="nav-icon">◫</span>Plantilla
+      </div>
+      <div class="nav-item" onclick="showSection('s-disponibilidad',this)">
+        <span class="nav-icon">◈</span>Disponibilidad
+      </div>
+      <div class="sb-section">Médico</div>
+      <div class="nav-item" onclick="showSection('s-lesiones',this)">
+        <span class="nav-icon">✦</span>Lesiones
+        <span class="nav-badge" id="inj-badge">0</span>
+      </div>
+      <div class="sb-section">Rendimiento</div>
+      <div class="nav-item" onclick="showSection('s-tests',this)">
+        <span class="nav-icon">◐</span>Tests Físicos
+      </div>
+      <div class="nav-item" onclick="showSection('s-estadisticas',this)">
+        <span class="nav-icon">◧</span>Estadísticas
+      </div>
+    </nav>
+    <div class="sb-foot">
+      <div class="sb-foot-txt">Racing Club Portuense · 2026/27</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div class="topbar-right" id="topbar-actions"></div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="s-dashboard">
+      <div class="kpi-grid" id="dash-kpis"></div>
+      <div class="dash-grid">
+        <div class="card">
+          <div class="card-title">Lesionados activos</div>
+          <div id="dash-injuries"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Retornos estimados</div>
+          <div id="dash-returns"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Disponibilidad por línea</div>
+          <div id="dash-avail-bars"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Últimos tests</div>
+          <div id="dash-tests"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PLANTILLA -->
+    <div class="page" id="s-plantilla">
+      <div class="sh">
+        <div>
+          <div class="st">Plantilla</div>
+          <div class="sc" id="plantilla-count"></div>
+        </div>
+        <div class="sh-actions">
+          <button class="btn btn-primary" onclick="openModal('modal-add-player')">+ Jugador</button>
+        </div>
+      </div>
+      <div class="ftabs">
+        <button class="ftab active" data-f="" onclick="filterPlantilla('',this)">Todos</button>
+        <button class="ftab" data-f="POR" onclick="filterPlantilla('POR',this)">Porteros</button>
+        <button class="ftab" data-f="DEF" onclick="filterPlantilla('DEF',this)">Defensas</button>
+        <button class="ftab" data-f="MED" onclick="filterPlantilla('MED',this)">Centrocampistas</button>
+        <button class="ftab" data-f="DEL" onclick="filterPlantilla('DEL',this)">Delanteros</button>
+        <button class="ftab" data-f="injury" onclick="filterPlantilla('injury',this)">Lesionados</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr>
+              <th>#</th><th>Jugador</th><th>Posición</th>
+              <th>Edad</th><th>Estado</th><th>Últ. test</th><th>Acciones</th>
+            </tr></thead>
+            <tbody id="plantilla-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- DISPONIBILIDAD -->
+    <div class="page" id="s-disponibilidad">
+      <div class="sh"><div class="st">Disponibilidad</div><div class="sc">Semana actual</div></div>
+      <div class="kpi-grid" id="avail-kpis"></div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">Disponibilidad por demarcación</div>
+        <div id="avail-pos-chart"></div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div class="card-title" style="padding:16px 18px 0;">Vista semanal</div>
+        <div style="overflow-x:auto;padding:12px 18px 18px;" id="avail-grid-container"></div>
+      </div>
+    </div>
+
+    <!-- LESIONES -->
+    <div class="page" id="s-lesiones">
+      <div class="sh">
+        <div>
+          <div class="st">Lesiones</div>
+          <div class="sc" id="lesiones-count"></div>
+        </div>
+        <div class="sh-actions">
+          <button class="btn btn-primary" onclick="openModal('modal-add-injury')">+ Nueva lesión</button>
+        </div>
+      </div>
+      <div class="ftabs">
+        <button class="ftab active" data-lt="activas" onclick="showInjTab('activas',this)">Activas</button>
+        <button class="ftab" data-lt="historico" onclick="showInjTab('historico',this)">Histórico</button>
+      </div>
+      <div id="inj-activas"></div>
+      <div id="inj-historico" style="display:none;"></div>
+    </div>
+
+    <!-- TESTS -->
+    <div class="page" id="s-tests">
+      <div class="sh">
+        <div><div class="st">Tests Físicos</div><div class="sc" id="tests-count"></div></div>
+        <div class="sh-actions">
+          <button class="btn btn-primary" onclick="openModal('modal-add-test')">+ Registrar test</button>
+        </div>
+      </div>
+      <div class="ftabs">
+        <button class="ftab active" onclick="showTestView('semaforo',this)">Semáforo</button>
+        <button class="ftab" onclick="showTestView('tabla',this)">Tabla</button>
+      </div>
+      <div id="tests-semaforo">
+        <div class="test-grid" id="tests-semaforo-grid"></div>
+      </div>
+      <div id="tests-tabla" style="display:none;">
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr>
+                <th>Fecha</th><th>Jugador</th>
+                <th>CMJ (cm)</th><th>SJ (cm)</th>
+                <th>Sprint 10m (s)</th><th>Sprint 30m (s)</th>
+                <th>Yo-Yo</th><th>Asimetría (%)</th><th>Hooper</th>
+              </tr></thead>
+              <tbody id="tests-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ESTADÍSTICAS -->
+    <div class="page" id="s-estadisticas">
+      <div class="sh"><div class="st">Estadísticas</div><div class="sc">Temporada 2026/27</div></div>
+      <div class="card" style="text-align:center;padding:48px;color:var(--faint);">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;margin-bottom:8px;">Próximamente</div>
+        <div style="font-size:13px;">Las estadísticas individuales y colectivas estarán disponibles al inicio de competición.</div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══ MODALS ══ -->
+
+<!-- NUEVA LESIÓN -->
+<div class="overlay" id="modal-add-injury" onclick="overlayClose(event,'modal-add-injury')">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Nueva Lesión</h3>
+      <button class="modal-close" onclick="closeModal('modal-add-injury')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Jugador</label>
+      <select class="form-control" id="ni-player"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Fecha lesión</label>
+        <input type="date" class="form-control" id="ni-date"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">¿Recaída?</label>
+        <select class="form-control" id="ni-recaida">
+          <option value="no">No</option>
+          <option value="si">Sí</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-control" id="ni-type">
+          <option value="muscular">Muscular</option>
+          <option value="ligamentosa">Ligamentosa</option>
+          <option value="tendinosa">Tendinosa</option>
+          <option value="osea">Ósea</option>
+          <option value="contusion">Contusión</option>
+          <option value="sobrecarga">Sobrecarga</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Gravedad</label>
+        <select class="form-control" id="ni-severity">
+          <option value="leve">Leve</option>
+          <option value="moderada">Moderada</option>
+          <option value="grave">Grave</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Zona / Localización</label>
+      <input type="text" class="form-control" id="ni-zone" placeholder="Ej: Isquiotibial derecho"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">RTT estimado (días)</label>
+        <input type="number" class="form-control" id="ni-rtt-est" value="14" min="1"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">RTP estimado (días)</label>
+        <input type="number" class="form-control" id="ni-rtp-est" value="21" min="1"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nota inicial</label>
+      <textarea class="form-control" id="ni-notes" rows="3" placeholder="Descripción, mecanismo de lesión…"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-injury')">Cancelar</button>
+      <button class="btn btn-primary" onclick="addInjury()">Registrar lesión</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACTUALIZAR LESIÓN (update/comment) -->
+<div class="overlay" id="modal-update-injury" onclick="overlayClose(event,'modal-update-injury')">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Actualizar Lesión</h3>
+      <button class="modal-close" onclick="closeModal('modal-update-injury')">×</button>
+    </div>
+    <div id="modal-update-player-name" style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--mid);margin-bottom:16px;letter-spacing:.06em;text-transform:uppercase;"></div>
+    <div class="form-group">
+      <label class="form-label">Nota de evolución</label>
+      <textarea class="form-control" id="upd-note" rows="4" placeholder="Estado actual, evolución, observaciones del fisio…"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Revisar RTT (días)</label>
+        <input type="number" class="form-control" id="upd-rtt" placeholder="Dejar vacío para no cambiar" min="0"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Revisar RTP (días)</label>
+        <input type="number" class="form-control" id="upd-rtp" placeholder="Dejar vacío para no cambiar" min="0"/>
+      </div>
+    </div>
+    <input type="hidden" id="upd-inj-id"/>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-update-injury')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveInjuryUpdate()">Guardar actualización</button>
+    </div>
+  </div>
+</div>
+
+<!-- AÑADIR JUGADOR -->
+<div class="overlay" id="modal-add-player" onclick="overlayClose(event,'modal-add-player')">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Nuevo Jugador</h3>
+      <button class="modal-close" onclick="closeModal('modal-add-player')">×</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Dorsal</label>
+        <input type="number" class="form-control" id="np-dorsal" min="0" max="99"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Apodo / Nombre</label>
+        <input type="text" class="form-control" id="np-nick" placeholder="Ej: Rodri"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nombre completo</label>
+      <input type="text" class="form-control" id="np-name" placeholder="Nombre y apellidos"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Posición</label>
+        <select class="form-control" id="np-pos">
+          <option value="POR">Portero</option>
+          <option value="DEF">Defensa</option>
+          <option value="MED">Centrocampista</option>
+          <option value="DEL">Delantero</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Demarcación</label>
+        <input type="text" class="form-control" id="np-dem" placeholder="Ej: Central"/>
+      </div>
+    </div>
+    <div class="form-row-3">
+      <div class="form-group">
+        <label class="form-label">Edad</label>
+        <input type="number" class="form-control" id="np-age" min="14" max="50"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Altura (cm)</label>
+        <input type="number" class="form-control" id="np-h" min="150" max="220"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Peso (kg)</label>
+        <input type="number" class="form-control" id="np-w" min="50" max="120"/>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-player')">Cancelar</button>
+      <button class="btn btn-primary" onclick="addPlayer()">Añadir jugador</button>
+    </div>
+  </div>
+</div>
+
+<!-- NUEVO TEST -->
+<div class="overlay" id="modal-add-test" onclick="overlayClose(event,'modal-add-test')">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Registrar Test Físico</h3>
+      <button class="modal-close" onclick="closeModal('modal-add-test')">×</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Jugador</label>
+        <select class="form-control" id="nt-player"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fecha</label>
+        <input type="date" class="form-control" id="nt-date"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">CMJ (cm)</label>
+        <input type="number" class="form-control" id="nt-cmj" step="0.1" placeholder="—"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">SJ (cm)</label>
+        <input type="number" class="form-control" id="nt-sj" step="0.1" placeholder="—"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Sprint 10m (s)</label>
+        <input type="number" class="form-control" id="nt-sp10" step="0.01" placeholder="—"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sprint 30m (s)</label>
+        <input type="number" class="form-control" id="nt-sp30" step="0.01" placeholder="—"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Yo-Yo (nivel)</label>
+        <input type="number" class="form-control" id="nt-yoyo" step="0.5" placeholder="—"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Asimetría (%)</label>
+        <input type="number" class="form-control" id="nt-asim" step="0.1" placeholder="—"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Nordic (reps)</label>
+        <input type="number" class="form-control" id="nt-nordic" placeholder="—"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Hooper Index</label>
+        <input type="number" class="form-control" id="nt-hooper" placeholder="—"/>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-test')">Cancelar</button>
+      <button class="btn btn-primary" onclick="addTest()">Guardar test</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══ DATA ══════════════════════════════════════════ */
+const THRESHOLDS = { cmj:35, asim:15, sprint10:1.8, hooper:16 };
+
+const DEFAULT_PLAYERS = [
+  // PORTEROS
+  {id:'p00',d:0,  nick:'Castañeda', n:'Alejandro Castañeda Sánchez', pos:'POR',dem:'Portero',         age:20,h:0,w:0,status:'fit'},
+  {id:'p13',d:13, nick:'Juanma',    n:'Juan Manuel Lozano Álvarez',  pos:'POR',dem:'Portero',         age:23,h:0,w:0,status:'fit'},
+  {id:'p01',d:1,  nick:'Manu',      n:'Manuel López García',         pos:'POR',dem:'Portero',         age:32,h:0,w:0,status:'fit'},
+  // DEFENSAS
+  {id:'p06',d:6,  nick:'Alberto Durán', n:'Alberto Durán López',       pos:'DEF',dem:'Central',          age:28,h:0,w:0,status:'fit'},
+  {id:'p20',d:20, nick:'Barba',         n:'Roberto Barba Castillo',    pos:'DEF',dem:'Lateral Izquierdo',age:27,h:0,w:0,status:'fit'},
+  {id:'p02',d:2,  nick:'Carmelo',       n:'Carmelo Manuel Humanes Porras',pos:'DEF',dem:'Central',       age:25,h:0,w:0,status:'fit'},
+  {id:'p04',d:4,  nick:'Kevin',         n:'Kevin Roberto Gil Navarro', pos:'DEF',dem:'Central',          age:31,h:0,w:0,status:'fit'},
+  {id:'p42',d:42, nick:'Lainez',        n:'Daniel Lainez Herrera',     pos:'DEF',dem:'Lateral Derecho',  age:26,h:0,w:0,status:'fit'},
+  {id:'p11',d:11, nick:'Manu Moreno',   n:'Manuel Domínguez Moreno',   pos:'DEF',dem:'Lateral Izquierdo',age:27,h:0,w:0,status:'fit'},
+  {id:'p18',d:18, nick:'Oca',           n:'Antonio Miguel Oca Contreras',pos:'DEF',dem:'Central',        age:35,h:0,w:0,status:'fit'},
+  {id:'p15',d:15, nick:'Rodri',         n:'José Luis Rodríguez Muñoz', pos:'DEF',dem:'Central',          age:29,h:0,w:0,status:'fit'},
+  // CENTROCAMPISTAS
+  {id:'p28',d:28, nick:'Adri Cuevas',   n:'Adrián Cuevas',             pos:'MED',dem:'Medio Centro',     age:36,h:0,w:0,status:'fit'},
+  {id:'p14',d:14, nick:'Adri Romero',   n:'Adrián Romero Rodríguez',   pos:'MED',dem:'Media Punta',      age:32,h:0,w:0,status:'fit'},
+  {id:'p10',d:10, nick:'Chicho',        n:'Antonio Jesús Garrido Fernández',pos:'MED',dem:'Media Punta', age:23,h:0,w:0,status:'fit'},
+  {id:'p05',d:5,  nick:'Fernando',      n:'Fernando Ramos Delgado',    pos:'MED',dem:'MC Ofensivo',      age:0, h:0,w:0,status:'fit'},
+  {id:'p21',d:21, nick:'Fran García',   n:'Francisco José García Pavón',pos:'MED',dem:'Medio Centro',    age:27,h:0,w:0,status:'fit'},
+  {id:'p08',d:8,  nick:'Kevin',         n:'Juan Kevin Bonilla Durán',  pos:'MED',dem:'Media Punta',      age:34,h:0,w:0,status:'fit'},
+  // DELANTEROS
+  {id:'p16',d:16, nick:'Borja',         n:'Borja Jiménez Macías',      pos:'DEL',dem:'Extremo Derecho',  age:32,h:0,w:0,status:'fit'},
+  {id:'p99',d:0,  nick:'Elías',         n:'Elías Sebastián Palacio',   pos:'DEL',dem:'Extremo Izquierdo',age:28,h:0,w:0,status:'fit'},
+  {id:'p17',d:17, nick:'Fran Jiménez',  n:'Francisco Jiménez Cruz',    pos:'DEL',dem:'Delantero Centro', age:28,h:0,w:0,status:'fit'},
+  {id:'p30',d:30, nick:'Hugo Rodríguez',n:'Hugo Rodríguez Romero',     pos:'DEL',dem:'Extremo Izquierdo',age:36,h:0,w:0,status:'fit'},
+  {id:'p24',d:24, nick:'Jacobo',        n:'Jacobo Cornejo Salas',      pos:'DEL',dem:'Extremo Derecho',  age:30,h:0,w:0,status:'fit'},
+  {id:'p09',d:9,  nick:'Javi Tamayo',   n:'Manuel Javier Tamayo Pacheco',pos:'DEL',dem:'Delantero Centro',age:35,h:0,w:0,status:'fit'},
+  {id:'p07',d:7,  nick:'Manu Heredia',  n:'Manuel Heredia Montoya',    pos:'DEL',dem:'Extremo Izquierdo',age:31,h:0,w:0,status:'fit'},
+  {id:'p27',d:27, nick:'Pepe Sáinz',    n:'José Luis Sáinz Hugues',    pos:'DEL',dem:'Delantero',        age:24,h:0,w:0,status:'fit'},
+  {id:'p19',d:19, nick:'Tocino',        n:'Antonio Jesús Tocino Sánchez',pos:'DEL',dem:'Extremo Derecho',age:22,h:0,w:0,status:'fit'},
+];
+
+function loadData() {
+  const stored = localStorage.getItem('rl_perf_v2');
+  if (stored) {
+    try { return JSON.parse(stored); } catch(e) {}
+  }
+  return {
+    players: JSON.parse(JSON.stringify(DEFAULT_PLAYERS)),
+    injuries: [],
+    tests: [],
+  };
+}
+function saveData() { localStorage.setItem('rl_perf_v2', JSON.stringify(DATA)); }
+
+let DATA = loadData();
+let currentPlantillaFilter = '';
+
+/* ══ HELPERS ══════════════════════════════════════ */
+const pos_lbl = {POR:'Portero',DEF:'Defensa',MED:'Centrocampista',DEL:'Delantero'};
+function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function daysSince(dateStr){ return Math.ceil((Date.now()-new Date(dateStr))/86400000); }
+function rtpDaysLeft(inj){
+  const elapsed = daysSince(inj.date);
+  const est = (inj.updates||[]).reduce((last,u)=>u.rtp_est||last, inj.rtp_est);
+  return Math.max(0, est - elapsed);
+}
+function shortName(n){
+  const parts = n.split(' ');
+  return parts.length<=2 ? n : parts[0]+' '+parts[parts.length-1];
+}
+
+/* ══ NAVIGATION ══════════════════════════════════ */
+const PAGE_TITLES = {
+  's-dashboard':'Dashboard','s-plantilla':'Plantilla',
+  's-disponibilidad':'Disponibilidad','s-lesiones':'Lesiones',
+  's-tests':'Tests Físicos','s-estadisticas':'Estadísticas'
+};
+const PAGE_ACTIONS = {
+  's-lesiones': `<button class="btn btn-primary btn-sm" onclick="openModal('modal-add-injury')">+ Nueva lesión</button>`,
+  's-tests':    `<button class="btn btn-primary btn-sm" onclick="openModal('modal-add-test')">+ Registrar test</button>`,
+  's-plantilla':`<button class="btn btn-primary btn-sm" onclick="openModal('modal-add-player')">+ Jugador</button>`,
+};
+
+function showSection(id, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.getElementById('page-title').textContent = PAGE_TITLES[id]||id;
+  document.getElementById('topbar-actions').innerHTML = PAGE_ACTIONS[id]||'';
+  renderSection(id);
+}
+function renderSection(id){
+  const map = {
+    's-dashboard': renderDashboard,
+    's-plantilla': ()=>renderPlantilla(currentPlantillaFilter),
+    's-disponibilidad': renderDisponibilidad,
+    's-lesiones': renderLesiones,
+    's-tests': renderTests,
+  };
+  if(map[id]) map[id]();
+}
+
+/* ══ DASHBOARD ══════════════════════════════════ */
+function renderDashboard() {
+  const total = DATA.players.length;
+  const fit = DATA.players.filter(p=>p.status==='fit').length;
+  const inj = DATA.players.filter(p=>p.status==='injury').length;
+  const caut = DATA.players.filter(p=>p.status==='caution').length;
+  const pct = total ? Math.round(fit/total*100) : 0;
+
+  document.getElementById('dash-kpis').innerHTML = `
+    <div class="kpi"><div class="kv">${total}</div><div class="kl">Jugadores</div></div>
+    <div class="kpi"><div class="kv green">${fit}</div><div class="kl">Disponibles</div><div class="ks">${pct}% plantilla</div></div>
+    <div class="kpi"><div class="kv red">${inj}</div><div class="kl">Lesionados</div></div>
+    <div class="kpi"><div class="kv amber">${caut}</div><div class="kl">Precaución</div></div>
+    <div class="kpi"><div class="kv">${DATA.tests.length}</div><div class="kl">Tests registrados</div></div>
+  `;
+
+  // Active injuries
+  const activeInj = DATA.injuries.filter(i=>i.active);
+  let injHtml = activeInj.length ? '' : '<div style="color:var(--faint);font-size:13px;padding:4px 0">Sin lesionados activos ✓</div>';
+  activeInj.forEach(inj=>{
+    const p = DATA.players.find(pl=>pl.id===inj.pid);
+    const dAgo = daysSince(inj.date);
+    injHtml += `<div class="dash-item">
+      <div><div class="dash-name">${p?p.d+' · '+p.nick:'—'}</div>
+      <div class="dash-sub">${cap(inj.type)} · ${inj.zone}</div></div>
+      <div style="text-align:right">
+        <div class="status s-inj">Día ${dAgo}</div>
+        <div style="font-size:10px;color:var(--faint);margin-top:3px">RTP ~${rtpDaysLeft(inj)}d</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('dash-injuries').innerHTML = injHtml;
+
+  // Returns
+  const returning = activeInj.map(inj=>({inj,p:DATA.players.find(pl=>pl.id===inj.pid),left:rtpDaysLeft(inj)}))
+    .sort((a,b)=>a.left-b.left);
+  let retHtml = returning.length ? '' : '<div style="color:var(--faint);font-size:13px;padding:4px 0">Sin retornos pendientes</div>';
+  returning.forEach(({inj,p,left})=>{
+    const cls = left<=3?'s-inj':left<=7?'s-caut':'s-fit';
+    retHtml += `<div class="dash-item">
+      <div><div class="dash-name">${p?p.d+' · '+p.nick:'—'}</div>
+      <div class="dash-sub">${cap(inj.type)} · ${inj.zone}</div></div>
+      <span class="status ${cls}">${left<=0?'RTP HOY':left+' días'}</span>
+    </div>`;
+  });
+  document.getElementById('dash-returns').innerHTML = retHtml;
+
+  // Avail bars
+  const positions = ['POR','DEF','MED','DEL'];
+  const posNames = {POR:'Porteros',DEF:'Defensas',MED:'Centrocampistas',DEL:'Delanteros'};
+  let barHtml = '';
+  positions.forEach(pos=>{
+    const tot = DATA.players.filter(p=>p.pos===pos).length;
+    const av = DATA.players.filter(p=>p.pos===pos&&p.status==='fit').length;
+    const pct = tot?Math.round(av/tot*100):0;
+    const col = pct>=80?'var(--fit)':pct>=60?'var(--caut)':'var(--inj)';
+    barHtml += `<div class="bar-row">
+      <div class="bar-lbl">${posNames[pos]}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col};min-width:${av?'24px':'0'}">${av}/${tot}</div></div>
+      <div class="bar-pct">${pct}%</div>
+    </div>`;
+  });
+  document.getElementById('dash-avail-bars').innerHTML = barHtml;
+
+  // Last tests
+  const lastTests = [...DATA.tests].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+  let testHtml = lastTests.length ? '' : '<div style="color:var(--faint);font-size:13px;padding:4px 0">Sin tests registrados aún</div>';
+  lastTests.forEach(t=>{
+    const p = DATA.players.find(pl=>pl.id===t.pid);
+    testHtml += `<div class="dash-item">
+      <div><div class="dash-name">${p?p.d+' · '+p.nick:'—'}</div></div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint)">${t.date}</div>
+    </div>`;
+  });
+  document.getElementById('dash-tests').innerHTML = testHtml;
+}
+
+/* ══ PLANTILLA ══════════════════════════════════ */
+function renderPlantilla(filter) {
+  filter = filter||'';
+  let players = [...DATA.players].sort((a,b)=>a.d-b.d);
+  if(filter==='injury') players = players.filter(p=>p.status==='injury'||p.status==='caution');
+  else if(filter) players = players.filter(p=>p.pos===filter);
+
+  document.getElementById('plantilla-count').textContent = players.length+' jugadores';
+
+  const lastTest = pid => DATA.tests.filter(t=>t.pid===pid).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+  const sCls = {fit:'s-fit',caution:'s-caut',injury:'s-inj'};
+  const sLbl = {fit:'Disponible',caution:'Precaución',injury:'Lesionado'};
+
+  let html = '';
+  players.forEach(p=>{
+    const lt = lastTest(p.id);
+    const sc = sCls[p.status]||'s-fit';
+    const sl = sLbl[p.status]||'Disponible';
+    html += `<tr>
+      <td class="dn">${p.d||'—'}</td>
+      <td class="nm">${p.nick}<small>${shortName(p.n)}</small></td>
+      <td><span style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--r);letter-spacing:.06em">${p.dem||pos_lbl[p.pos]}</span></td>
+      <td style="color:var(--mid);font-size:13px">${p.age||'—'}</td>
+      <td><span class="status ${sc}">${sl}</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint)">${lt?lt.date.slice(5):'—'}</td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-ghost btn-sm" onclick="quickOpenInjury('${p.id}')">🩹</button>
+          <button class="btn btn-ghost btn-sm" onclick="cycleStatus('${p.id}')">✏️</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('plantilla-tbody').innerHTML = html;
+}
+
+function filterPlantilla(f, el) {
+  currentPlantillaFilter = f;
+  document.querySelectorAll('[data-f]').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderPlantilla(f);
+}
+
+function cycleStatus(pid) {
+  const p = DATA.players.find(pl=>pl.id===pid);
+  if(!p) return;
+  const cycle = {fit:'caution',caution:'injury',injury:'fit'};
+  p.status = cycle[p.status]||'fit';
+  saveData(); updateBadges();
+  renderPlantilla(currentPlantillaFilter);
+  showToast('Estado actualizado: '+p.nick);
+}
+
+function quickOpenInjury(pid) {
+  populatePlayerSelects();
+  document.getElementById('ni-player').value = pid;
+  document.getElementById('ni-date').value = todayStr();
+  openModal('modal-add-injury');
+}
+
+function addPlayer() {
+  const d = parseInt(document.getElementById('np-dorsal').value)||0;
+  const nick = document.getElementById('np-nick').value.trim();
+  const n = document.getElementById('np-name').value.trim();
+  if(!nick&&!n){showToast('El nombre es obligatorio','err');return;}
+  DATA.players.push({
+    id:'p'+Date.now(), d, nick:nick||n.split(' ')[0], n:n||nick,
+    pos:document.getElementById('np-pos').value,
+    dem:document.getElementById('np-dem').value,
+    age:parseInt(document.getElementById('np-age').value)||0,
+    h:parseInt(document.getElementById('np-h').value)||0,
+    w:parseInt(document.getElementById('np-w').value)||0,
+    status:'fit'
+  });
+  saveData(); closeModal('modal-add-player');
+  renderPlantilla(); showToast('Jugador añadido');
+}
+
+/* ══ DISPONIBILIDAD ════════════════════════════ */
+function renderDisponibilidad() {
+  const total = DATA.players.length;
+  const fit = DATA.players.filter(p=>p.status==='fit').length;
+  const inj = DATA.players.filter(p=>p.status==='injury').length;
+  const caut = DATA.players.filter(p=>p.status==='caution').length;
+
+  document.getElementById('avail-kpis').innerHTML = `
+    <div class="kpi"><div class="kv green">${fit}</div><div class="kl">Disponibles</div><div class="ks">${Math.round(fit/total*100)}%</div></div>
+    <div class="kpi"><div class="kv amber">${caut}</div><div class="kl">Precaución</div></div>
+    <div class="kpi"><div class="kv red">${inj}</div><div class="kl">Baja</div></div>
+    <div class="kpi"><div class="kv">${total}</div><div class="kl">Total plantilla</div></div>
+  `;
+
+  // Bars
+  const posNames = {POR:'Porteros',DEF:'Defensas',MED:'Centrocampistas',DEL:'Delanteros'};
+  let barHtml = '';
+  ['POR','DEF','MED','DEL'].forEach(pos=>{
+    const tot = DATA.players.filter(p=>p.pos===pos).length;
+    const av = DATA.players.filter(p=>p.pos===pos&&p.status==='fit').length;
+    const pct = tot?Math.round(av/tot*100):0;
+    const col = pct>=80?'var(--fit)':pct>=60?'var(--caut)':'var(--inj)';
+    barHtml += `<div class="bar-row">
+      <div class="bar-lbl">${posNames[pos]}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col};min-width:${av?'24px':'0'}">${av}/${tot}</div></div>
+      <div class="bar-pct">${pct}%</div>
+    </div>`;
+  });
+  document.getElementById('avail-pos-chart').innerHTML = barHtml;
+
+  // Weekly grid
+  const today = new Date();
+  const days = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const weekDates = Array.from({length:7},(_,i)=>{const d=new Date(today);d.setDate(d.getDate()+i);return d;});
+  let g = `<div class="avail-grid">
+    <div class="avail-cell hdr nm">Jugador</div>
+    ${weekDates.map((d,i)=>`<div class="avail-cell hdr">${days[i]}<br><span style="font-size:9px;opacity:.6">${d.getDate()}/${d.getMonth()+1}</span></div>`).join('')}`;
+  [...DATA.players].sort((a,b)=>a.d-b.d).forEach(p=>{
+    const col = p.status==='fit'?'var(--fit)':p.status==='caution'?'var(--caut)':'var(--inj)';
+    g += `<div class="avail-cell nm">${p.d?p.d+' · ':''}${p.nick}</div>`;
+    weekDates.forEach(()=>{g += `<div class="avail-cell"><div class="adot" style="background:${col}"></div></div>`;});
+  });
+  g += '</div>';
+  document.getElementById('avail-grid-container').innerHTML = g;
+}
+
+/* ══ LESIONES ══════════════════════════════════ */
+function renderLesiones() {
+  populatePlayerSelects();
+  document.getElementById('ni-date').value = todayStr();
+  const active = DATA.injuries.filter(i=>i.active);
+  const hist = DATA.injuries.filter(i=>!i.active);
+  document.getElementById('lesiones-count').textContent = active.length+' activas · '+hist.length+' históricas';
+  document.getElementById('inj-activas').innerHTML = active.length
+    ? active.map(i=>injCardHtml(i)).join('')
+    : '<div class="card" style="color:var(--faint);text-align:center;padding:32px;font-family:\'Barlow Condensed\',sans-serif;font-size:15px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">Sin lesionados activos ✓</div>';
+  document.getElementById('inj-historico').innerHTML = hist.length
+    ? hist.map(i=>injCardHtml(i,true)).join('')
+    : '<div class="card" style="color:var(--faint);font-size:13px;padding:24px;">Sin historial previo</div>';
+}
+
+function showInjTab(tab, el) {
+  document.querySelectorAll('[data-lt]').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('inj-activas').style.display = tab==='activas'?'':'none';
+  document.getElementById('inj-historico').style.display = tab==='historico'?'':'none';
+}
+
+function injCardHtml(inj, historical=false) {
+  const p = DATA.players.find(pl=>pl.id===inj.pid);
+  const pName = p ? (p.d?p.d+' · ':'')+p.nick : 'Jugador desconocido';
+  const dAgo = daysSince(inj.date);
+  const rttpEst = (inj.updates||[]).reduce((last,u)=>u.rtt_est||last, inj.rtt_est);
+  const rtpEst = (inj.updates||[]).reduce((last,u)=>u.rtp_est||last, inj.rtp_est);
+  const progRTT = Math.min(100, Math.round(dAgo/rttpEst*100));
+  const progRTP = Math.min(100, Math.round(dAgo/rtpEst*100));
+
+  // Timeline entries
+  const tl_entries = [];
+  tl_entries.push({type:'origin', date:inj.date, note:(inj.notes||'Lesión registrada.'), meta:cap(inj.type)+' · '+inj.zone+' · '+cap(inj.severity)});
+  (inj.updates||[]).forEach(u=>{
+    tl_entries.push({type:'update', date:u.date, note:u.note||'Actualización registrada.',
+      meta:(u.rtt_est?'RTT revisado: '+u.rtt_est+'d ':'')+( u.rtp_est?'· RTP revisado: '+u.rtp_est+'d':'') });
+  });
+  if(!inj.active) tl_entries.push({type:'discharge', date:inj.discharge_date||'—', note:'Alta médica registrada.', meta:'Días baja total: '+dAgo});
+
+  const tlHtml = tl_entries.map(e=>`
+    <div class="tl-item">
+      <div class="tl-dot ${e.type}"></div>
+      <div class="tl-content">
+        <div class="tl-date">${e.date}</div>
+        <div class="tl-note">${e.note}</div>
+        ${e.meta?`<div class="tl-meta">${e.meta}</div>`:''}
+      </div>
+    </div>`).join('');
+
+  return `<div class="inj-card${historical?' discharged':''}">
+    <div class="inj-head" onclick="toggleInjBody('ib-${inj.id}')">
+      <div>
+        <div class="inj-player">${pName}</div>
+        <div style="font-size:12px;color:var(--mid);margin-top:3px">${inj.zone}</div>
+      </div>
+      <div class="inj-tags">
+        <span class="inj-tag t-${inj.type}">${cap(inj.type)}</span>
+        <span class="inj-tag t-sev">${cap(inj.severity)}</span>
+        ${inj.recaida==='si'?'<span class="inj-tag" style="background:#fef2f2;color:#dc2626;">Recaída</span>':''}
+        ${inj.active?`<span class="status s-inj">Día ${dAgo}</span>`:`<span class="status s-fit">Alta</span>`}
+        <span style="color:var(--faint);font-size:14px;">${'ib-'+inj.id}</span>
+      </div>
+    </div>
+    <div id="ib-${inj.id}" class="inj-body" style="display:none;">
+      <div class="inj-meta">
+        <div class="inj-mi"><strong>${inj.date}</strong>Fecha lesión</div>
+        <div class="inj-mi"><strong>${dAgo} días</strong>En baja</div>
+        <div class="inj-mi"><strong>~${rttpEst}d</strong>RTT estimado</div>
+        <div class="inj-mi"><strong>~${rtpEst}d</strong>RTP estimado</div>
+        <div class="inj-mi"><strong>${(inj.updates||[]).length}</strong>Actualizaciones</div>
+      </div>
+      ${inj.active?`<div class="prog-wrap">
+        <div class="prog-row">
+          <div class="prog-lbl"><span>Return to Training</span><span>${Math.min(progRTT,100)}%</span></div>
+          <div class="prog-bar"><div class="prog-fill pf-rtt" style="width:${progRTT}%"></div></div>
+        </div>
+        <div class="prog-row">
+          <div class="prog-lbl"><span>Return to Play</span><span>${Math.min(progRTP,100)}%</span></div>
+          <div class="prog-bar"><div class="prog-fill pf-rtp" style="width:${progRTP}%"></div></div>
+        </div>
+      </div>`:''}
+      <div class="inj-timeline">
+        <div class="tl-title">Historial de evolución</div>
+        ${tlHtml}
+      </div>
+      ${inj.active?`<div class="inj-actions">
+        <button class="btn-update" onclick="openUpdateInjury('${inj.id}')">+ Añadir actualización</button>
+        <button class="btn btn-danger btn-sm" onclick="dischargeInjury('${inj.id}')">Alta médica</button>
+      </div>`:''}
+    </div>
+  </div>`;
+}
+
+function toggleInjBody(id) {
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.style.display = el.style.display==='none'?'block':'none';
+}
+
+function openUpdateInjury(injId) {
+  const inj = DATA.injuries.find(i=>i.id===injId);
+  if(!inj) return;
+  const p = DATA.players.find(pl=>pl.id===inj.pid);
+  document.getElementById('modal-update-player-name').textContent =
+    (p?(p.d?p.d+' · ':'')+p.nick:'')+' · '+inj.zone;
+  document.getElementById('upd-note').value = '';
+  document.getElementById('upd-rtt').value = '';
+  document.getElementById('upd-rtp').value = '';
+  document.getElementById('upd-inj-id').value = injId;
+  openModal('modal-update-injury');
+}
+
+function saveInjuryUpdate() {
+  const injId = document.getElementById('upd-inj-id').value;
+  const note = document.getElementById('upd-note').value.trim();
+  const rtt = parseInt(document.getElementById('upd-rtt').value)||null;
+  const rtp = parseInt(document.getElementById('upd-rtp').value)||null;
+  if(!note){showToast('Escribe una nota de evolución','err');return;}
+  const inj = DATA.injuries.find(i=>i.id===injId);
+  if(!inj) return;
+  if(!inj.updates) inj.updates = [];
+  inj.updates.push({
+    id:'u'+Date.now(), date:todayStr(),
+    note, rtt_est:rtt||null, rtp_est:rtp||null
+  });
+  saveData(); closeModal('modal-update-injury');
+  renderLesiones();
+  // Re-open the card body
+  setTimeout(()=>{
+    const el = document.getElementById('ib-'+injId);
+    if(el) el.style.display='block';
+  }, 100);
+  showToast('Actualización guardada');
+}
+
+function addInjury() {
+  const pid = document.getElementById('ni-player').value;
+  const date = document.getElementById('ni-date').value;
+  if(!pid||!date){showToast('Jugador y fecha son obligatorios','err');return;}
+  const inj = {
+    id:'i'+Date.now(), pid, date,
+    type:document.getElementById('ni-type').value,
+    zone:document.getElementById('ni-zone').value||'Sin especificar',
+    severity:document.getElementById('ni-severity').value,
+    rtt_est:parseInt(document.getElementById('ni-rtt-est').value)||14,
+    rtp_est:parseInt(document.getElementById('ni-rtp-est').value)||21,
+    recaida:document.getElementById('ni-recaida').value,
+    notes:document.getElementById('ni-notes').value.trim(),
+    updates:[], active:true
+  };
+  DATA.injuries.push(inj);
+  const p = DATA.players.find(pl=>pl.id===pid);
+  if(p) p.status='injury';
+  saveData(); updateBadges();
+  closeModal('modal-add-injury');
+  renderLesiones(); renderDashboard();
+  showToast('Lesión registrada');
+}
+
+function dischargeInjury(id) {
+  const inj = DATA.injuries.find(i=>i.id===id);
+  if(!inj) return;
+  if(!confirm('¿Confirmar alta médica para esta lesión?')) return;
+  inj.active = false;
+  inj.discharge_date = todayStr();
+  const p = DATA.players.find(pl=>pl.id===inj.pid);
+  if(p) p.status='fit';
+  saveData(); updateBadges();
+  renderLesiones(); renderDashboard();
+  showToast('Alta médica registrada','ok');
+}
+
+/* ══ TESTS ═════════════════════════════════════ */
+function renderTests() {
+  populatePlayerSelects();
+  document.getElementById('nt-date').value = todayStr();
+  document.getElementById('tests-count').textContent = DATA.tests.length+' tests registrados';
+  renderTestsSemaforo(); renderTestsTabla();
+}
+
+function showTestView(v, el) {
+  document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tests-semaforo').style.display = v==='semaforo'?'':'none';
+  document.getElementById('tests-tabla').style.display = v==='tabla'?'':'none';
+}
+
+function renderTestsSemaforo() {
+  const T = THRESHOLDS;
+  let html = '';
+  DATA.players.forEach(p=>{
+    const tests = DATA.tests.filter(t=>t.pid===p.id).sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const last = tests[0];
+    if(!last){
+      html+=`<div class="test-card none"><div class="tc-head"><div class="tc-name">${p.d?p.d+' · ':''}${p.nick}<br><span style="font-size:10px;color:var(--faint);font-weight:400">${p.dem}</span></div><div class="risk-dot none"></div></div><div style="font-size:11px;color:var(--faint)">Sin tests</div></div>`;
+      return;
+    }
+    let risks=0;
+    if(last.cmj&&last.cmj<T.cmj) risks++;
+    if(last.asim&&last.asim>T.asim) risks++;
+    if(last.sp10&&last.sp10>T.sprint10) risks++;
+    if(last.hooper&&last.hooper>T.hooper) risks++;
+    const rc = risks===0?'verde':risks===1?'ambar':'rojo';
+    const mRow=(lbl,val,bad)=>val!=null?`<div class="tm-row"><span class="tm-lbl">${lbl}</span><span class="tm-v ${bad?'warn':'ok'}">${val}</span></div>`:'';
+    html+=`<div class="test-card ${rc}">
+      <div class="tc-head">
+        <div class="tc-name">${p.d?p.d+' · ':''}${p.nick}<br><span style="font-size:10px;color:var(--faint);font-weight:400">${p.dem}</span></div>
+        <div><div class="risk-dot ${rc}"></div><div class="tc-date">${last.date.slice(5)}</div></div>
+      </div>
+      ${mRow('CMJ',last.cmj,last.cmj&&last.cmj<T.cmj)}
+      ${mRow('Asim.',last.asim!=null?last.asim+'%':null,last.asim&&last.asim>T.asim)}
+      ${mRow('Spr.10m',last.sp10!=null?last.sp10+'s':null,last.sp10&&last.sp10>T.sprint10)}
+      ${mRow('Hooper',last.hooper,last.hooper&&last.hooper>T.hooper)}
+    </div>`;
+  });
+  document.getElementById('tests-semaforo-grid').innerHTML = html;
+}
+
+function renderTestsTabla() {
+  const rows = [...DATA.tests].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  let html = rows.length?'':'<tr><td colspan="9" style="text-align:center;color:var(--faint);padding:28px;">Sin tests registrados</td></tr>';
+  rows.forEach(t=>{
+    const p = DATA.players.find(pl=>pl.id===t.pid);
+    html+=`<tr>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint)">${t.date}</td>
+      <td class="nm">${p?(p.d?p.d+' · ':'')+p.nick:'—'}</td>
+      <td>${t.cmj??'—'}</td><td>${t.sj??'—'}</td>
+      <td>${t.sp10??'—'}</td><td>${t.sp30??'—'}</td>
+      <td>${t.yoyo??'—'}</td>
+      <td style="color:${t.asim>THRESHOLDS.asim?'var(--inj)':'var(--fit)'}">${t.asim!=null?t.asim+'%':'—'}</td>
+      <td style="color:${t.hooper>THRESHOLDS.hooper?'var(--inj)':'var(--fit)'}">${t.hooper??'—'}</td>
+    </tr>`;
+  });
+  document.getElementById('tests-tbody').innerHTML = html;
+}
+
+function addTest() {
+  const pid = document.getElementById('nt-player').value;
+  const date = document.getElementById('nt-date').value;
+  if(!pid||!date){showToast('Jugador y fecha son obligatorios','err');return;}
+  const t = {
+    id:'t'+Date.now(), pid, date,
+    cmj:parseFloat(document.getElementById('nt-cmj').value)||null,
+    sj:parseFloat(document.getElementById('nt-sj').value)||null,
+    sp10:parseFloat(document.getElementById('nt-sp10').value)||null,
+    sp30:parseFloat(document.getElementById('nt-sp30').value)||null,
+    yoyo:parseFloat(document.getElementById('nt-yoyo').value)||null,
+    asim:parseFloat(document.getElementById('nt-asim').value)||null,
+    nordic:parseInt(document.getElementById('nt-nordic').value)||null,
+    hooper:parseInt(document.getElementById('nt-hooper').value)||null,
+  };
+  DATA.tests.push(t);
+  saveData(); closeModal('modal-add-test'); renderTests();
+  showToast('Test guardado');
+}
+
+/* ══ UTILS ═════════════════════════════════════ */
+function populatePlayerSelects() {
+  const sorted = [...DATA.players].sort((a,b)=>a.d-b.d);
+  const opts = sorted.map(p=>`<option value="${p.id}">${p.d?p.d+' · ':''}${p.nick}</option>`).join('');
+  ['ni-player','nt-player'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.innerHTML='<option value="">— Seleccionar jugador —</option>'+opts;}
+  });
+}
+
+function updateBadges() {
+  document.getElementById('inj-badge').textContent = DATA.injuries.filter(i=>i.active).length;
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function overlayClose(e, id) { if(e.target.classList.contains('overlay')) closeModal(id); }
+
+let toastTimer = null;
+function showToast(msg, type='ok') {
+  let t = document.querySelector('.toast');
+  if(!t){ t=document.createElement('div'); t.className='toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.className = 'toast '+(type==='err'?'err':'ok');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.remove(), 3000);
+}
+
+/* ══ INIT ══════════════════════════════════════ */
+updateBadges();
+renderDashboard();
+</script>
+</body>
+</html>
