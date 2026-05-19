@@ -415,25 +415,63 @@ const HOLIDAYS = {
 };
 
 const SEED_EVENTS = [
-  {title:'Inicio de Pretemporada',  date:'2026-07-22',type:'club',        notes:'Primer día de trabajo'},
-  {title:'Día Libre',               date:'2026-08-01',type:'libre',       notes:''},
-  {title:'Conceptos Modelo de Juego',date:'2026-08-02',type:'club',       notes:''},
-  {title:'Amistoso',                date:'2026-08-05',type:'amistoso',    notes:''},
-  {title:'Amistoso',                date:'2026-08-08',type:'amistoso',    notes:''},
-  {title:'Día Libre',               date:'2026-08-09',type:'libre',       notes:''},
-  {title:'Amistoso',                date:'2026-08-12',type:'amistoso',    notes:''},
-  {title:'Amistoso',                date:'2026-08-15',type:'amistoso',    notes:''},
-  {title:'Día Libre',               date:'2026-08-16',type:'libre',       notes:''},
-  {title:'Amistoso',                date:'2026-08-19',type:'amistoso',    notes:''},
-  {title:'Amistoso',                date:'2026-08-22',type:'amistoso',    notes:''},
-  {title:'Día Libre',               date:'2026-08-23',type:'libre',       notes:''},
-  {title:'Amistoso',                date:'2026-08-26',type:'amistoso',    notes:''},
-  {title:'Amistoso',                date:'2026-08-29',type:'amistoso',    notes:''},
-  {title:'Día Libre',               date:'2026-08-30',type:'libre',       notes:''},
-  {title:'Día Libre',               date:'2026-09-01',type:'libre',       notes:''},
-  {title:'Liga · Jornada 1',        date:'2026-09-06',type:'liga',        notes:'Inicio de competición'},
-  {title:'Día Libre',               date:'2026-09-08',type:'libre',       notes:''},
-  {title:'Liga · Jornada 2',        date:'2026-09-13',type:'liga',        notes:''},
+  // INICIO
+  {title:'Inicio de Pretemporada',  date:'2026-07-22',type:'club',         notes:'Primer día de trabajo'},
+  // SEM 1 - Jul 23-31
+  {title:'Entrenamiento',           date:'2026-07-23',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-07-24',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-07-27',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-07-28',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-07-29',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-07-30',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-07-31',type:'entrenamiento', notes:''},
+  // SEM 2
+  {title:'Día Libre',               date:'2026-08-01',type:'libre',         notes:''},
+  {title:'Entrenamiento',           date:'2026-08-03',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-08-04',type:'entrenamiento', notes:''},
+  {title:'Amistoso',                date:'2026-08-05',type:'amistoso',      notes:''},
+  {title:'Entrenamiento',           date:'2026-08-06',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-08-07',type:'entrenamiento', notes:''},
+  {title:'Amistoso',                date:'2026-08-08',type:'amistoso',      notes:''},
+  {title:'Día Libre',               date:'2026-08-09',type:'libre',         notes:''},
+  // SEM 3
+  {title:'Entrenamiento',           date:'2026-08-10',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-08-11',type:'entrenamiento', notes:''},
+  {title:'Amistoso',                date:'2026-08-12',type:'amistoso',      notes:''},
+  {title:'Entrenamiento',           date:'2026-08-13',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-08-14',type:'entrenamiento', notes:''},
+  {title:'Amistoso',                date:'2026-08-15',type:'amistoso',      notes:''},
+  {title:'Día Libre',               date:'2026-08-16',type:'libre',         notes:''},
+  // SEM 4
+  {title:'Entrenamiento',           date:'2026-08-17',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-08-18',type:'entrenamiento', notes:''},
+  {title:'Amistoso',                date:'2026-08-19',type:'amistoso',      notes:''},
+  {title:'Entrenamiento',           date:'2026-08-20',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-08-21',type:'entrenamiento', notes:''},
+  {title:'Amistoso',                date:'2026-08-22',type:'amistoso',      notes:''},
+  {title:'Día Libre',               date:'2026-08-23',type:'libre',         notes:''},
+  // SEM 5
+  {title:'Entrenamiento',           date:'2026-08-24',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-08-25',type:'entrenamiento', notes:''},
+  {title:'Amistoso',                date:'2026-08-26',type:'amistoso',      notes:''},
+  {title:'Entrenamiento',           date:'2026-08-27',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-08-28',type:'entrenamiento', notes:''},
+  {title:'Amistoso',                date:'2026-08-29',type:'amistoso',      notes:''},
+  {title:'Día Libre',               date:'2026-08-30',type:'libre',         notes:''},
+  // SEM 6
+  {title:'Entrenamiento',           date:'2026-08-31',type:'entrenamiento', notes:''},
+  {title:'Día Libre',               date:'2026-09-01',type:'libre',         notes:''},
+  {title:'Entrenamiento',           date:'2026-09-02',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-09-03',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-09-04',type:'entrenamiento', notes:''},
+  {title:'Liga · Jornada 1',        date:'2026-09-05',type:'liga',          notes:'Inicio de competición'},
+  // SEM 7
+  {title:'Entrenamiento',           date:'2026-09-07',type:'entrenamiento', notes:''},
+  {title:'Día Libre',               date:'2026-09-08',type:'libre',         notes:''},
+  {title:'Entrenamiento',           date:'2026-09-09',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-09-10',type:'entrenamiento', notes:''},
+  {title:'Entrenamiento',           date:'2026-09-11',type:'entrenamiento', notes:''},
+  {title:'Liga · Jornada 2',        date:'2026-09-12',type:'liga',          notes:''},
 ];
 
 /* ── STATE ── */
@@ -449,7 +487,7 @@ let seeded        = false;
 
 /* ── HELPERS ── */
 const typeById  = id => EVENT_TYPES.find(t=>t.id===id) || EVENT_TYPES[0];
-const dateStr   = d  => d.toISOString().slice(0,10);
+const dateStr   = d  => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const today     = ()  => dateStr(new Date());
 const pad       = n  => String(n).padStart(2,'0');
 function toDate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
@@ -893,6 +931,18 @@ window.showToast = function(msg, type='') {
   if(!t){ t=document.createElement('div'); t.className='toast'; document.body.appendChild(t); }
   t.textContent=msg; t.className='toast '+(type==='ok'?'ok':'');
   clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.remove(),3000);
+};
+
+/* ── RESEED UTIL ── */
+window.reseedCalendar = async function() {
+  if(!confirm('Esto borrará TODOS los eventos y recargará los de pretemporada. ¿Continuar?')) return;
+  // Delete all existing events
+  const {getDocs} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+  const snap = await getDocs(collection(db,'calEvents'));
+  for(const d of snap.docs) await deleteDoc(doc(db,'calEvents',d.id));
+  seeded = false;
+  await seedEvents();
+  showToast('Calendario reiniciado con datos de pretemporada','ok');
 };
 
 /* ── INIT ── */
