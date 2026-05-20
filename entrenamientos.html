@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Entrenamientos · Racing Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --r:#e8192c;--r2:rgba(232,25,44,.09);--r3:rgba(232,25,44,.2);
+  --blk:#0b0b0b;--txt:#111;--mid:#6b6b6b;--faint:#b0b0b0;
+  --bdr:#e2e2e2;--bg:#f3f3f1;--wh:#fff;
+  --fit:#15803d;--fit-bg:#f0fdf4;
+  --warn:#c2410c;--warn-bg:#fff7ed;
+  --sidebar:240px;
+}
+html,body{height:100%;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--txt);}
+button{font-family:inherit;cursor:pointer;border:none;outline:none;}
+input,select,textarea{font-family:inherit;outline:none;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes dot{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── LAYOUT ── */
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--blk);display:flex;flex-direction:column;position:relative;z-index:10;border-right:3px solid var(--r);}
+.sidebar::after{content:'';position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,rgba(255,255,255,.03) 1px,transparent 1px);background-size:22px 22px;}
+.sb-brand{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.07);position:relative;z-index:1;}
+.sb-back{display:flex;align-items:center;gap:6px;margin-bottom:16px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.14em;color:rgba(255,255,255,.28);text-transform:uppercase;cursor:pointer;background:none;border:none;padding:0;transition:color .2s;}
+.sb-back:hover{color:var(--r);}
+.sb-back svg{width:10px;height:10px;stroke:currentColor;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.sb-name{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--wh);letter-spacing:.5px;line-height:1;}
+.sb-name span{color:var(--r);}
+.sb-sub{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;color:rgba(255,255,255,.25);text-transform:uppercase;margin-top:4px;}
+.sb-nav{flex:1;padding:12px 10px;overflow-y:auto;position:relative;z-index:1;}
+.sb-section{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.2em;color:rgba(255,255,255,.2);text-transform:uppercase;padding:14px 10px 5px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:4px;cursor:pointer;transition:all .18s;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.04em;color:rgba(255,255,255,.4);margin-bottom:1px;border-left:2px solid transparent;}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.8);}
+.nav-item.active{background:rgba(232,25,44,.12);color:var(--wh);border-left-color:var(--r);}
+.nav-icon{width:18px;text-align:center;font-size:13px;flex-shrink:0;}
+.nav-soon{margin-left:auto;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.18);text-transform:uppercase;}
+.sb-foot{padding:14px 18px;border-top:1px solid rgba(255,255,255,.07);position:relative;z-index:1;}
+.sb-user{display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;border-radius:4px;border:1px solid rgba(255,255,255,.08);transition:border-color .2s;}
+.sb-user:hover{border-color:var(--r);}
+.sb-av{width:28px;height:28px;border-radius:50%;background:var(--r);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--wh);flex-shrink:0;}
+.sb-uname{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:rgba(255,255,255,.5);flex:1;letter-spacing:.04em;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--faint);animation:dot 2s infinite;flex-shrink:0;}
+
+/* ── MAIN ── */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+.topbar{height:58px;background:var(--wh);border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;padding:0 36px;flex-shrink:0;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.topbar-title{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;letter-spacing:.1em;color:var(--txt);text-transform:uppercase;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+
+/* ── PAGES ── */
+.page{display:none;padding:32px 36px 56px;animation:fadeUp .3s ease;}
+.page.active{display:block;}
+
+/* ── UTILS ── */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid var(--bdr);flex-wrap:wrap;gap:10px;}
+.st{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;letter-spacing:.1em;color:var(--txt);text-transform:uppercase;}
+.sc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);}
+.card{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;padding:20px;}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:14px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:24px;}
+.kpi{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;padding:16px;border-left:3px solid transparent;transition:border-color .2s;}
+.kpi:hover{border-left-color:var(--r);}
+.kv{font-family:'Bebas Neue',sans-serif;font-size:40px;color:var(--txt);line-height:1;}
+.kv.red{color:var(--r);}
+.kl{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);margin-top:3px;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;transition:all .18s;cursor:pointer;border:none;}
+.btn-primary{background:var(--r);color:var(--wh);}
+.btn-primary:hover{background:#c8151f;box-shadow:0 4px 12px var(--r3);}
+.btn-ghost{background:transparent;border:1.5px solid var(--bdr);color:var(--mid);}
+.btn-ghost:hover{border-color:var(--r);color:var(--r);}
+.btn-green{background:var(--fit);color:var(--wh);}
+.btn-green:hover{background:#126a34;}
+.btn-sm{padding:4px 10px;font-size:11px;}
+
+/* ── FORM ── */
+.form-group{margin-bottom:14px;}
+.form-label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--mid);margin-bottom:6px;}
+.form-control{width:100%;background:var(--bg);border:1.5px solid var(--bdr);border-radius:4px;color:var(--txt);padding:9px 12px;font-size:13px;transition:border-color .18s;}
+.form-control:focus{border-color:var(--r);}
+.form-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}
+textarea.form-control{resize:vertical;min-height:72px;}
+
+/* ── UPLOAD AREA ── */
+.upload-area{border:2px dashed var(--bdr);border-radius:6px;background:var(--wh);padding:56px 32px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;}
+.upload-area:hover{border-color:var(--r);background:var(--r2);}
+.upload-area svg{opacity:.2;margin-bottom:12px;}
+.upload-icon{font-size:36px;margin-bottom:10px;opacity:.3;}
+.upload-txt{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);}
+.upload-sub{font-size:12px;color:var(--faint);margin-top:4px;}
+
+/* ── PROCESSING ── */
+.processing{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:64px 32px;background:var(--wh);border:1px solid var(--bdr);border-radius:6px;}
+.spinner{width:36px;height:36px;border:3px solid var(--bdr);border-top-color:var(--r);border-radius:50%;animation:spin .7s linear infinite;}
+.proc-step{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mid);}
+.proc-sub{font-size:12px;color:var(--faint);}
+
+/* ── REVIEW LAYOUT ── */
+.review-layout{display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start;}
+.photo-panel{position:sticky;top:78px;}
+.photo-frame{border-radius:6px;overflow:hidden;border:1px solid var(--bdr);box-shadow:0 8px 24px rgba(0,0,0,.08);cursor:zoom-in;}
+.photo-frame img{width:100%;display:block;}
+.photo-meta{margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);text-align:center;}
+.photo-actions{display:flex;gap:6px;margin-top:8px;}
+
+/* ── HEADER FIELDS ── */
+.session-header{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;padding:18px;margin-bottom:16px;}
+.sh-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+.sh-field label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:5px;}
+.sh-field input{width:100%;background:var(--bg);border:1.5px solid var(--bdr);border-radius:4px;color:var(--txt);padding:7px 10px;font-size:13px;font-family:'Barlow Condensed',sans-serif;font-weight:700;transition:border-color .18s;}
+.sh-field input:focus{border-color:var(--r);}
+
+/* ── TASK CARDS ── */
+.tasks-wrap{display:flex;flex-direction:column;gap:14px;}
+.task-card{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;overflow:hidden;border-left:4px solid var(--r);}
+.task-head{display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(232,25,44,.04);border-bottom:1px solid var(--bdr);cursor:pointer;}
+.task-num{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--r);letter-spacing:.5px;line-height:1;width:32px;flex-shrink:0;}
+.task-title-input{flex:1;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--txt);background:transparent;border:none;padding:0;letter-spacing:.04em;}
+.task-title-input::placeholder{color:var(--faint);}
+.task-body{padding:16px;}
+.task-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.task-field label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:5px;}
+.task-field textarea{width:100%;background:var(--bg);border:1.5px solid var(--bdr);border-radius:4px;color:var(--txt);padding:8px 10px;font-size:12px;resize:vertical;min-height:60px;transition:border-color .18s;line-height:1.5;}
+.task-field textarea:focus{border-color:var(--r);}
+.task-field.full{grid-column:1/-1;}
+.task-drawing{background:var(--bg);border:1px solid var(--bdr);border-radius:4px;padding:10px;margin-top:8px;}
+.task-drawing-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:6px;}
+.task-drawing-desc{font-size:12px;color:var(--mid);line-height:1.5;font-style:italic;}
+.task-drawing-desc.empty{color:var(--faint);}
+.task-players{margin-top:10px;}
+.task-players label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:6px;}
+.task-players textarea{width:100%;background:var(--bg);border:1.5px solid var(--bdr);border-radius:4px;color:var(--txt);padding:8px 10px;font-size:12px;resize:none;height:52px;transition:border-color .18s;}
+.task-players textarea:focus{border-color:var(--r);}
+
+/* ── PRE-PF BLOCK ── */
+.prepf-block{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;padding:18px;margin-bottom:14px;border-left:4px solid #2563eb;}
+.prepf-title{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#2563eb;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.prepf-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* ── HISTORY ── */
+.hist-list{display:flex;flex-direction:column;gap:12px;}
+.hist-card{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s;border-left:3px solid transparent;}
+.hist-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.08);border-left-color:var(--r);}
+.hist-inner{display:flex;gap:0;}
+.hist-thumb{width:100px;flex-shrink:0;overflow:hidden;background:var(--bg);}
+.hist-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.hist-thumb-ph{width:100%;height:100%;min-height:90px;display:flex;align-items:center;justify-content:center;font-size:24px;opacity:.2;}
+.hist-body{flex:1;padding:14px 16px;}
+.hist-date{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--txt);margin-bottom:4px;}
+.hist-meta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px;}
+.hist-m{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);}
+.hist-m strong{color:var(--mid);}
+.hist-tasks{display:flex;gap:5px;flex-wrap:wrap;}
+.hist-tag{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:2px;background:var(--bg);color:var(--mid);}
+.hist-author{margin-left:auto;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;align-self:flex-start;}
+
+/* ── SESSION DETAIL ── */
+.detail-wrap{display:none;}
+.detail-wrap.active{display:block;animation:fadeIn .3s ease;}
+.detail-topbar{height:50px;background:rgba(11,11,11,.96);border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;padding:0 36px;position:sticky;top:58px;z-index:20;backdrop-filter:blur(10px);}
+.detail-back{display:flex;align-items:center;gap:6px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);cursor:pointer;background:none;border:none;padding:0;transition:color .2s;}
+.detail-back:hover{color:var(--r);}
+.detail-back svg{width:10px;height:10px;stroke:currentColor;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.detail-topbar-title{margin-left:auto;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.2);}
+.detail-layout{display:grid;grid-template-columns:1fr 340px;gap:24px;padding:28px 36px 56px;align-items:start;}
+.detail-tasks{flex:1;}
+.detail-sidebar{position:sticky;top:108px;}
+.detail-photo{border-radius:6px;overflow:hidden;border:1px solid var(--bdr);cursor:zoom-in;margin-bottom:14px;}
+.detail-photo img{width:100%;display:block;}
+.dtask{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;margin-bottom:12px;border-left:4px solid var(--r);overflow:hidden;}
+.dtask-head{padding:12px 16px;background:rgba(232,25,44,.03);border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:10px;}
+.dtask-num{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--r);width:28px;flex-shrink:0;line-height:1;}
+.dtask-tipo{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--txt);letter-spacing:.04em;}
+.dtask-body{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.dtask-field{font-size:12px;}
+.dtask-field.full{grid-column:1/-1;}
+.dtask-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:4px;}
+.dtask-val{color:var(--txt);line-height:1.5;}
+.dtask-val.empty{color:var(--faint);font-style:italic;}
+.dtask-drawing{background:var(--bg);border:1px solid var(--bdr);border-radius:4px;padding:10px;grid-column:1/-1;}
+
+/* ── LIGHTBOX ── */
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:500;align-items:center;justify-content:center;cursor:zoom-out;}
+.lightbox.open{display:flex;}
+.lightbox img{max-width:92vw;max-height:92vh;border-radius:4px;object-fit:contain;}
+.lightbox-close{position:absolute;top:20px;right:24px;color:rgba(255,255,255,.5);font-size:28px;cursor:pointer;transition:color .2s;background:none;border:none;}
+.lightbox-close:hover{color:var(--wh);}
+
+/* ── USER MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);}
+.overlay.open{display:flex;}
+.modal{background:var(--wh);border:1px solid var(--bdr);border-radius:8px;width:100%;max-width:380px;padding:28px;box-shadow:0 24px 60px rgba(0,0,0,.15);animation:fadeUp .25s ease;}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bdr);}
+.modal-head h3{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;}
+.modal-close{background:none;border:none;font-size:22px;color:var(--faint);cursor:pointer;padding:0;}
+.user-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.user-opt{padding:9px 12px;border-radius:4px;border:1.5px solid var(--bdr);cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--mid);transition:all .18s;text-align:center;}
+.user-opt:hover{border-color:var(--r);color:var(--r);}
+.user-opt.selected{background:var(--r);border-color:var(--r);color:var(--wh);}
+
+/* ── PILLS ── */
+.pill{display:inline-flex;align-items:center;gap:4px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;padding:3px 8px;border-radius:2px;text-transform:uppercase;}
+.pill-green{background:var(--fit-bg);color:var(--fit);}
+.pill-amber{background:var(--warn-bg);color:var(--warn);}
+.pill-gray{background:#f5f5f5;color:var(--mid);}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:28px;right:28px;background:var(--blk);color:var(--wh);padding:12px 18px 12px 14px;border-radius:4px;border-left:3px solid var(--r);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:fadeUp .3s ease;}
+.toast.ok{border-left-color:var(--fit);}
+.toast.err{border-left-color:var(--inj,#dc2626);}
+
+/* ── COMING SOON ── */
+.coming-soon{text-align:center;padding:64px 24px;}
+.cs-icon{font-size:36px;margin-bottom:12px;opacity:.25;}
+.cs-txt{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);}
+
+@media(max-width:1000px){.review-layout,.detail-layout{grid-template-columns:1fr;}.photo-panel{position:static;}.detail-sidebar{position:static;}}
+@media(max-width:700px){.sidebar{display:none;}.page{padding:20px 16px 40px;}.sh-grid{grid-template-columns:1fr 1fr;}.task-grid,.prepf-grid,.dtask-body{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sb-brand">
+    <button class="sb-back" onclick="window.location.href='index.html'">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Volver al Lab
+    </button>
+    <div class="sb-name">RACING <span>LAB</span></div>
+    <div class="sb-sub">Entrenamientos</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">Sesiones</div>
+    <div class="nav-item active" onclick="nav('p-register',this)"><span class="nav-icon">📋</span>Registrar sesión</div>
+    <div class="nav-item" onclick="nav('p-history',this)"><span class="nav-icon">◫</span>Historial</div>
+    <div class="sb-section">Próximamente</div>
+    <div class="nav-item" onclick="nav('p-library',this)"><span class="nav-icon">◉</span>Librería<span class="nav-soon">Pronto</span></div>
+    <div class="nav-item" onclick="nav('p-planning',this)"><span class="nav-icon">◈</span>Planificación<span class="nav-soon">Pronto</span></div>
+    <div class="nav-item" onclick="nav('p-dashboard',this)"><span class="nav-icon">◧</span>Dashboard<span class="nav-soon">Pronto</span></div>
+  </nav>
+  <div class="sb-foot">
+    <div class="sb-user" onclick="openModal('modal-user')">
+      <div class="sb-av" id="sb-av">?</div>
+      <div class="sb-uname" id="sb-uname">Seleccionar usuario</div>
+      <div class="sync-dot" id="sync-dot"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Registrar Sesión</div>
+    <div class="topbar-right" id="topbar-actions"></div>
+  </div>
+
+  <!-- ── REGISTER PAGE ── -->
+  <div class="page active" id="p-register">
+
+    <!-- STEP 1: UPLOAD -->
+    <div id="step-upload">
+      <div class="sh">
+        <div class="st">Nueva Sesión</div>
+        <div class="sc" id="reg-date-lbl"></div>
+      </div>
+      <div class="upload-area" onclick="document.getElementById('session-file').click()">
+        <input type="file" id="session-file" accept="image/*" style="display:none" onchange="handleUpload(this)"/>
+        <div class="upload-icon">📋</div>
+        <div class="upload-txt">Subir hoja de sesión</div>
+        <div class="upload-sub">Fotografía de la hoja completa · JPG o PNG</div>
+      </div>
+    </div>
+
+    <!-- STEP 2: PROCESSING -->
+    <div id="step-processing" style="display:none;">
+      <div class="processing">
+        <div class="spinner"></div>
+        <div class="proc-step" id="proc-msg">Subiendo imagen a Cloudinary…</div>
+        <div class="proc-sub">Claude está leyendo la hoja de sesión</div>
+      </div>
+    </div>
+
+    <!-- STEP 3: REVIEW & SAVE -->
+    <div id="step-review" style="display:none;">
+      <div class="sh">
+        <div>
+          <div class="st">Revisar y confirmar</div>
+          <div class="sc">Edita cualquier campo antes de guardar</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="resetRegister()">← Nueva foto</button>
+          <button class="btn btn-green" onclick="saveSession()">💾 Guardar sesión</button>
+        </div>
+      </div>
+
+      <div class="review-layout">
+        <!-- LEFT: PHOTO -->
+        <div class="photo-panel">
+          <div class="photo-frame" onclick="openLightbox()">
+            <img id="review-photo" src="" alt="Hoja de sesión"/>
+          </div>
+          <div class="photo-meta" id="review-photo-meta">Toca para ampliar</div>
+          <div class="photo-actions">
+            <a id="review-photo-link" href="#" target="_blank" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center">↗ Ver original</a>
+          </div>
+        </div>
+
+        <!-- RIGHT: FORM -->
+        <div>
+          <!-- Header fields -->
+          <div class="session-header">
+            <div class="card-title" style="margin-bottom:12px;">Datos de la sesión</div>
+            <div class="sh-grid">
+              <div class="sh-field"><label>Temporada</label><input type="text" id="f-temporada" value="2025-26"/></div>
+              <div class="sh-field"><label>Mesociclo</label><input type="text" id="f-mesociclo" placeholder="—"/></div>
+              <div class="sh-field"><label>Microciclo</label><input type="text" id="f-microciclo" placeholder="—"/></div>
+              <div class="sh-field"><label>Sesión</label><input type="text" id="f-sesion" placeholder="—"/></div>
+              <div class="sh-field"><label>Fecha</label><input type="date" id="f-fecha"/></div>
+            </div>
+          </div>
+
+          <!-- Pre-PF exercise -->
+          <div class="prepf-block">
+            <div class="prepf-title">⚡ Ejercicio previo — Preparación Física</div>
+            <div class="prepf-grid">
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Tipo / Descripción</label>
+                <textarea class="form-control" id="pf-desc" placeholder="Ej: Activación neuromuscular, escalera de agilidad, movilidad articular…" rows="3"></textarea>
+              </div>
+              <div>
+                <div class="form-group" style="margin-bottom:10px;">
+                  <label class="form-label">Duración (min)</label>
+                  <input type="number" class="form-control" id="pf-duracion" placeholder="—" min="0" max="60"/>
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label class="form-label">Intensidad</label>
+                  <select class="form-control" id="pf-intensidad">
+                    <option value="">—</option>
+                    <option value="baja">Baja</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tasks -->
+          <div class="tasks-wrap" id="tasks-form"></div>
+
+          <!-- Notes -->
+          <div class="card" style="margin-top:14px;">
+            <div class="card-title">Notas generales</div>
+            <textarea class="form-control" id="f-notas" rows="3" placeholder="Número de jugadores, observaciones, incidencias…"></textarea>
+          </div>
+
+          <!-- RPE -->
+          <div class="card" style="margin-top:14px;">
+            <div class="card-title">Carga percibida (RPE)</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">RPE equipo (1-10)</label>
+                <input type="number" class="form-control" id="f-rpe" min="1" max="10" placeholder="—"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Duración total (min)</label>
+                <input type="number" class="form-control" id="f-duracion" placeholder="—" min="0"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Jugadores asistentes</label>
+                <input type="number" class="form-control" id="f-jugadores" placeholder="—" min="0"/>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HISTORY PAGE ── -->
+  <div class="page" id="p-history">
+    <div class="sh">
+      <div class="st">Historial de Sesiones</div>
+      <div class="sc" id="hist-count"></div>
+    </div>
+    <div id="hist-list" class="hist-list"></div>
+  </div>
+
+  <!-- ── DETAIL VIEW (overlays history) ── -->
+  <div class="detail-wrap" id="detail-wrap">
+    <div class="detail-topbar">
+      <button class="detail-back" onclick="closeDetail()">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Volver al historial
+      </button>
+      <div class="detail-topbar-title" id="detail-topbar-title"></div>
+    </div>
+    <div class="detail-layout">
+      <div class="detail-tasks" id="detail-tasks"></div>
+      <div class="detail-sidebar">
+        <div class="detail-photo" onclick="openLightboxUrl(currentDetailPhotoUrl)">
+          <img id="detail-photo-img" src="" alt=""/>
+        </div>
+        <div id="detail-meta-block"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LIBRARY (soon) ── -->
+  <div class="page" id="p-library">
+    <div class="coming-soon">
+      <div class="cs-icon">📚</div>
+      <div class="cs-txt">Librería de ejercicios · Próximamente</div>
+    </div>
+  </div>
+
+  <!-- ── PLANNING (soon) ── -->
+  <div class="page" id="p-planning">
+    <div class="coming-soon">
+      <div class="cs-icon">📅</div>
+      <div class="cs-txt">Planificación de microciclos · Próximamente</div>
+    </div>
+  </div>
+
+  <!-- ── DASHBOARD (soon) ── -->
+  <div class="page" id="p-dashboard">
+    <div class="coming-soon">
+      <div class="cs-icon">📊</div>
+      <div class="cs-txt">Dashboard de carga · Próximamente</div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">×</button>
+  <img id="lightbox-img" src="" alt=""/>
+</div>
+
+<!-- USER MODAL -->
+<div class="overlay" id="modal-user" onclick="overlayClose(event,'modal-user')">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>¿Quién eres?</h3>
+      <button class="modal-close" onclick="closeModal('modal-user')">×</button>
+    </div>
+    <div style="font-size:13px;color:var(--mid);margin-bottom:16px;">Tus sesiones quedarán firmadas con tu nombre.</div>
+    <div class="user-grid" id="user-grid"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, getDocs,
+  onSnapshot, orderBy, query, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+/* ── FIREBASE ── */
+const app = initializeApp({
+  apiKey:"AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
+  authDomain:"racing-portuense-scouting.firebaseapp.com",
+  projectId:"racing-portuense-scouting",
+  storageBucket:"racing-portuense-scouting.firebasestorage.app",
+  messagingSenderId:"1073919975511",
+  appId:"1:1073919975511:web:7c7f59495d1f67f6f44312"
+});
+const db = getFirestore(app);
+
+/* ── CLOUDINARY ── */
+const CLOUD  = 'dprtymvge';
+const PRESET = 'racing_lab';
+async function uploadToCloudinary(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', PRESET);
+  fd.append('folder', 'racing-lab/entrenamientos');
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`,{method:'POST',body:fd});
+  const d = await res.json();
+  if(!d.secure_url) throw new Error('Cloudinary error');
+  return d.secure_url;
+}
+
+/* ── USERS ── */
+const STAFF = ['Bruno Herrero','Pedro Ríos','Alejandro García','Alejandro Aguilera','Carlos Rueda','Delegado','Borja Domínguez','Javier Romero','Ramón Herrera'];
+let currentUser = localStorage.getItem('rl_train_user') || '';
+function initials(n){ const p=n.trim().split(/\s+/); return p.length>=2?(p[0][0]+p[p.length-1][0]).toUpperCase():n.slice(0,2).toUpperCase(); }
+function updateUserUI(){
+  const av=document.getElementById('sb-av'), nm=document.getElementById('sb-uname');
+  if(currentUser){ av.textContent=initials(currentUser); nm.textContent=currentUser; }
+  else { av.textContent='?'; nm.textContent='Seleccionar usuario'; }
+}
+
+/* ── STATE ── */
+let sessions = [];
+let pendingPhotoFile = null;
+let pendingPhotoUrl  = null;
+let pendingPhotoB64  = null;
+let parsedTasks      = [];
+window.currentDetailPhotoUrl = null;
+
+/* ── FIREBASE LISTENER ── */
+function startListeners(){
+  const q = query(collection(db,'trainingSessions'), orderBy('date','desc'));
+  onSnapshot(q, snap => {
+    sessions = snap.docs.map(d=>({id:d.id,...d.data()}));
+    document.getElementById('sync-dot').style.background = '#15803d';
+    if(document.getElementById('p-history').classList.contains('active')) renderHistory();
+    updateKpis();
+  });
+}
+
+function updateKpis(){
+  document.getElementById('hist-count').textContent = sessions.length + ' sesiones registradas';
+}
+
+/* ── NAVIGATION ── */
+const PAGE_TITLES = {
+  'p-register':'Registrar Sesión','p-history':'Historial',
+  'p-library':'Librería','p-planning':'Planificación','p-dashboard':'Dashboard'
+};
+window.nav = function(id, el){
+  // Hide detail if open
+  document.getElementById('detail-wrap').classList.remove('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.getElementById('page-title').textContent = PAGE_TITLES[id]||'';
+  if(id==='p-history') renderHistory();
+};
+
+/* ── UPLOAD & ANALYZE ── */
+window.handleUpload = async function(input){
+  const file = input.files[0];
+  if(!file) return;
+  if(!currentUser){ showToast('Selecciona tu usuario primero','err'); openModal('modal-user'); return; }
+  pendingPhotoFile = file;
+
+  // Show photo preview immediately
+  const reader = new FileReader();
+  reader.onload = async e => {
+    pendingPhotoB64 = e.target.result;
+    showStep('processing');
+    try {
+      // 1. Upload to Cloudinary
+      setProc('Subiendo imagen a Cloudinary…');
+      pendingPhotoUrl = await uploadToCloudinary(file);
+
+      // 2. Analyze with Claude Vision
+      setProc('Claude está leyendo la hoja de sesión…');
+      await analyzeSheet(pendingPhotoB64);
+
+    } catch(err){
+      console.error(err);
+      showToast('Error al procesar la imagen','err');
+      showStep('upload');
+    }
+  };
+  reader.readAsDataURL(file);
+};
+
+function setProc(msg){ document.getElementById('proc-msg').textContent = msg; }
+
+async function analyzeSheet(b64){
+  const base64 = b64.split(',')[1];
+  const prompt = `You are analyzing a football training session sheet from Racing Club Portuense.
+The sheet always has this fixed structure:
+- HEADER: Temporada, Mesociclo, Microciclo, Sesión number, Fecha
+- Up to 5 TAREAS (tasks). Each task has: Tipo de tarea, Contenidos, a tactical drawing, Normas, Incidir en, Variantes
+- Player group assignments written above each task column
+- General notes at the bottom
+
+Extract ALL information visible on the sheet and respond ONLY with this JSON (no markdown, no extra text):
+{
+  "temporada": "",
+  "mesociclo": "",
+  "microciclo": "",
+  "sesion": "",
+  "fecha": "",
+  "notas": "",
+  "tareas": [
+    {
+      "num": 1,
+      "tipo": "",
+      "contenidos": "",
+      "normas": "",
+      "incidirEn": "",
+      "variantes": "",
+      "grupos": "",
+      "drawingDescription": "Describe the tactical drawing: shapes used, movements, player positions, any arrows or paths drawn"
+    }
+  ]
+}
+Include only the tasks that actually appear on the sheet (1 to 5). If a field is empty or illegible, use "".
+For fecha, format as YYYY-MM-DD if possible.
+For drawingDescription, be specific about what is drawn: circles, crosses, triangles, arrows, cones, lines, names written, etc.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:2000,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:base64}},
+          {type:'text',text:prompt}
+        ]}]
+      })
+    });
+    const data = await res.json();
+    const raw  = data.content[0].text.trim().replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(raw);
+    populateReviewForm(parsed);
+    showStep('review');
+  } catch(e){
+    console.error(e);
+    // Fallback: show empty form
+    populateReviewForm({temporada:'2025-26',mesociclo:'',microciclo:'',sesion:'',fecha:'',notas:'',tareas:[]});
+    showStep('review');
+    showToast('No se pudo leer la hoja — revisa los campos manualmente','err');
+  }
+}
+
+function populateReviewForm(d){
+  document.getElementById('f-temporada').value = d.temporada||'2025-26';
+  document.getElementById('f-mesociclo').value = d.mesociclo||'';
+  document.getElementById('f-microciclo').value= d.microciclo||'';
+  document.getElementById('f-sesion').value    = d.sesion||'';
+  document.getElementById('f-notas').value     = d.notas||'';
+
+  // Date: use today if not extracted
+  const today = new Date().toISOString().slice(0,10);
+  let fechaVal = today;
+  if(d.fecha && d.fecha.match(/^\d{4}-\d{2}-\d{2}$/)) fechaVal = d.fecha;
+  document.getElementById('f-fecha').value = fechaVal;
+
+  // Photo
+  document.getElementById('review-photo').src = pendingPhotoB64;
+  document.getElementById('review-photo-link').href = pendingPhotoUrl||'#';
+  document.getElementById('review-photo-meta').textContent = 'Subida a Cloudinary · Toca para ampliar';
+
+  // Tasks
+  parsedTasks = d.tareas && d.tareas.length ? d.tareas : [{num:1,tipo:'',contenidos:'',normas:'',incidirEn:'',variantes:'',grupos:'',drawingDescription:''}];
+  // Ensure at least 4 tasks
+  while(parsedTasks.length < 4){
+    parsedTasks.push({num:parsedTasks.length+1,tipo:'',contenidos:'',normas:'',incidirEn:'',variantes:'',grupos:'',drawingDescription:''});
+  }
+  renderTaskForms(parsedTasks);
+}
+
+function renderTaskForms(tasks){
+  const wrap = document.getElementById('tasks-form');
+  wrap.innerHTML = tasks.map((t,i)=>`
+    <div class="task-card">
+      <div class="task-head">
+        <div class="task-num">T${t.num||i+1}</div>
+        <input class="task-title-input" type="text" id="t${i}-tipo" value="${esc(t.tipo)}" placeholder="Tipo de tarea (ej: 3x2, Posesión 4x4+3…)"/>
+      </div>
+      <div class="task-body">
+        <div class="task-grid">
+          <div class="task-field">
+            <label>Contenidos</label>
+            <textarea id="t${i}-contenidos" placeholder="—">${esc(t.contenidos)}</textarea>
+          </div>
+          <div class="task-field">
+            <label>Normas</label>
+            <textarea id="t${i}-normas" placeholder="—">${esc(t.normas)}</textarea>
+          </div>
+          <div class="task-field">
+            <label>Incidir en</label>
+            <textarea id="t${i}-incidir" placeholder="—">${esc(t.incidirEn)}</textarea>
+          </div>
+          <div class="task-field">
+            <label>Variantes</label>
+            <textarea id="t${i}-variantes" placeholder="—">${esc(t.variantes)}</textarea>
+          </div>
+        </div>
+        <div class="task-drawing">
+          <div class="task-drawing-label">📐 Descripción del dibujo (extraída por Claude)</div>
+          <div class="task-drawing-desc${t.drawingDescription?' ':'empty'}" id="t${i}-drawing">${t.drawingDescription||'Sin descripción extraída'}</div>
+        </div>
+        <div class="task-players">
+          <label>Grupos / Jugadores asignados</label>
+          <textarea id="t${i}-grupos" placeholder="Nombres o grupos asignados a esta tarea">${esc(t.grupos)}</textarea>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ── SAVE SESSION ── */
+window.saveSession = async function(){
+  const fecha = document.getElementById('f-fecha').value;
+  if(!fecha){ showToast('La fecha es obligatoria','err'); return; }
+
+  const tasks = parsedTasks.map((_,i)=>({
+    num:    i+1,
+    tipo:   document.getElementById(`t${i}-tipo`)?.value||'',
+    contenidos: document.getElementById(`t${i}-contenidos`)?.value||'',
+    normas: document.getElementById(`t${i}-normas`)?.value||'',
+    incidirEn: document.getElementById(`t${i}-incidir`)?.value||'',
+    variantes: document.getElementById(`t${i}-variantes`)?.value||'',
+    drawingDescription: document.getElementById(`t${i}-drawing`)?.textContent||'',
+    grupos: document.getElementById(`t${i}-grupos`)?.value||'',
+  })).filter(t=>t.tipo||t.contenidos||t.normas);
+
+  const session = {
+    date:       fecha,
+    temporada:  document.getElementById('f-temporada').value,
+    mesociclo:  document.getElementById('f-mesociclo').value,
+    microciclo: document.getElementById('f-microciclo').value,
+    sesion:     document.getElementById('f-sesion').value,
+    notas:      document.getElementById('f-notas').value,
+    rpe:        parseInt(document.getElementById('f-rpe').value)||null,
+    duracion:   parseInt(document.getElementById('f-duracion').value)||null,
+    jugadores:  parseInt(document.getElementById('f-jugadores').value)||null,
+    prePF: {
+      desc:       document.getElementById('pf-desc').value,
+      duracion:   parseInt(document.getElementById('pf-duracion').value)||null,
+      intensidad: document.getElementById('pf-intensidad').value,
+    },
+    tasks,
+    photoUrl:   pendingPhotoUrl,
+    uploadedBy: currentUser,
+    createdAt:  serverTimestamp(),
+  };
+
+  try {
+    await addDoc(collection(db,'trainingSessions'), session);
+    showToast('Sesión guardada correctamente','ok');
+    resetRegister();
+  } catch(e){
+    console.error(e);
+    showToast('Error al guardar en Firebase','err');
+  }
+};
+
+window.resetRegister = function(){
+  pendingPhotoFile=null; pendingPhotoUrl=null; pendingPhotoB64=null; parsedTasks=[];
+  document.getElementById('session-file').value='';
+  document.getElementById('tasks-form').innerHTML='';
+  showStep('upload');
+};
+
+function showStep(step){
+  ['upload','processing','review'].forEach(s=>
+    document.getElementById('step-'+s).style.display = s===step?'':'none'
+  );
+}
+
+/* ── HISTORY ── */
+function renderHistory(){
+  const list = document.getElementById('hist-list');
+  document.getElementById('hist-count').textContent = sessions.length+' sesiones';
+  if(!sessions.length){
+    list.innerHTML = `<div class="card" style="text-align:center;padding:40px;color:var(--faint)">
+      <div style="font-size:28px;margin-bottom:8px;opacity:.3">📋</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Sin sesiones registradas aún</div>
+    </div>`;
+    return;
+  }
+  list.innerHTML = sessions.map(s=>`
+    <div class="hist-card" onclick="openDetail('${s.id}')">
+      <div class="hist-inner">
+        <div class="hist-thumb">
+          ${s.photoUrl
+            ? `<img src="${s.photoUrl}" alt="" loading="lazy"/>`
+            : `<div class="hist-thumb-ph">📋</div>`}
+        </div>
+        <div class="hist-body">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+            <div class="hist-date">${formatDate(s.date)}</div>
+            <div class="hist-author">${s.uploadedBy||'—'}</div>
+          </div>
+          <div class="hist-meta">
+            ${s.mesociclo?`<div class="hist-m"><strong>Meso</strong> ${s.mesociclo}</div>`:''}
+            ${s.microciclo?`<div class="hist-m"><strong>Micro</strong> ${s.microciclo}</div>`:''}
+            ${s.sesion?`<div class="hist-m"><strong>Sesión</strong> ${s.sesion}</div>`:''}
+            ${s.rpe?`<div class="hist-m"><strong>RPE</strong> ${s.rpe}</div>`:''}
+            ${s.jugadores?`<div class="hist-m"><strong>Jugadores</strong> ${s.jugadores}</div>`:''}
+          </div>
+          <div class="hist-tasks">
+            ${(s.tasks||[]).filter(t=>t.tipo).map(t=>`<span class="hist-tag">${t.tipo}</span>`).join('')}
+            ${s.prePF?.desc?`<span class="hist-tag" style="border-left:2px solid #2563eb">⚡ PF</span>`:''}
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+/* ── DETAIL ── */
+window.openDetail = function(id){
+  const s = sessions.find(s=>s.id===id);
+  if(!s) return;
+  window.currentDetailPhotoUrl = s.photoUrl||null;
+
+  document.getElementById('detail-topbar-title').textContent =
+    formatDate(s.date) + (s.sesion?' · Sesión '+s.sesion:'');
+
+  // Photo
+  const img = document.getElementById('detail-photo-img');
+  if(s.photoUrl){ img.src=s.photoUrl; img.parentElement.style.display=''; }
+  else { img.parentElement.style.display='none'; }
+
+  // Meta sidebar
+  document.getElementById('detail-meta-block').innerHTML = `
+    <div class="card">
+      <div class="card-title">Datos de la sesión</div>
+      ${metaRow('Fecha', formatDate(s.date))}
+      ${metaRow('Temporada', s.temporada)}
+      ${metaRow('Mesociclo', s.mesociclo)}
+      ${metaRow('Microciclo', s.microciclo)}
+      ${metaRow('Sesión', s.sesion)}
+      ${metaRow('RPE', s.rpe)}
+      ${metaRow('Duración', s.duracion ? s.duracion+'min' : null)}
+      ${metaRow('Jugadores', s.jugadores)}
+      ${metaRow('Registrado por', s.uploadedBy)}
+    </div>
+    ${s.notas?`<div class="card" style="margin-top:12px;">
+      <div class="card-title">Notas generales</div>
+      <div style="font-size:12px;color:var(--txt);line-height:1.6">${s.notas}</div>
+    </div>`:''}
+    ${s.prePF?.desc?`<div class="card" style="margin-top:12px;border-left:3px solid #2563eb;">
+      <div class="card-title" style="color:#2563eb">⚡ Ejercicio previo PF</div>
+      <div style="font-size:12px;color:var(--txt);margin-bottom:6px;line-height:1.5">${s.prePF.desc}</div>
+      ${s.prePF.duracion?`<div style="font-size:11px;color:var(--mid)">${s.prePF.duracion} min · ${s.prePF.intensidad||'—'}</div>`:''}
+    </div>`:''}`;
+
+  // Tasks
+  const tasks = s.tasks||[];
+  document.getElementById('detail-tasks').innerHTML = tasks.length
+    ? tasks.map(t=>`
+      <div class="dtask">
+        <div class="dtask-head">
+          <div class="dtask-num">T${t.num}</div>
+          <div class="dtask-tipo">${t.tipo||'Sin tipo'}</div>
+        </div>
+        <div class="dtask-body">
+          ${dtaskField('Contenidos', t.contenidos)}
+          ${dtaskField('Normas', t.normas)}
+          ${dtaskField('Incidir en', t.incidirEn)}
+          ${dtaskField('Variantes', t.variantes)}
+          ${t.grupos?`<div class="dtask-field full">
+            <div class="dtask-label">Grupos / Jugadores</div>
+            <div class="dtask-val">${t.grupos}</div>
+          </div>`:''}
+          ${t.drawingDescription?`<div class="dtask-drawing">
+            <div class="dtask-label" style="margin-bottom:5px">📐 Descripción del dibujo</div>
+            <div style="font-size:12px;color:var(--mid);line-height:1.5;font-style:italic">${t.drawingDescription}</div>
+          </div>`:''}
+        </div>
+      </div>`).join('')
+    : `<div class="card" style="color:var(--faint);font-size:13px;padding:24px;">Sin tareas registradas</div>`;
+
+  // Show detail
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('detail-wrap').classList.add('active');
+  document.getElementById('page-title').textContent = 'Sesión · '+formatDate(s.date);
+  window.scrollTo(0,0);
+};
+
+function dtaskField(label, val){
+  if(!val) return '';
+  return `<div class="dtask-field">
+    <div class="dtask-label">${label}</div>
+    <div class="dtask-val">${val}</div>
+  </div>`;
+}
+
+function metaRow(label, val){
+  if(!val) return '';
+  return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(226,226,226,.5);font-size:12px;">
+    <span style="color:var(--mid)">${label}</span>
+    <span style="font-weight:600">${val}</span>
+  </div>`;
+}
+
+window.closeDetail = function(){
+  document.getElementById('detail-wrap').classList.remove('active');
+  document.getElementById('p-history').classList.add('active');
+  document.getElementById('page-title').textContent = 'Historial';
+  renderHistory();
+};
+
+/* ── LIGHTBOX ── */
+window.openLightbox = function(){
+  if(pendingPhotoB64||pendingPhotoUrl) openLightboxUrl(pendingPhotoUrl||pendingPhotoB64);
+};
+window.openLightboxUrl = function(url){
+  if(!url) return;
+  document.getElementById('lightbox-img').src = url;
+  document.getElementById('lightbox').classList.add('open');
+};
+window.closeLightbox = function(){
+  document.getElementById('lightbox').classList.remove('open');
+};
+
+/* ── UTILS ── */
+function formatDate(ds){
+  if(!ds) return '—';
+  const d = new Date(ds+'T12:00:00');
+  return d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+
+window.openModal = id => document.getElementById(id).classList.add('open');
+window.closeModal = id => document.getElementById(id).classList.remove('open');
+window.overlayClose = (e,id) => { if(e.target.classList.contains('overlay')) closeModal(id); };
+
+let toastTimer=null;
+window.showToast = function(msg,type=''){
+  let t=document.querySelector('.toast');
+  if(!t){t=document.createElement('div');t.className='toast';document.body.appendChild(t);}
+  t.textContent=msg; t.className='toast '+(type==='ok'?'ok':type==='err'?'err':'');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.remove(),3200);
+};
+
+/* ── USER PICKER ── */
+function renderUserGrid(){
+  document.getElementById('user-grid').innerHTML = STAFF.map(u=>`
+    <div class="user-opt${currentUser===u?' selected':''}" onclick="selectUser('${u}')">${u}</div>
+  `).join('');
+}
+
+window.selectUser = function(name){
+  currentUser = name;
+  localStorage.setItem('rl_train_user', name);
+  updateUserUI();
+  closeModal('modal-user');
+  showToast('Bienvenido, '+name.split(' ')[0],'ok');
+};
+
+/* ── INIT ── */
+document.getElementById('reg-date-lbl').textContent =
+  new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+document.getElementById('f-fecha') && (document.getElementById('f-fecha').value = new Date().toISOString().slice(0,10));
+
+updateUserUI();
+renderUserGrid();
+startListeners();
+
+if(!currentUser) setTimeout(()=>openModal('modal-user'), 600);
+</script>
+</body>
+</html>
