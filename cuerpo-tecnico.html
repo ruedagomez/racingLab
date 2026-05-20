@@ -126,7 +126,7 @@ input,select,textarea{font-family:inherit;outline:none;}
 .ph-quote{font-size:13px;font-weight:300;color:rgba(255,255,255,.32);line-height:1.7;font-style:italic;max-width:480px;padding-left:16px;border-left:2px solid var(--r);}
 
 /* Profile tabs */
-.ptabs{display:flex;border-bottom:2px solid var(--bdr);position:sticky;top:62px;background:var(--bg);z-index:10;}
+.ptabs{display:flex;border-bottom:2px solid var(--bdr);position:sticky;top:114px;background:var(--bg);z-index:10;}
 .ptab{padding:12px 20px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mid);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .18s;background:none;border-top:none;border-left:none;border-right:none;}
 .ptab:hover{color:var(--txt);}
 .ptab.active{color:var(--r);border-bottom-color:var(--r);}
@@ -238,13 +238,18 @@ input,select,textarea{font-family:inherit;outline:none;}
 
 <!-- PROFILE VIEW -->
 <div id="profile-view" class="profile-wrap">
-  <div class="ph">
+  <!-- Sticky topbar -->
+  <div class="ph-topbar">
     <button class="ph-back" onclick="closeProfile()">
       <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       Volver al cuerpo técnico
     </button>
+    <div class="ph-topbar-name" id="ph-topbar-name"></div>
+  </div>
+  <!-- Hero -->
+  <div class="ph">
     <div class="ph-inner">
-      <div class="ph-photo" id="ph-photo-wrap"></div>
+      <div class="ph-photo-frame" id="ph-photo-wrap"></div>
       <div class="ph-info">
         <div class="ph-eyebrow" id="ph-eyebrow"></div>
         <div class="ph-name" id="ph-name"></div>
@@ -581,6 +586,7 @@ function openProfile(id) {
     photoWrap.innerHTML = `<div class="ph-photo-ph"><div class="ph-photo-ph-i">${initials(currentStaff.name)}</div></div>`;
   }
 
+  document.getElementById('ph-topbar-name').textContent = currentStaff.role.toUpperCase() + ' · ' + currentStaff.name.toUpperCase();
   document.getElementById('ph-eyebrow').textContent = currentStaff.role + ' · Racing Club Portuense';
   document.getElementById('ph-name').textContent = currentStaff.name.toUpperCase();
   document.getElementById('ph-meta').innerHTML = [
