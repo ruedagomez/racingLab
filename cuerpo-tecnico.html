@@ -85,24 +85,45 @@ input,select,textarea{font-family:inherit;outline:none;}
 .profile-wrap.active{display:block;animation:fadeIn .3s ease;}
 
 /* Profile hero */
-.ph{background:var(--blk);position:relative;overflow:hidden;}
-.ph::after{content:'';position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,rgba(255,255,255,.03) 1px,transparent 1px);background-size:22px 22px;}
-.ph-inner{max-width:1280px;margin:0 auto;display:flex;align-items:flex-end;gap:0;position:relative;z-index:1;}
-.ph-photo{width:260px;flex-shrink:0;aspect-ratio:3/4;overflow:hidden;position:relative;}
-.ph-photo img{width:100%;height:100%;object-fit:cover;object-position:top center;}
-.ph-photo-ph{width:260px;aspect-ratio:3/4;background:linear-gradient(135deg,#1a1a1a,#2d2d2d);display:flex;align-items:center;justify-content:center;}
-.ph-photo-ph-i{font-family:'Bebas Neue',sans-serif;font-size:72px;color:rgba(255,255,255,.1);letter-spacing:2px;}
-.ph-photo::after{content:'';position:absolute;right:0;top:0;bottom:0;width:60px;background:linear-gradient(to right,transparent,var(--blk));}
-.ph-info{flex:1;padding:40px 40px 36px 28px;}
-.ph-eyebrow{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.24em;color:var(--r);text-transform:uppercase;margin-bottom:8px;}
-.ph-name{font-family:'Bebas Neue',sans-serif;font-size:64px;color:var(--wh);letter-spacing:.5px;line-height:.88;margin-bottom:16px;}
-.ph-meta{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:20px;}
-.ph-m-v{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:rgba(255,255,255,.9);}
-.ph-m-l{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-top:2px;}
-.ph-quote{font-size:13px;font-weight:300;color:rgba(255,255,255,.35);line-height:1.6;font-style:italic;max-width:500px;border-left:2px solid var(--r);padding-left:14px;}
-.ph-back{display:flex;align-items:center;gap:6px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.3);cursor:pointer;background:none;border:none;padding:20px 40px 0;transition:color .2s;position:relative;z-index:1;}
+/* Sticky back bar */
+.ph-topbar{
+  height:52px;background:rgba(11,11,11,.96);border-bottom:1px solid rgba(255,255,255,.08);
+  display:flex;align-items:center;padding:0 40px;position:sticky;top:62px;z-index:20;
+  backdrop-filter:blur(10px);
+}
+.ph-back{display:flex;align-items:center;gap:7px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.4);cursor:pointer;background:none;border:none;padding:0;transition:color .2s;}
 .ph-back:hover{color:var(--r);}
 .ph-back svg{width:11px;height:11px;stroke:currentColor;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.ph-topbar-name{margin-left:auto;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.2);}
+
+/* Hero body */
+.ph{background:var(--blk);position:relative;overflow:hidden;}
+.ph::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,rgba(255,255,255,.03) 1px,transparent 1px);background-size:26px 26px;}
+.ph-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:44px;padding:44px 40px;position:relative;z-index:1;}
+
+/* Photo frame — contained card with shadow */
+.ph-photo-frame{
+  flex-shrink:0;width:200px;
+  border-radius:6px;overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.06);
+  position:relative;
+}
+.ph-photo-frame img{width:100%;aspect-ratio:3/4;object-fit:cover;object-position:top center;display:block;}
+.ph-photo-frame .ph-photo-ph{width:200px;aspect-ratio:3/4;background:linear-gradient(135deg,#1c1c1c,#2a2a2a);display:flex;align-items:center;justify-content:center;}
+.ph-photo-ph-i{font-family:'Bebas Neue',sans-serif;font-size:64px;color:rgba(255,255,255,.1);letter-spacing:2px;}
+/* Red accent line on photo */
+.ph-photo-frame::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--r);}
+
+/* Info */
+.ph-info{flex:1;}
+.ph-eyebrow{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.28em;color:var(--r);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.ph-eyebrow::before{content:'';display:inline-block;width:18px;height:1.5px;background:var(--r);}
+.ph-name{font-family:'Bebas Neue',sans-serif;font-size:64px;color:var(--wh);letter-spacing:.5px;line-height:.88;margin-bottom:20px;}
+.ph-meta{display:flex;gap:0;flex-wrap:wrap;margin-bottom:22px;border-left:1px solid rgba(255,255,255,.08);}
+.ph-m{padding:0 24px;border-right:1px solid rgba(255,255,255,.08);}
+.ph-m-v{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:rgba(255,255,255,.9);letter-spacing:.04em;}
+.ph-m-l{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.25);margin-top:3px;}
+.ph-quote{font-size:13px;font-weight:300;color:rgba(255,255,255,.32);line-height:1.7;font-style:italic;max-width:480px;padding-left:16px;border-left:2px solid var(--r);}
 
 /* Profile tabs */
 .ptabs{display:flex;border-bottom:2px solid var(--bdr);position:sticky;top:62px;background:var(--bg);z-index:10;}
@@ -173,7 +194,7 @@ input,select,textarea{font-family:inherit;outline:none;}
 .ft-b span{color:var(--r);}
 
 @media(max-width:1100px){.staff-grid{grid-template-columns:repeat(3,1fr);}}
-@media(max-width:800px){.staff-grid{grid-template-columns:repeat(2,1fr);}.resp-cols{grid-template-columns:1fr;}.ph-photo{width:160px;}.ph-name{font-size:44px;}.ficha-grid{grid-template-columns:1fr;}.nav{padding:0 20px;}.wrap{padding:0 20px;}.hero{padding:40px 20px;}.ht{font-size:56px;}.status-grid{grid-template-columns:repeat(4,1fr);}}
+@media(max-width:800px){.staff-grid{grid-template-columns:repeat(2,1fr);}.resp-cols{grid-template-columns:1fr;}.ph-photo-frame{width:140px;}.ph-name{font-size:44px;}.ficha-grid{grid-template-columns:1fr;}.nav{padding:0 20px;}.wrap{padding:0 20px;}.hero{padding:40px 20px;}.ht{font-size:56px;}.status-grid{grid-template-columns:repeat(4,1fr);}}
 @media(max-width:500px){.staff-grid{grid-template-columns:1fr;}.ph-inner{flex-direction:column;}.ph-photo{width:100%;aspect-ratio:4/3;}.ph-photo::after{display:none;}}
 </style>
 </head>
@@ -487,14 +508,14 @@ const STAFF = [
     quote:'',
     responsibilities:{
       entrenamiento:{
-        before:['Apoyo en montaje del carro y preparación del campo','Hinchado de balones','Material complementario a disposición del cuerpo técnico'],
-        during:['Apoyo en recogida de material durante la sesión','Pendiente del agua y neveras junto al utillero principal','Atención a necesidades inmediatas'],
-        after:['Recogida de material junto al utillero principal','Revisión de vestuario post-sesión','Control final del campo']
+        before:['Carro mínimo 30 minutos antes con balones, petos, setas y cintas','Hinchado de balones cuando sea necesario','Montaje del vestuario pre-sesión','Preparar material adicional que solicite el cuerpo técnico'],
+        during:['Recoger material de tareas ya realizadas','Pendiente de balones durante los ejercicios','Atención a necesidades de utilería (camisetas, botas, chubasqueros)','Encargado del agua y las neveras'],
+        after:['Recoger material y balones del campo','Recogida del vestuario cuando todo el mundo acabe','Revisar que no quede nada del equipo en el campo']
       },
       partido:{
-        before:['Apoyo en preparación del vestuario','Material de banda preparado','Atención a jugadores y staff'],
-        during:['Atención durante el partido','Apoyo en gestión de material de banda'],
-        after:['Recogida de material','Control del vestuario y campo']
+        before:['Preparar vestuario pre-partido mínimo 2 horas antes','Colocar pizarra para el cuerpo técnico','Atención máxima a cualquier necesidad de jugadores y staff'],
+        during:['Atención a necesidades que surjan durante el partido','Gestión del material de banda'],
+        after:['Recoger todo el material','Revisar que no quede nada del equipo en las instalaciones']
       }
     },
     objectives:[
