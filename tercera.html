@@ -226,8 +226,8 @@ input,select,textarea{font-family:inherit;outline:none;}
       <div class="he">Temporada 2026 / 27</div>
       <div class="ht">TERCERA RFEF<br/>GRUPO X</div>
       <div class="hero-meta">
-        <div class="hm"><div class="hm-l">Equipos</div><div class="hm-v red">20</div></div>
-        <div class="hm"><div class="hm-l">Jornadas</div><div class="hm-v">38</div></div>
+        <div class="hm"><div class="hm-l">Equipos</div><div class="hm-v red" id="hm-equipos">—</div></div>
+        <div class="hm"><div class="hm-l">Jornadas</div><div class="hm-v" id="hm-jornadas">—</div></div>
         <div class="hm"><div class="hm-l">Ascenso directo</div><div class="hm-v">Top 2</div></div>
         <div class="hm"><div class="hm-l">Playoff ascenso</div><div class="hm-v">3º – 6º</div></div>
         <div class="hm"><div class="hm-l">Datos plantillas</div><div class="hm-v">2025/26</div></div>
@@ -238,7 +238,7 @@ input,select,textarea{font-family:inherit;outline:none;}
   <div class="wrap">
     <div class="sh">
       <div class="st">Equipos del Grupo</div>
-      <div class="sc" id="grid-meta">20 equipos · Clic para ver perfil</div>
+      <div class="sc" id="grid-meta">— equipos · Clic para ver perfil</div>
     </div>
     <div class="clubs-grid" id="clubs-grid"></div>
   </div>
@@ -334,6 +334,26 @@ input,select,textarea{font-family:inherit;outline:none;}
   </div>
 </div>
 
+
+<!-- MODAL: CONFLICTO IMPORT -->
+<div class="overlay" id="modal-conflict">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <h3 id="cf-title">Registro existente</h3>
+      <button class="modal-close" onclick="cancelConflicts()">×</button>
+    </div>
+    <div id="cf-progress" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);margin-bottom:10px;"></div>
+    <div id="cf-body"></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid var(--bdr);">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mid);margin-right:auto;cursor:pointer;">
+        <input type="checkbox" id="cf-apply-all" style="accent-color:var(--r);"/> Aplicar a todos los restantes
+      </label>
+      <button class="btn btn-ghost" onclick="resolveConflict(false)">Mantener actual</button>
+      <button class="btn btn-primary" onclick="resolveConflict(true)">Reemplazar</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
@@ -341,6 +361,7 @@ import {
   collection, addDoc, getDocs, deleteDoc,
   onSnapshot, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
@@ -351,6 +372,8 @@ const app = initializeApp({
   appId:"1:1073919975511:web:7c7f59495d1f67f6f44312"
 });
 const db = getFirestore(app);
+const fns = getFunctions(app, 'europe-west1');
+const lpCallable = httpsCallable(fns, 'cargarDesdeLapreferente');
 
 /* ── STAFF LIST ── */
 const STAFF_USERS = ['Carlos (Analista)','Primer Entrenador','Preparador Físico','Delegado','Staff'];
@@ -358,30 +381,29 @@ const currentUser = () => localStorage.getItem('rl_cal_user') || 'Staff';
 
 /* ── CLUB DATA ── */
 const CLUBS = [
-  // NUESTRO EQUIPO
-  { id:'racing',          name:'Racing Club Portuense',  short:'RCP',  city:'El Puerto de Santa María', stadium:'Campo Municipal',    colors:['#e8192c','#ffffff'], pos2526:'—',    pts2526:null, tw:'@racingportuense', web:'', isHome:true,  locked:true,  tbd:false, playoffRisk:false },
-  // GRUPO 10 2025/26 - POSICIONES 2-15
-  { id:'dos-hermanas',    name:'Dos Hermanas CF 1971',   short:'DH71', city:'Dos Hermanas',             stadium:'Estadio Las Piras',  colors:['#c0392b','#1a3a7c'], pos2526:2,      pts2526:60,   tw:'@_doshermanascf',   web:'https://dhcf.es', isHome:false, locked:false, tbd:false, playoffRisk:true  },
-  { id:'atletico-central',name:'Club Atlético Central',  short:'CAC',  city:'Sevilla',                  stadium:'Ciudad Deportiva',   colors:['#1a3a7c','#ffffff'], pos2526:3,      pts2526:55,   tw:'@atleticocentral',  web:'', isHome:false, locked:false, tbd:false, playoffRisk:true  },
-  { id:'bollullos',       name:'Bollullos CF',           short:'BCF',  city:'Bollullos Par del Condado',stadium:'Municipal',          colors:['#e8192c','#000000'], pos2526:4,      pts2526:53,   tw:'@bollulloscf',      web:'', isHome:false, locked:false, tbd:false, playoffRisk:true  },
-  { id:'ceuta-b',         name:'AD Ceuta FC B',          short:'CEU',  city:'Ceuta',                    stadium:'Alfonso Murube',     colors:['#1a7c3e','#ffffff'], pos2526:5,      pts2526:52,   tw:'@adceutafc',        web:'', isHome:false, locked:false, tbd:false, playoffRisk:true  },
-  { id:'linense',         name:'RB Linense',             short:'RBL',  city:'La Línea de la Concepción',stadium:'Municipal La Línea', colors:['#1a1a1a','#ffffff'], pos2526:6,      pts2526:52,   tw:'@rblinense',        web:'', isHome:false, locked:false, tbd:false, playoffRisk:false },
-  { id:'cadiz-b',         name:'Cádiz CF Mirandilla',    short:'CDZ',  city:'Cádiz',                    stadium:'Mirandilla',         colors:['#f5c518','#003087'], pos2526:7,      pts2526:52,   tw:'@cadizcf',          web:'', isHome:false, locked:false, tbd:false, playoffRisk:false },
-  { id:'conil',           name:'Conil CF',               short:'CNL',  city:'Conil de la Frontera',     stadium:'Municipal de Conil', colors:['#e8192c','#ffffff'], pos2526:8,      pts2526:52,   tw:'@conilcf',          web:'', isHome:false, locked:false, tbd:false, playoffRisk:false },
-  { id:'cordoba-b',       name:'Córdoba CF B',           short:'COR',  city:'Córdoba',                  stadium:'Ciudad Deportiva',   colors:['#1a7c3e','#ffffff'], pos2526:9,      pts2526:44,   tw:'@cordobacf',        web:'', isHome:false, locked:false, tbd:false, playoffRisk:false },
-  { id:'utrera',          name:'CD Utrera',              short:'UTR',  city:'Utrera',                   stadium:'Municipal Utrera',   colors:['#e8192c','#000000'], pos2526:10,     pts2526:44,   tw:'@cd_utrera',        web:'', isHome:false, locked:false, tbd:false, playoffRisk:false },
-  { id:'pozoblanco',      name:'CD Pozoblanco',          short:'POZ',  city:'Pozoblanco',               stadium:'Municipal Pozoblanco',colors:['#e8192c','#ffffff'],pos2526:11,     pts2526:43,   tw:'@cdpozoblanco',     web:'', isHome:false, locked:false, tbd:false, playoffRisk:false },
-  { id:'chiclana',        name:'Chiclana CF',            short:'CHI',  city:'Chiclana de la Frontera',  stadium:'Municipal Chiclana', colors:['#e8192c','#000000'], pos2526:12,     pts2526:43,   tw:'@chiclana_cf',      web:'', isHome:false, locked:false, tbd:false, playoffRisk:false },
-  { id:'san-roque',       name:'San Roque de Lepe',      short:'SRL',  city:'Lepe',                     stadium:'Municipal de Lepe',  colors:['#003087','#ffffff'], pos2526:13,     pts2526:43,   tw:'@sanroquelepe',     web:'', isHome:false, locked:false, tbd:false, playoffRisk:false },
-  { id:'onubense',        name:'Atlético Onubense',      short:'AON',  city:'Huelva',                   stadium:'Municipal Huelva',   colors:['#e8192c','#ffffff'], pos2526:14,     pts2526:40,   tw:'@atleticoonubense', web:'', isHome:false, locked:false, tbd:false, playoffRisk:false },
-  { id:'tomares',         name:'UD Tomares',             short:'TOM',  city:'Tomares',                  stadium:'Ciudad Deportiva',   colors:['#e8192c','#1a1a1a'], pos2526:15,     pts2526:39,   tw:'@udtomares',        web:'', isHome:false, locked:false, tbd:false, playoffRisk:false },
-  // NUEVOS / INCORPORACIONES
-  { id:'xerez-dfc',       name:'Xerez DFC',              short:'XDF',  city:'Jerez de la Frontera',     stadium:'Municipal de Chapín',colors:['#2563eb','#ffffff'], pos2526:'2ªF',  pts2526:null, tw:'@xerezdfc',         web:'https://xerezdfc.com', isHome:false, locked:false, tbd:false, playoffRisk:false },
-  { id:'betis-c',         name:'Real Betis C',           short:'RBC',  city:'Sevilla',                  stadium:'Luis del Sol',       colors:['#1a7c3e','#ffffff'], pos2526:'2ªF',  pts2526:null, tw:'@realbetis',        web:'', isHome:false, locked:false, tbd:false, playoffRisk:false },
-  { id:'puente-genil',    name:'Salerm Puente Genil',    short:'SPG',  city:'Puente Genil',             stadium:'Municipal Puente Genil',colors:['#e8192c','#000000'],pos2526:'DH', pts2526:null, tw:'@salermpuentegenil',web:'', isHome:false, locked:false, tbd:false, playoffRisk:false },
-  { id:'egabrense',       name:'Egabrense / Montilla',   short:'EGA',  city:'Cabra / Montilla',         stadium:'Por confirmar',      colors:['#003087','#ffffff'], pos2526:'PO',   pts2526:null, tw:'',                  web:'', isHome:false, locked:false, tbd:true,  playoffRisk:false },
-  { id:'tbd',             name:'Por confirmar',          short:'TBD',  city:'—',                        stadium:'—',                  colors:['#9ca3af','#ffffff'], pos2526:'—',    pts2526:null, tw:'',                  web:'', isHome:false, locked:false, tbd:true,  playoffRisk:false },
+  // NUESTRO EQUIPO — clic lleva al módulo Plantilla
+  { id:'racing',       lpId:'161',   name:'Racing Club Portuense', short:'RCP', city:'El Puerto de Santa María', stadium:'Campo Municipal',        colors:['#e8192c','#ffffff'], pos2526:'—',  pts2526:null, tw:'@racingportuense',  web:'', isHome:true,  tbd:false },
+  { id:'san-roque',    lpId:'181',   name:'San Roque de Lepe',     short:'SRL', city:'Lepe',                     stadium:'Ciudad de Lepe',         colors:['#003087','#ffffff'], pos2526:13,   pts2526:43,   tw:'@sanroquelepe',     web:'', isHome:false, tbd:false },
+  { id:'xerez-dfc',    lpId:'12717', name:'Xerez DFC',             short:'XDF', city:'Jerez de la Frontera',     stadium:'Chapín',                 colors:['#2563eb','#ffffff'], pos2526:'2ªF',pts2526:null, tw:'@xerezdfc',         web:'https://xerezdfc.com', isHome:false, tbd:false },
+  { id:'onubense',     lpId:'362',   name:'Atlético Onubense',     short:'AON', city:'Huelva',                   stadium:'Ciudad Deportiva Decano',colors:['#e8192c','#ffffff'], pos2526:14,   pts2526:40,   tw:'@atleticoonubense', web:'', isHome:false, tbd:false },
+  { id:'cadiz-b',      lpId:'163',   name:'Cádiz CF Mirandilla',   short:'CDZ', city:'Cádiz',                    stadium:'El Rosal',               colors:['#f5c518','#003087'], pos2526:7,    pts2526:52,   tw:'@cadizcf',          web:'', isHome:false, tbd:false },
+  { id:'pozoblanco',   lpId:'21',    name:'CD Pozoblanco',         short:'POZ', city:'Pozoblanco',               stadium:'Municipal Pozoblanco',   colors:['#e8192c','#ffffff'], pos2526:11,   pts2526:43,   tw:'@cdpozoblanco',     web:'', isHome:false, tbd:false },
+  { id:'ceuta-b',      lpId:'13159', name:'AD Ceuta FC B',         short:'CEU', city:'Ceuta',                    stadium:'José Martínez Pirri',    colors:['#1a7c3e','#ffffff'], pos2526:5,    pts2526:52,   tw:'@adceutafc',        web:'', isHome:false, tbd:false },
+  { id:'bollullos',    lpId:'582',   name:'Bollullos CF',          short:'BCF', city:'Bollullos Par del Condado',stadium:'Eloy Ávila Cano',        colors:['#e8192c','#000000'], pos2526:4,    pts2526:53,   tw:'@bollulloscf',      web:'', isHome:false, tbd:false },
+  { id:'puente-genil', lpId:'2224',  name:'Salerm Puente Genil',   short:'SPG', city:'Puente Genil',             stadium:'Manuel Polinario',       colors:['#e8192c','#000000'], pos2526:'DH', pts2526:null, tw:'@salermpuentegenil',web:'', isHome:false, tbd:false },
+  { id:'dos-hermanas', lpId:'34672', name:'Dos Hermanas CF 1971',  short:'DH71',city:'Dos Hermanas',             stadium:'Miguel Román',           colors:['#c0392b','#1a3a7c'], pos2526:2,    pts2526:60,   tw:'@_doshermanascf',   web:'https://dhcf.es', isHome:false, tbd:false },
+  { id:'egabrense',    lpId:'23',    name:'Egabrense',             short:'EGA', city:'Cabra',                    stadium:'Antonio Povedano',       colors:['#003087','#ffffff'], pos2526:'PO↑',pts2526:null, tw:'',                  web:'', isHome:false, tbd:false },
+  { id:'linense',      lpId:'580',   name:'RB Linense',            short:'RBL', city:'La Línea de la Concepción',stadium:'Ciudad de La Línea',     colors:['#1a1a1a','#ffffff'], pos2526:6,    pts2526:52,   tw:'@rblinense',        web:'', isHome:false, tbd:false },
+  { id:'tomares',      lpId:'199',   name:'UD Tomares',            short:'TOM', city:'Tomares',                  stadium:'San Sebastián',          colors:['#e8192c','#1a1a1a'], pos2526:15,   pts2526:39,   tw:'@udtomares',        web:'', isHome:false, tbd:false },
+  { id:'utrera',       lpId:'201',   name:'CD Utrera',             short:'UTR', city:'Utrera',                   stadium:'San Juan Bosco',         colors:['#e8192c','#000000'], pos2526:10,   pts2526:44,   tw:'@cd_utrera',        web:'', isHome:false, tbd:false },
+  { id:'chiclana',     lpId:'170',   name:'Chiclana CF',           short:'CHI', city:'Chiclana de la Frontera',  stadium:'Municipal de Chiclana',  colors:['#e8192c','#000000'], pos2526:12,   pts2526:43,   tw:'@chiclana_cf',      web:'', isHome:false, tbd:false },
+  { id:'conil',        lpId:'313',   name:'Conil CF',              short:'CNL', city:'Conil de la Frontera',     stadium:'José Antonio Pérez Ureba',colors:['#e8192c','#ffffff'],pos2526:8,    pts2526:52,   tw:'@conilcf',          web:'', isHome:false, tbd:false },
+  { id:'cordoba-b',    lpId:'472',   name:'Córdoba CF B',          short:'COR', city:'Córdoba',                  stadium:'Ciudad Deportiva CCF',   colors:['#1a7c3e','#ffffff'], pos2526:9,    pts2526:44,   tw:'@cordobacf',        web:'', isHome:false, tbd:false },
+  { id:'betis-c',      lpId:'517',   name:'Real Betis C',          short:'RBC', city:'Sevilla',                  stadium:'Luis del Sol',           colors:['#1a7c3e','#ffffff'], pos2526:'2ªF',pts2526:null, tw:'@realbetis',        web:'', isHome:false, tbd:false },
 ];
+// Jornadas derivadas del nº real de equipos — nunca hardcodear
+const N_EQUIPOS = CLUBS.length;               // 18
+const N_JORNADAS = (N_EQUIPOS - 1) * 2;       // 34
 
 /* ── SHIELD SVG GENERATOR ── */
 function shieldSVG(c1, c2, initials, size=60) {
@@ -423,9 +445,8 @@ function renderGrid() {
     const div = document.createElement('div');
     div.className = 'club-card'
       + (c.isHome   ? ' home'   : '')
-      + (c.locked   ? ' locked' : '')
-      + (c.tbd      ? ' tbd'    : '')
-      + (c.playoffRisk ? ' playoff-risk' : '');
+            + (c.tbd      ? ' tbd'    : '')
+;
     div.setAttribute('data-pos', typeof c.pos2526==='number' ? String(c.pos2526).padStart(2,'0') : c.pos2526||'—');
 
     const shield = c.tbd
@@ -433,15 +454,18 @@ function renderGrid() {
       : shieldSVG(c.colors[0], c.colors[1], c.short, 52);
 
     div.innerHTML = `
-      ${c.playoffRisk ? '<div class="playoff-badge">Playoff ↑</div>' : ''}
-      ${c.locked ? '<div class="lock-icon">🔒</div>' : ''}
+      
+      
       <div class="shield-wrap">${shield}</div>
       <div class="club-name">${c.name}</div>
       ${c.isHome ? '<div class="home-pill">Nuestro equipo</div>' : ''}
       ${!c.tbd && !c.isHome ? `<div class="club-pos">${c.pos2526!=='—'?'Pos. '+c.pos2526+' · ':c.pos2526+' · '}${c.pts2526?c.pts2526+'pts':''}</div>` : ''}
       ${c.tbd ? '<div class="club-pos" style="color:var(--warn)">Por confirmar</div>' : ''}
     `;
-    if (!c.locked && !c.tbd) {
+    if (c.isHome) {
+      div.onclick = () => window.location.href = 'plantilla.html';
+      div.style.cursor = 'pointer';
+    } else if (!c.tbd) {
       div.onclick = () => openProfile(c.id);
       div.style.cursor = 'pointer';
     }
@@ -532,7 +556,10 @@ function renderPlantillaTab(clubId) {
 
   let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
     <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;color:var(--mid);">${players.length} jugadores registrados · Datos 2025/26</div>
-    <button class="btn btn-primary btn-sm" onclick="openAddPlayer('${clubId}')">+ Jugador</button>
+    <div style="display:flex;gap:6px;">
+      <button class="btn btn-ghost btn-sm" onclick="importFromLP('players')">⟳ Cargar de lapreferente</button>
+      <button class="btn btn-primary btn-sm" onclick="openAddPlayer('${clubId}')">+ Jugador</button>
+    </div>
   </div>`;
 
   if(!players.length) {
@@ -555,7 +582,15 @@ function renderPlantillaTab(clubId) {
           </tr></thead><tbody>
           ${group.map(p=>`<tr>
             <td style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--faint)">${p.dorsal||'—'}</td>
-            <td class="nm">${p.name}</td>
+            <td class="nm">
+              <div style="display:flex;align-items:center;gap:8px;">
+                ${p.fotoUrl?`<img src="${p.fotoUrl}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;" alt=""/>`:''}
+                <span>${p.name}</span>
+                ${p.sub23?'<span class="pill pill-green" style="font-size:9px;">S23</span>':''}
+                ${p.estado==='nuevo_fichaje'?'<span class="pill pill-amber" style="font-size:9px;">Fichaje</span>':''}
+                ${p.estado==='renovado'?'<span class="pill pill-gray" style="font-size:9px;">Renov.</span>':''}
+              </div>
+            </td>
             <td><span class="pill pill-gray">${p.dem||p.pos}</span></td>
             <td style="font-size:12px;color:var(--mid)">${p.age||'—'}</td>
             <td style="font-size:12px;color:var(--mid)">${p.from||'—'}</td>
@@ -593,7 +628,10 @@ function renderStaffTab(clubId) {
   const staff = clubData.staff;
   let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
     <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;color:var(--mid);">${staff.length} miembros registrados</div>
-    <button class="btn btn-primary btn-sm" onclick="openAddStaff('${clubId}')">+ Miembro</button>
+    <div style="display:flex;gap:6px;">
+      <button class="btn btn-ghost btn-sm" onclick="importFromLP('staff')">⟳ Cargar de lapreferente</button>
+      <button class="btn btn-primary btn-sm" onclick="openAddStaff('${clubId}')">+ Miembro</button>
+    </div>
   </div>`;
 
   if(!staff.length) {
@@ -808,7 +846,7 @@ window.savePlayer = async function() {
     await updateDoc(doc(db,`rivals/${clubId}/players`,editId), data);
     showToast('Jugador actualizado','ok');
   } else {
-    await addDoc(collection(db,`rivals/${clubId}/players`), data);
+    await addDoc(collection(db,`rivals/${clubId}/players`), {...data, origen:'manual'});
     showToast('Jugador añadido','ok');
   }
   closeModal('modal-player');
@@ -858,7 +896,7 @@ window.saveStaff = async function() {
     await updateDoc(doc(db,`rivals/${clubId}/staff`,editId), data);
     showToast('Actualizado','ok');
   } else {
-    await addDoc(collection(db,`rivals/${clubId}/staff`), data);
+    await addDoc(collection(db,`rivals/${clubId}/staff`), {...data, origen:'manual'});
     showToast('Añadido','ok');
   }
   closeModal('modal-staff');
@@ -867,6 +905,145 @@ window.saveStaff = async function() {
 window.deleteStaff = async function(clubId, sid) {
   if(!confirm('¿Eliminar?')) return;
   await deleteDoc(doc(db,`rivals/${clubId}/staff`,sid));
+};
+
+
+/* ══════════ IMPORT LAPREFERENTE ══════════ */
+const LP_FIELDS_PLAYERS = ['name','dorsal','pos','dem','age','sub23','estado','procedencia','from','fotoUrl'];
+const LP_FIELDS_STAFF   = ['name','role','age','fotoUrl'];
+
+let conflictQueue = [];
+let conflictColl  = '';
+let conflictStats = null;
+
+function normVal(v){ return (v===undefined||v===null||v==='') ? null : v; }
+function diffFields(existing, incoming, fields){
+  return fields.filter(f => JSON.stringify(normVal(existing[f])) !== JSON.stringify(normVal(incoming[f])));
+}
+
+window.importFromLP = async function(kind){
+  if(!currentClub) return;
+  if(!currentClub.lpId){ showToast('Equipo sin ID de lapreferente','err'); return; }
+  showToast('Cargando de lapreferente…');
+  let res;
+  try {
+    res = await lpCallable({ teamId: currentClub.lpId });
+  } catch(e){
+    console.error('[LP] callable error', e);
+    showToast('Error en la función: '+(e.message||e.code),'err');
+    return;
+  }
+  const data = res.data;
+  if(!data.ok){
+    console.warn('[LP] Parseo vacío. debugHtml:', data.debugHtml);
+    console.warn('[LP] URL final:', data.finalUrl);
+    showToast('Parseo vacío — HTML de debug en la consola (F12)','err');
+    return;
+  }
+  if(data.warnings?.length) console.warn('[LP] warnings:', data.warnings);
+
+  const incoming = kind==='players' ? data.players : data.staff;
+  const existing = kind==='players' ? clubData.players : clubData.staff;
+  const coll     = kind==='players' ? 'players' : 'staff';
+  const fields   = kind==='players' ? LP_FIELDS_PLAYERS : LP_FIELDS_STAFF;
+
+  if(!incoming.length){ showToast('lapreferente no devolvió registros de '+(kind==='players'?'plantilla':'staff'),'err'); return; }
+
+  const byJid = new Map(existing.filter(e=>e.jId).map(e=>[String(e.jId), e]));
+  const toAdd = [], conflicts = [];
+
+  for(const inc of incoming){
+    const ex = byJid.get(String(inc.jId));
+    if(!ex){ toAdd.push(inc); continue; }
+    if(ex.origen === 'manual') continue;            // manual → intocable
+    const diffs = diffFields(ex, inc, fields);
+    if(diffs.length) conflicts.push({ ex, inc, diffs });
+  }
+
+  // Altas directas
+  let added = 0;
+  for(const inc of toAdd){
+    try{
+      await addDoc(collection(db, `rivals/${currentClub.id}/${coll}`), {
+        ...inc,
+        origen: 'lapreferente',
+        updatedBy: currentUser(),
+        updatedDate: new Date().toISOString().slice(0,10),
+        updatedAt: serverTimestamp()
+      });
+      added++;
+    }catch(e){ console.error('[LP] addDoc', e); }
+  }
+
+  if(conflicts.length){
+    conflictQueue = conflicts;
+    conflictColl  = coll;
+    conflictStats = { added, replaced:0, kept:0 };
+    showNextConflict();
+  } else {
+    showToast(`Import completado: ${added} añadidos${data.cached?' (caché)':''}`,'ok');
+  }
+};
+
+function showNextConflict(){
+  if(!conflictQueue.length){
+    const s = conflictStats;
+    showToast(`Import: ${s.added} nuevos · ${s.replaced} reemplazados · ${s.kept} mantenidos`,'ok');
+    closeModal('modal-conflict');
+    conflictStats = null;
+    return;
+  }
+  const { ex, inc, diffs } = conflictQueue[0];
+  document.getElementById('cf-title').textContent = ex.name || inc.name;
+  document.getElementById('cf-progress').textContent =
+    `Conflicto 1 de ${conflictQueue.length} · campos distintos: ${diffs.join(', ')}`;
+  document.getElementById('cf-body').innerHTML = `
+    <table class="tbl" style="font-size:12px;">
+      <thead><tr><th>Campo</th><th>Actual (guardado)</th><th>lapreferente (nuevo)</th></tr></thead>
+      <tbody>
+        ${diffs.map(f=>`<tr>
+          <td style="font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:10px;color:var(--mid)">${f}</td>
+          <td>${fmtCf(ex[f])}</td>
+          <td style="color:var(--r);font-weight:600">${fmtCf(inc[f])}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  openModal('modal-conflict');
+}
+function fmtCf(v){
+  if(v===null||v===undefined||v==='') return '<span style="color:var(--faint)">—</span>';
+  if(v===true) return 'Sí'; if(v===false) return 'No';
+  if(typeof v==='string' && v.startsWith('http')) return '<span style="font-size:10px">imagen</span>';
+  return String(v);
+}
+
+window.resolveConflict = async function(replace){
+  const applyAll = document.getElementById('cf-apply-all').checked;
+  const batch = applyAll ? conflictQueue.splice(0) : [conflictQueue.shift()];
+  for(const { ex, inc } of batch){
+    if(replace){
+      try{
+        await updateDoc(doc(db, `rivals/${currentClub.id}/${conflictColl}`, ex.id), {
+          ...inc,
+          origen: 'lapreferente',
+          updatedBy: currentUser(),
+          updatedDate: new Date().toISOString().slice(0,10),
+          updatedAt: serverTimestamp()
+        });
+        conflictStats.replaced++;
+      }catch(e){ console.error('[LP] updateDoc', e); }
+    } else {
+      conflictStats.kept++;
+    }
+  }
+  document.getElementById('cf-apply-all').checked = false;
+  showNextConflict();
+};
+
+window.cancelConflicts = function(){
+  conflictStats.kept += conflictQueue.length;
+  conflictQueue = [];
+  showNextConflict();
 };
 
 /* ── UTILS ── */
@@ -890,6 +1067,9 @@ window.showToast = function(msg,type=''){
 };
 
 /* ── INIT ── */
+document.getElementById('hm-equipos').textContent = N_EQUIPOS;
+document.getElementById('hm-jornadas').textContent = N_JORNADAS;
+document.getElementById('grid-meta').textContent = N_EQUIPOS + ' equipos · Clic para ver perfil';
 renderGrid();
 document.getElementById('sync-dot').style.background='#15803d';
 document.getElementById('sync-lbl').textContent='Firebase OK';
