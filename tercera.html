@@ -361,7 +361,6 @@ import {
   collection, addDoc, getDocs, deleteDoc,
   onSnapshot, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
@@ -372,8 +371,8 @@ const app = initializeApp({
   appId:"1:1073919975511:web:7c7f59495d1f67f6f44312"
 });
 const db = getFirestore(app);
-const fns = getFunctions(app, 'europe-west1');
-const lpCallable = httpsCallable(fns, 'cargarDesdeLapreferente');
+// URL de la Cloud Function — desplegada en Google Cloud Run
+const LP_FN_URL = 'https://cargar-desde-lapreferente-1073919975511.europe-west1.run.app';
 
 /* ── STAFF LIST ── */
 const STAFF_USERS = ['Carlos (Analista)','Primer Entrenador','Preparador Físico','Delegado','Staff'];
@@ -925,15 +924,20 @@ window.importFromLP = async function(kind){
   if(!currentClub) return;
   if(!currentClub.lpId){ showToast('Equipo sin ID de lapreferente','err'); return; }
   showToast('Cargando de lapreferente…');
-  let res;
+  let data;
   try {
-    res = await lpCallable({ teamId: currentClub.lpId });
+    const resp = await fetch(LP_FN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ teamId: currentClub.lpId })
+    });
+    data = await resp.json();
+    if(!resp.ok && !data){ throw new Error('HTTP '+resp.status); }
   } catch(e){
-    console.error('[LP] callable error', e);
-    showToast('Error en la función: '+(e.message||e.code),'err');
+    console.error('[LP] fetch error', e);
+    showToast('Error llamando a la función: '+e.message,'err');
     return;
   }
-  const data = res.data;
   if(!data.ok){
     console.warn('[LP] Parseo vacío. debugHtml:', data.debugHtml);
     console.warn('[LP] URL final:', data.finalUrl);
