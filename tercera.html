@@ -335,6 +335,27 @@ input,select,textarea{font-family:inherit;outline:none;}
 </div>
 
 
+<!-- MODAL: IMPORTAR PEGANDO HTML -->
+<div class="overlay" id="modal-paste">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-head">
+      <h3>Importar de lapreferente</h3>
+      <button class="modal-close" onclick="closeModal('modal-paste')">×</button>
+    </div>
+    <div style="font-size:13px;color:var(--mid);line-height:1.7;margin-bottom:14px;">
+      <div style="margin-bottom:10px;"><strong style="color:var(--txt)">1.</strong> Abre la ficha de <strong style="color:var(--txt)" id="paste-club-name"></strong> en lapreferente (botón de abajo). Si aparece una pantalla de verificación, espera a que cargue la página del equipo.</div>
+      <div style="margin-bottom:10px;"><strong style="color:var(--txt)">2.</strong> En esa pestaña pulsa <span class="pill pill-gray" style="font-family:'JetBrains Mono',monospace;">⌘ + ⌥ + U</span> (ver código fuente) → <span class="pill pill-gray" style="font-family:'JetBrains Mono',monospace;">⌘ + A</span> → <span class="pill pill-gray" style="font-family:'JetBrains Mono',monospace;">⌘ + C</span></div>
+      <div><strong style="color:var(--txt)">3.</strong> Vuelve aquí, pega en el cuadro y pulsa Procesar.</div>
+    </div>
+    <a id="paste-open-link" href="#" target="_blank" class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:12px;">↗ Abrir ficha del equipo en lapreferente</a>
+    <textarea id="lp-paste-area" class="form-control" rows="7" placeholder="Pega aquí el código fuente completo de la página…" style="font-family:'JetBrains Mono',monospace;font-size:10px;"></textarea>
+    <div class="modal-foot" style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--bdr);">
+      <button class="btn btn-ghost" onclick="closeModal('modal-paste')">Cancelar</button>
+      <button class="btn btn-primary" onclick="processPastedHTML()">Procesar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: CONFLICTO IMPORT -->
 <div class="overlay" id="modal-conflict">
   <div class="modal" style="max-width:560px;">
@@ -371,8 +392,6 @@ const app = initializeApp({
   appId:"1:1073919975511:web:7c7f59495d1f67f6f44312"
 });
 const db = getFirestore(app);
-// URL de la Cloud Function — desplegada en Google Cloud Run
-const LP_FN_URL = 'https://cargar-desde-lapreferente-1073919975511.europe-west1.run.app';
 
 /* ── STAFF LIST ── */
 const STAFF_USERS = ['Carlos (Analista)','Primer Entrenador','Preparador Físico','Delegado','Staff'];
@@ -907,51 +926,153 @@ window.deleteStaff = async function(clubId, sid) {
 };
 
 
-/* ══════════ IMPORT LAPREFERENTE ══════════ */
-const LP_FIELDS_PLAYERS = ['name','dorsal','pos','dem','age','sub23','estado','procedencia','from','fotoUrl'];
-const LP_FIELDS_STAFF   = ['name','role','age','fotoUrl'];
+/* ══════════ IMPORT LAPREFERENTE — vía navegador del usuario ══════════
+   lapreferente está tras Cloudflare: ningún fetch de servidor pasa.
+   El usuario abre la ficha en SU navegador (pasa el challenge por ser humano),
+   copia el código fuente y lo pega aquí. El resto es automático:
+   parseo, dedup por jId, fotos a Cloudinary, merge con conflictos. */
 
-let conflictQueue = [];
-let conflictColl  = '';
-let conflictStats = null;
+const LP_FIELDS_PLAYERS = ['name','dorsal','pos','dem','age','sub23','estado','procedencia','from'];
+const LP_FIELDS_STAFF   = ['name','role','age'];
+
+const LP_STAFF_ROLES = ['entrenador','segundo entrenador','2º entrenador','preparador físico',
+  'preparador fisico','entrenador de porteros','delegado','fisioterapeuta','fisio','utillero',
+  'director deportivo','coordinador','médico','medico','analista','readaptador','encargado material'];
+const LP_DEMARCACIONES = ['portero','central','lateral derecho','lateral izquierdo','lateral',
+  'carrilero','líbero','libero','defensa','mediocentro','pivote','interior derecho',
+  'interior izquierdo','interior','mediapunta','centrocampista','volante','extremo derecho',
+  'extremo izquierdo','extremo','delantero centro','delantero','punta','ariete'];
+
+function lpMapPos(dem){
+  const d=(dem||'').toLowerCase();
+  if(/porter/.test(d)) return 'POR';
+  if(/(defens|central|lateral|carrilero|l[ií]bero)/.test(d)) return 'DEF';
+  if(/(centrocamp|mediocentro|pivote|interior|mediapunta|volante|medio)/.test(d)) return 'MED';
+  if(/(delanter|extremo|punta|ariete)/.test(d)) return 'DEL';
+  return 'MED';
+}
+function lpAbsolutize(src){
+  if(!src) return null;
+  if(src.startsWith('http')) return src;
+  if(src.startsWith('//')) return 'https:'+src;
+  if(src.startsWith('/')) return 'https://www.lapreferente.com'+src;
+  return null;
+}
+
+let conflictQueue=[], conflictColl='', conflictStats=null;
+let pasteKind='players';
+
+window.importFromLP = function(kind){
+  if(!currentClub) return;
+  if(!currentClub.lpId){ showToast('Equipo sin ID de lapreferente','err'); return; }
+  pasteKind = kind;
+  document.getElementById('paste-club-name').textContent = currentClub.name;
+  document.getElementById('paste-open-link').href = `https://www.lapreferente.com/E${currentClub.lpId}C26702-1/`;
+  document.getElementById('lp-paste-area').value = '';
+  openModal('modal-paste');
+};
+
+window.processPastedHTML = async function(){
+  const raw = document.getElementById('lp-paste-area').value;
+  if(raw.trim().length < 500){ showToast('Pega el código fuente completo (paso 2)','err'); return; }
+  let parsed;
+  try { parsed = lpParseHTML(raw); }
+  catch(e){ console.error('[LP] parse error', e); showToast('Error al parsear el HTML','err'); return; }
+  const incoming = pasteKind==='players' ? parsed.players : parsed.staff;
+  if(!incoming.length){
+    console.warn('[LP] 0 registros. players:', parsed.players.length, 'staff:', parsed.staff.length);
+    showToast('No se encontraron '+(pasteKind==='players'?'jugadores':'miembros de staff')+' en el HTML','err');
+    return;
+  }
+  closeModal('modal-paste');
+  showToast('Procesando '+incoming.length+' registros…');
+  await runLPMerge(incoming, pasteKind);
+};
+
+function lpParseHTML(htmlString){
+  const docP = new DOMParser().parseFromString(htmlString, 'text/html');
+  const players=[], staff=[];
+  const seen = new Set();
+
+  docP.querySelectorAll('a[href*="/J"]').forEach(a=>{
+    const href = a.getAttribute('href')||'';
+    const m = href.match(/\/J(\d+)/);
+    if(!m) return;
+    const jId = m[1];
+    if(seen.has(jId)) return;
+    const name = (a.textContent||'').replace(/\s+/g,' ').trim();
+    if(!name || name.length<2) return;
+    seen.add(jId);
+
+    const row = a.closest('tr') || a.parentElement?.parentElement;
+    const rowText = (row?.textContent||'').replace(/\s+/g,' ').trim();
+    const rowLower = rowText.toLowerCase();
+    const img = row?.querySelector('img');
+    const fotoSrc = lpAbsolutize(img?.getAttribute('src'));
+
+    const staffRole = LP_STAFF_ROLES.find(r=>rowLower.includes(r));
+    const demarc = LP_DEMARCACIONES.find(d=>rowLower.includes(d));
+
+    if(staffRole && !demarc){
+      const ageMatch = rowText.match(/(\d{2})\s*años/i);
+      staff.push({ jId, name,
+        role: staffRole.charAt(0).toUpperCase()+staffRole.slice(1),
+        age: ageMatch?parseInt(ageMatch[1]):null,
+        notes:'', fotoSrc });
+      return;
+    }
+
+    const cells = [...(row?.querySelectorAll('td')||[])].map(td=>td.textContent.trim());
+    const nums = cells.filter(c=>/^\d{1,2}$/.test(c)).map(Number);
+    let dorsal=null, age=null;
+    const ageMatch = rowText.match(/(\d{2})\s*años/i);
+    if(ageMatch) age = parseInt(ageMatch[1]);
+    if(nums.length){
+      if(age!==null){ dorsal = nums.find(n=>n!==age) ?? null; }
+      else { dorsal = nums[0] ?? null; age = nums.find(n=>n>=15&&n<=49&&n!==dorsal) ?? null; }
+    }
+
+    const sub23 = /sub\s*-?\s*23/i.test(rowText);
+    let estado = null;
+    if(/renovado/i.test(rowText)) estado='renovado';
+    else if(/nuevo\s+fichaje/i.test(rowText)) estado='nuevo_fichaje';
+    let procedencia = null;
+    const procMatch = rowText.match(/procedente\s+del?\s+([^.,;()]{3,60})/i);
+    if(procMatch) procedencia = procMatch[1].trim();
+
+    players.push({ jId, name, dorsal,
+      pos: lpMapPos(demarc),
+      dem: demarc ? demarc.charAt(0).toUpperCase()+demarc.slice(1) : '',
+      age, sub23, estado, procedencia,
+      from: procedencia||'', fotoSrc });
+  });
+
+  return { players, staff };
+}
+
+/* Foto → Cloudinary (Cloudinary hace el fetch remoto de la URL) */
+async function lpPhoto(rec){
+  if(!rec.fotoSrc) return null;
+  try{
+    const fd = new FormData();
+    fd.append('file', rec.fotoSrc);
+    fd.append('upload_preset', 'racing_lab');
+    fd.append('folder', 'racing-lab/lapreferente');
+    const r = await fetch('https://api.cloudinary.com/v1_1/dprtymvge/image/upload', {method:'POST', body:fd});
+    const d = await r.json();
+    return d.secure_url || null;
+  }catch(e){ return null; }
+}
 
 function normVal(v){ return (v===undefined||v===null||v==='') ? null : v; }
 function diffFields(existing, incoming, fields){
   return fields.filter(f => JSON.stringify(normVal(existing[f])) !== JSON.stringify(normVal(incoming[f])));
 }
 
-window.importFromLP = async function(kind){
-  if(!currentClub) return;
-  if(!currentClub.lpId){ showToast('Equipo sin ID de lapreferente','err'); return; }
-  showToast('Cargando de lapreferente…');
-  let data;
-  try {
-    const resp = await fetch(LP_FN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ teamId: currentClub.lpId })
-    });
-    data = await resp.json();
-    if(!resp.ok && !data){ throw new Error('HTTP '+resp.status); }
-  } catch(e){
-    console.error('[LP] fetch error', e);
-    showToast('Error llamando a la función: '+e.message,'err');
-    return;
-  }
-  if(!data.ok){
-    console.warn('[LP] Parseo vacío. debugHtml:', data.debugHtml);
-    console.warn('[LP] URL final:', data.finalUrl);
-    showToast('Parseo vacío — HTML de debug en la consola (F12)','err');
-    return;
-  }
-  if(data.warnings?.length) console.warn('[LP] warnings:', data.warnings);
-
-  const incoming = kind==='players' ? data.players : data.staff;
+async function runLPMerge(incoming, kind){
   const existing = kind==='players' ? clubData.players : clubData.staff;
   const coll     = kind==='players' ? 'players' : 'staff';
   const fields   = kind==='players' ? LP_FIELDS_PLAYERS : LP_FIELDS_STAFF;
-
-  if(!incoming.length){ showToast('lapreferente no devolvió registros de '+(kind==='players'?'plantilla':'staff'),'err'); return; }
 
   const byJid = new Map(existing.filter(e=>e.jId).map(e=>[String(e.jId), e]));
   const toAdd = [], conflicts = [];
@@ -959,18 +1080,19 @@ window.importFromLP = async function(kind){
   for(const inc of incoming){
     const ex = byJid.get(String(inc.jId));
     if(!ex){ toAdd.push(inc); continue; }
-    if(ex.origen === 'manual') continue;            // manual → intocable
+    if(ex.origen === 'manual') continue;              // manual → intocable
     const diffs = diffFields(ex, inc, fields);
     if(diffs.length) conflicts.push({ ex, inc, diffs });
   }
 
-  // Altas directas
   let added = 0;
   for(const inc of toAdd){
+    const fotoUrl = await lpPhoto(inc);
+    const { fotoSrc, ...clean } = inc;
     try{
       await addDoc(collection(db, `rivals/${currentClub.id}/${coll}`), {
-        ...inc,
-        origen: 'lapreferente',
+        ...clean, fotoUrl,
+        origen:'lapreferente',
         updatedBy: currentUser(),
         updatedDate: new Date().toISOString().slice(0,10),
         updatedAt: serverTimestamp()
@@ -985,9 +1107,9 @@ window.importFromLP = async function(kind){
     conflictStats = { added, replaced:0, kept:0 };
     showNextConflict();
   } else {
-    showToast(`Import completado: ${added} añadidos${data.cached?' (caché)':''}`,'ok');
+    showToast(`Import completado: ${added} añadidos`,'ok');
   }
-};
+}
 
 function showNextConflict(){
   if(!conflictQueue.length){
@@ -1026,10 +1148,12 @@ window.resolveConflict = async function(replace){
   const batch = applyAll ? conflictQueue.splice(0) : [conflictQueue.shift()];
   for(const { ex, inc } of batch){
     if(replace){
+      const fotoUrl = (await lpPhoto(inc)) || ex.fotoUrl || null;
+      const { fotoSrc, ...clean } = inc;
       try{
         await updateDoc(doc(db, `rivals/${currentClub.id}/${conflictColl}`, ex.id), {
-          ...inc,
-          origen: 'lapreferente',
+          ...clean, fotoUrl,
+          origen:'lapreferente',
           updatedBy: currentUser(),
           updatedDate: new Date().toISOString().slice(0,10),
           updatedAt: serverTimestamp()
