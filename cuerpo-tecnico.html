@@ -58,6 +58,12 @@ input,select,textarea{font-family:inherit;outline:none;}
 
 /* ── STAFF CARD ── */
 .staff-card{background:var(--wh);border:1px solid var(--bdr);border-radius:8px;overflow:hidden;cursor:pointer;transition:transform .25s,box-shadow .25s;position:relative;}
+.card-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px;opacity:0;transition:opacity .18s;z-index:2;}
+.staff-card:hover .card-actions{opacity:1;}
+.card-action-btn{width:26px;height:26px;border-radius:4px;background:rgba(255,255,255,.92);border:1px solid var(--bdr);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;backdrop-filter:blur(2px);}
+.card-action-btn:hover{border-color:var(--r);background:var(--wh);}
+.btn-add-staff{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--wh);background:var(--r);border:none;padding:8px 16px;border-radius:4px;cursor:pointer;transition:background .18s;}
+.btn-add-staff:hover{background:#c8151f;}
 .staff-card:hover{transform:translateY(-4px);box-shadow:0 14px 36px rgba(0,0,0,.1);}
 .staff-card.tbd{opacity:.45;cursor:default;}
 .staff-card.tbd:hover{transform:none;box-shadow:none;}
@@ -186,6 +192,24 @@ input,select,textarea{font-family:inherit;outline:none;}
 .btn-primary:hover{background:#c8151f;}
 .btn-ghost{background:transparent;border:1.5px solid var(--bdr);color:var(--mid);}
 .btn-ghost:hover{border-color:var(--r);color:var(--r);}
+
+/* Modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);}
+.overlay.open{display:flex;}
+.modal{background:var(--wh);border:1px solid var(--bdr);border-radius:8px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:26px;box-shadow:0 24px 60px rgba(0,0,0,.15);animation:fadeUp .25s ease;}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bdr);}
+.modal-head h3{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;}
+.modal-close{background:none;border:none;font-size:22px;color:var(--faint);cursor:pointer;padding:0;line-height:1;}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--bdr);}
+.form-group{margin-bottom:14px;}
+.form-label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--mid);margin-bottom:6px;}
+.form-control{width:100%;background:var(--bg);border:1.5px solid var(--bdr);border-radius:4px;color:var(--txt);padding:9px 12px;font-size:13px;transition:border-color .18s;font-family:'Barlow',sans-serif;}
+.form-control:focus{border-color:var(--r);outline:none;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+textarea.form-control{resize:vertical;}
+.btn-primary:hover{background:#c8151f;}
+.btn-ghost{background:transparent;border:1.5px solid var(--bdr);color:var(--mid);}
+.btn-ghost:hover{border-color:var(--r);color:var(--r);}
 .btn-sm{padding:4px 10px;font-size:11px;}
 
 /* Footer */
@@ -225,7 +249,10 @@ input,select,textarea{font-family:inherit;outline:none;}
   <div class="wrap">
     <div class="sh">
       <div class="st">Staff Técnico</div>
-      <div class="sc">10 miembros · Temporada 2026/27</div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="sc">10 miembros · Temporada 2026/27</div>
+        <button class="btn-add-staff" onclick="openAddStaff()">+ Añadir miembro</button>
+      </div>
     </div>
     <div class="staff-grid" id="staff-grid"></div>
   </div>
@@ -245,6 +272,8 @@ input,select,textarea{font-family:inherit;outline:none;}
       Volver al cuerpo técnico
     </button>
     <div class="ph-topbar-name" id="ph-topbar-name"></div>
+    <button class="ph-back" style="margin-left:16px" onclick="openEditStaff(currentStaff.id)">✏️ Editar</button>
+    <button class="ph-back" style="margin-left:8px;color:rgba(220,38,38,.6)" onclick="openDeactivateStaff(currentStaff.id)">🗑 Baja</button>
   </div>
   <!-- Hero -->
   <div class="ph">
@@ -272,11 +301,59 @@ input,select,textarea{font-family:inherit;outline:none;}
   </div>
 </div>
 
+<!-- MODAL: ADD/EDIT STAFF -->
+<div class="overlay" id="modal-staff-form">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="staff-form-title">Añadir Miembro</h3>
+      <button class="modal-close" onclick="closeModal('modal-staff-form')">×</button>
+    </div>
+    <input type="hidden" id="sf-id"/>
+    <div class="form-group"><label class="form-label">Nombre completo</label><input type="text" class="form-control" id="sf-name" placeholder="Nombre y apellidos"/></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Cargo / Rol</label><input type="text" class="form-control" id="sf-role" placeholder="Ej: Delegado de Equipo"/></div>
+      <div class="form-group"><label class="form-label">Rol corto (tarjeta)</label><input type="text" class="form-control" id="sf-roleshort" placeholder="Ej: Delegado"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">URL de la foto (Dropbox/Cloudinary)</label><input type="text" class="form-control" id="sf-photo" placeholder="https://..."/></div>
+    <div class="form-group"><label class="form-label">Frase / cita personal</label><input type="text" class="form-control" id="sf-quote" placeholder="Opcional"/></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Licencia / Titulación</label><input type="text" class="form-control" id="sf-licencia" placeholder="—"/></div>
+      <div class="form-group"><label class="form-label">Especialidad</label><input type="text" class="form-control" id="sf-especialidad" placeholder="—"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Incorporación</label><input type="text" class="form-control" id="sf-incorporacion" placeholder="Ej: Julio 2026"/></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-staff-form')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveStaffMember()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DEACTIVATE STAFF -->
+<div class="overlay" id="modal-staff-deactivate">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Dar de baja</h3>
+      <button class="modal-close" onclick="closeModal('modal-staff-deactivate')">×</button>
+    </div>
+    <p style="font-size:13px;color:var(--mid);margin-bottom:16px;">
+      <strong id="deact-staff-name"></strong> dejará de aparecer en el cuerpo técnico activo. Puede reactivarse más adelante.
+    </p>
+    <input type="hidden" id="deact-staff-id"/>
+    <div class="form-group"><label class="form-label">Fecha de baja</label><input type="date" class="form-control" id="deact-staff-date"/></div>
+    <div class="form-group"><label class="form-label">Motivo</label><textarea class="form-control" id="deact-staff-reason" rows="2" placeholder="Opcional"></textarea></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-staff-deactivate')">Cancelar</button>
+      <button class="btn btn-primary" style="background:#dc2626" onclick="confirmDeactivateStaff()">Confirmar baja</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ── STAFF DATA ── */
-const STAFF = [
+const DEFAULT_STAFF = [
   {
     id:'bruno',
+    active:true,
     name:'Bruno Herrero',
     role:'Entrenador Principal',
     roleShort:'Entrenador',
@@ -304,6 +381,7 @@ const STAFF = [
   },
   {
     id:'pedro',
+    active:true,
     name:'Pedro Ríos',
     role:'2º Entrenador',
     roleShort:'2º Entrenador',
@@ -330,6 +408,7 @@ const STAFF = [
   },
   {
     id:'alejandro-garcia',
+    active:true,
     name:'Alejandro García',
     role:'Preparador Físico',
     roleShort:'Prep. Físico',
@@ -356,6 +435,7 @@ const STAFF = [
   },
   {
     id:'alejandro-aguilera',
+    active:true,
     name:'Alejandro Aguilera',
     role:'Entrenador de Porteros',
     roleShort:'Entren. Porteros',
@@ -382,6 +462,7 @@ const STAFF = [
   },
   {
     id:'carlos',
+    active:true,
     name:'Carlos Rueda',
     role:'Analista',
     roleShort:'Analista',
@@ -409,6 +490,7 @@ const STAFF = [
   },
   {
     id:'fisio',
+    active:true,
     name:'Fisioterapeuta',
     role:'Fisioterapeuta',
     roleShort:'Fisio',
@@ -424,6 +506,7 @@ const STAFF = [
   },
   {
     id:'fisio-asist',
+    active:true,
     name:'Fisio Asistente',
     role:'Fisioterapeuta Asist.',
     roleShort:'Fisio Asist.',
@@ -439,6 +522,7 @@ const STAFF = [
   },
   {
     id:'delegado',
+    active:true,
     name:'Delegado de Equipo',
     role:'Delegado de Equipo',
     roleShort:'Delegado',
@@ -454,6 +538,7 @@ const STAFF = [
   },
   {
     id:'borja',
+    active:true,
     name:'Borja Domínguez',
     role:'Utillero',
     roleShort:'Utillero',
@@ -479,6 +564,7 @@ const STAFF = [
   },
   {
     id:'javier',
+    active:true,
     name:'Javier Romero',
     role:'Utillero',
     roleShort:'Utillero',
@@ -504,6 +590,7 @@ const STAFF = [
   },
   {
     id:'ramon',
+    active:true,
     name:'Ramón Herrera',
     role:'Delegado de Campo',
     roleShort:'Delegado Campo',
@@ -530,11 +617,33 @@ const STAFF = [
   },
 ];
 
+/* ── STORAGE (mismo patrón versionado que plantilla.html) ── */
+const STAFF_DATA_VERSION = 1; // Incrementar solo si se actualiza DEFAULT_STAFF desde código
+function loadStaff(){
+  try{
+    const storedVersion = parseInt(localStorage.getItem('rl_staff_version')||'0');
+    if(storedVersion < STAFF_DATA_VERSION){
+      localStorage.setItem('rl_staff', JSON.stringify(DEFAULT_STAFF));
+      localStorage.setItem('rl_staff_version', String(STAFF_DATA_VERSION));
+      return JSON.parse(JSON.stringify(DEFAULT_STAFF));
+    }
+    const s = localStorage.getItem('rl_staff');
+    if(s) return JSON.parse(s);
+  }catch(e){}
+  localStorage.setItem('rl_staff', JSON.stringify(DEFAULT_STAFF));
+  localStorage.setItem('rl_staff_version', String(STAFF_DATA_VERSION));
+  return JSON.parse(JSON.stringify(DEFAULT_STAFF));
+}
+function saveStaff(){ localStorage.setItem('rl_staff', JSON.stringify(STAFF)); }
+let STAFF = loadStaff();
+
 /* ── RENDER GRID ── */
 function renderGrid() {
   const grid = document.getElementById('staff-grid');
   grid.innerHTML = '';
-  STAFF.forEach((s,i) => {
+  const visible = STAFF.filter(s=>s.active!==false);
+  document.querySelector('.sc').textContent = visible.length + ' miembros · Temporada 2026/27';
+  visible.forEach((s,i) => {
     const div = document.createElement('div');
     div.className = 'staff-card' + (s.tbd ? ' tbd' : '');
     div.style.animation = `cardIn .35s ease ${i*.06}s both`;
@@ -554,6 +663,10 @@ function renderGrid() {
       <div class="card-footer">
         <div class="card-footer-lbl">${s.tbd?'Pendiente de incorporación':'Ver ficha completa'}</div>
         ${!s.tbd?'<div class="card-arrow">→</div>':''}
+      </div>
+      <div class="card-actions">
+        <button class="card-action-btn" onclick="event.stopPropagation();openEditStaff('${s.id}')" title="Editar">✏️</button>
+        <button class="card-action-btn" onclick="event.stopPropagation();openDeactivateStaff('${s.id}')" title="Dar de baja">🗑</button>
       </div>`;
 
     if (!s.tbd) div.onclick = () => openProfile(s.id);
@@ -715,6 +828,125 @@ function renderFichaTab(s) {
         ${row('Contacto',f.contacto)}
       </div>
     </div>`;
+}
+
+/* ── MODAL HELPERS ── */
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(ov=>{
+  ov.addEventListener('click', e=>{ if(e.target===ov) closeModal(ov.id); });
+});
+
+/* ── ADD / EDIT STAFF ── */
+function openAddStaff(){
+  document.getElementById('staff-form-title').textContent = 'Añadir Miembro';
+  document.getElementById('sf-id').value = '';
+  ['sf-name','sf-role','sf-roleshort','sf-photo','sf-quote','sf-licencia','sf-especialidad','sf-incorporacion']
+    .forEach(id=>document.getElementById(id).value='');
+  document.getElementById('sf-incorporacion').value = 'Julio 2026';
+  openModal('modal-staff-form');
+}
+
+function openEditStaff(id){
+  const s = STAFF.find(m=>m.id===id);
+  if(!s) return;
+  document.getElementById('staff-form-title').textContent = 'Editar Miembro';
+  document.getElementById('sf-id').value = s.id;
+  document.getElementById('sf-name').value = s.tbd ? '' : s.name;
+  document.getElementById('sf-role').value = s.role || '';
+  document.getElementById('sf-roleshort').value = s.roleShort || '';
+  document.getElementById('sf-photo').value = s.photo || '';
+  document.getElementById('sf-quote').value = s.quote || '';
+  document.getElementById('sf-licencia').value = (s.ficha&&s.ficha.licencia) || '';
+  document.getElementById('sf-especialidad').value = (s.ficha&&s.ficha.especialidad) || '';
+  document.getElementById('sf-incorporacion').value = (s.ficha&&s.ficha.incorporacion) || 'Julio 2026';
+  openModal('modal-staff-form');
+}
+
+function saveStaffMember(){
+  const name = document.getElementById('sf-name').value.trim();
+  const role = document.getElementById('sf-role').value.trim();
+  if(!name || !role){ showToast('Nombre y cargo son obligatorios','err'); return; }
+  const id = document.getElementById('sf-id').value;
+  const roleShort = document.getElementById('sf-roleshort').value.trim() || role;
+  const photo = document.getElementById('sf-photo').value.trim() || null;
+  const quote = document.getElementById('sf-quote').value.trim();
+  const licencia = document.getElementById('sf-licencia').value.trim();
+  const especialidad = document.getElementById('sf-especialidad').value.trim();
+  const incorporacion = document.getElementById('sf-incorporacion').value.trim();
+
+  const fichaData = {
+    club:'Racing Club Portuense', temporada:'2026/27',
+    incorporacion: incorporacion || 'Julio 2026',
+    licencia: licencia || '—', especialidad: especialidad || '—',
+    contacto:'Disponible vía staff'
+  };
+
+  if(id){
+    const idx = STAFF.findIndex(m=>m.id===id);
+    if(idx>=0){
+      STAFF[idx] = {...STAFF[idx], name, role, roleShort, photo, quote, tbd:false, active:true, ficha:fichaData};
+    }
+    showToast('Ficha actualizada','ok');
+  } else {
+    STAFF.push({
+      id: 'm'+Date.now(), name, role, roleShort, photo, tbd:false, active:true, quote,
+      responsibilities:{ entrenamiento:{before:[],during:[],after:[]}, partido:{before:[],during:[],after:[]} },
+      objectives:[], ficha:fichaData
+    });
+    showToast('Miembro añadido','ok');
+  }
+  saveStaff();
+  closeModal('modal-staff-form');
+  renderGrid();
+  // Si estábamos viendo el perfil de este miembro, refrescarlo
+  if(currentStaff && currentStaff.id===id) openProfile(id);
+}
+
+/* ── DEACTIVATE / REACTIVATE ── */
+function openDeactivateStaff(id){
+  const s = STAFF.find(m=>m.id===id);
+  if(!s) return;
+  document.getElementById('deact-staff-name').textContent = s.tbd ? s.role : s.name;
+  document.getElementById('deact-staff-id').value = id;
+  document.getElementById('deact-staff-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('deact-staff-reason').value = '';
+  openModal('modal-staff-deactivate');
+}
+
+function confirmDeactivateStaff(){
+  const id = document.getElementById('deact-staff-id').value;
+  const idx = STAFF.findIndex(m=>m.id===id);
+  if(idx<0) return;
+  STAFF[idx].active = false;
+  STAFF[idx].deactivated_date = document.getElementById('deact-staff-date').value;
+  STAFF[idx].deactivated_reason = document.getElementById('deact-staff-reason').value.trim();
+  saveStaff();
+  closeModal('modal-staff-deactivate');
+  renderGrid();
+  showToast('Miembro dado de baja');
+}
+
+function reactivateStaff(id){
+  const idx = STAFF.findIndex(m=>m.id===id);
+  if(idx<0) return;
+  STAFF[idx].active = true;
+  saveStaff();
+  renderGrid();
+  showToast('Miembro reactivado','ok');
+}
+
+/* ── TOAST ── */
+let toastTimer=null;
+function showToast(msg,type=''){
+  let t=document.querySelector('.toast');
+  if(!t){t=document.createElement('div');t.className='toast';document.body.appendChild(t);
+    t.style.cssText='position:fixed;bottom:28px;right:28px;background:#0b0b0b;color:#fff;padding:12px 18px 12px 14px;border-radius:4px;border-left:3px solid var(--r);font-family:\'Barlow Condensed\',sans-serif;font-size:14px;font-weight:700;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.2);';
+  }
+  t.textContent=msg;
+  t.style.borderLeftColor = type==='ok' ? '#15803d' : type==='err' ? '#dc2626' : 'var(--r)';
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.remove(),3000);
 }
 
 /* ── INIT ── */
