@@ -935,28 +935,26 @@ window.deleteStaff = async function(clubId, sid) {
 const LP_FIELDS_PLAYERS = ['name','dorsal','pos','dem','age','sub23','estado','procedencia','from'];
 const LP_FIELDS_STAFF   = ['name','role','age'];
 
-const LP_STAFF_ROLES = ['entrenador','segundo entrenador','2º entrenador','preparador físico',
-  'preparador fisico','entrenador de porteros','delegado','fisioterapeuta','fisio','utillero',
-  'director deportivo','coordinador','médico','medico','analista','readaptador','encargado material'];
 const LP_DEMARCACIONES = ['portero','central','lateral derecho','lateral izquierdo','lateral',
   'carrilero','líbero','libero','defensa','mediocentro','pivote','interior derecho',
-  'interior izquierdo','interior','mediapunta','centrocampista','volante','extremo derecho',
+  'interior izquierdo','interior','mediapunta','media punta','centrocampista','volante','extremo derecho',
   'extremo izquierdo','extremo','delantero centro','delantero','punta','ariete'];
 
 function lpMapPos(dem){
   const d=(dem||'').toLowerCase();
   if(/porter/.test(d)) return 'POR';
   if(/(defens|central|lateral|carrilero|l[ií]bero)/.test(d)) return 'DEF';
-  if(/(centrocamp|mediocentro|pivote|interior|mediapunta|volante|medio)/.test(d)) return 'MED';
+  if(/(centrocamp|mediocentro|pivote|interior|mediapunta|media punta|volante|medio)/.test(d)) return 'MED';
   if(/(delanter|extremo|punta|ariete)/.test(d)) return 'DEL';
   return 'MED';
 }
 function lpAbsolutize(src){
   if(!src) return null;
+  if(/sin-foto/i.test(src)) return null; // placeholder de lapreferente, no subir
   if(src.startsWith('http')) return src;
   if(src.startsWith('//')) return 'https:'+src;
   if(src.startsWith('/')) return 'https://www.lapreferente.com'+src;
-  return null;
+  return 'https://www.lapreferente.com/'+src; // ruta relativa sin barra inicial (caso real observado)
 }
 
 let conflictQueue=[], conflictColl='', conflictStats=null;
@@ -980,8 +978,8 @@ window.processPastedHTML = async function(){
   catch(e){ console.error('[LP] parse error', e); showToast('Error al parsear el HTML','err'); return; }
   const incoming = pasteKind==='players' ? parsed.players : parsed.staff;
   if(!incoming.length){
-    console.warn('[LP] 0 registros. players:', parsed.players.length, 'staff:', parsed.staff.length);
-    showToast('No se encontraron '+(pasteKind==='players'?'jugadores':'miembros de staff')+' en el HTML','err');
+    console.warn('[LP] 0 registros. players:', parsed.players.length, 'staff:', parsed.staff.length, '· filas escaneadas:', parsed._debugRows);
+    showToast('No se encontraron '+(pasteKind==='players'?'jugadores':'miembros de staff')+' — revisa la consola (F12)','err');
     return;
   }
   closeModal('modal-paste');
@@ -989,65 +987,92 @@ window.processPastedHTML = async function(){
   await runLPMerge(incoming, pasteKind);
 };
 
+/* ── Parser fiel a la estructura real de lapreferente ──
+   Cada fila de jugador/staff enlaza a su ficha via <a href="J{id}C{comp}/...">
+   (SIN barra inicial — a diferencia de una URL absoluta normal).
+   Columnas de jugador (13 td, en orden):
+     0 foto | 1 dorsal(vacío en esta plantilla) | 2 nombre+link+icono estado
+     3 demarcación(texto) | 4 demarcación(icono) | 5 edad(+Sub-23) | 6 PC | 7 PJ
+     8 PT | 9 Min | 10 Goles | 11 TA | 12 TR
+   Columnas de staff (8 td):
+     0 foto | 1 código rol(E/D/DC) | 2 nombre+link | 3 rol | 4 edad | 5 partidos | 6 TA | 7 TR
+   Distinción player/staff: la fila de jugador SIEMPRE trae un <img> de
+   graficos/iconos/demarcaciones/ en la columna 4; la de staff no. */
 function lpParseHTML(htmlString){
   const docP = new DOMParser().parseFromString(htmlString, 'text/html');
   const players=[], staff=[];
   const seen = new Set();
+  let debugRows = 0;
 
-  docP.querySelectorAll('a[href*="/J"]').forEach(a=>{
-    const href = a.getAttribute('href')||'';
-    const m = href.match(/\/J(\d+)/);
+  const JID_RE = /^J(\d+)C\d+/; // ej: "J265627C26702/dos-hermanas-cf-1971/angel.html"
+
+  docP.querySelectorAll('tr').forEach(row=>{
+    const link = row.querySelector('a[href]');
+    if(!link) return;
+    const href = link.getAttribute('href')||'';
+    const m = href.match(JID_RE);
     if(!m) return;
     const jId = m[1];
     if(seen.has(jId)) return;
-    const name = (a.textContent||'').replace(/\s+/g,' ').trim();
-    if(!name || name.length<2) return;
+    debugRows++;
+
+    const cells = Array.from(row.children).filter(el=>el.tagName==='TD');
+    if(cells.length < 4) return;
     seen.add(jId);
 
-    const row = a.closest('tr') || a.parentElement?.parentElement;
-    const rowText = (row?.textContent||'').replace(/\s+/g,' ').trim();
-    const rowLower = rowText.toLowerCase();
-    const img = row?.querySelector('img');
-    const fotoSrc = lpAbsolutize(img?.getAttribute('src'));
+    // Nombre corto + nombre completo: dos <span> dentro del <a>
+    const nameCell = cells[2];
+    const spans = nameCell ? nameCell.querySelectorAll('a span') : [];
+    const alias = spans[0] ? spans[0].textContent.trim() : link.textContent.trim();
+    const fullName = spans[1] ? spans[1].textContent.trim() : alias;
 
-    const staffRole = LP_STAFF_ROLES.find(r=>rowLower.includes(r));
-    const demarc = LP_DEMARCACIONES.find(d=>rowLower.includes(d));
+    // Foto: primera <img> de la fila
+    const imgEl = row.querySelector('img');
+    const fotoSrc = lpAbsolutize(imgEl?.getAttribute('src'));
 
-    if(staffRole && !demarc){
-      const ageMatch = rowText.match(/(\d{2})\s*años/i);
-      staff.push({ jId, name,
-        role: staffRole.charAt(0).toUpperCase()+staffRole.slice(1),
-        age: ageMatch?parseInt(ageMatch[1]):null,
-        notes:'', fotoSrc });
+    // ¿Jugador o staff? — presencia del icono de demarcación
+    const demIcon = row.querySelector('img[src*="demarcaciones/"]');
+
+    if(!demIcon){
+      // ── STAFF ──
+      const role = cells[3] ? cells[3].textContent.trim() : '';
+      const ageTxt = cells[4] ? cells[4].textContent.trim() : '';
+      const age = ageTxt ? (parseInt(ageTxt)||null) : null;
+      staff.push({ jId, name: fullName||alias, role, age, notes:'', fotoSrc });
       return;
     }
 
-    const cells = [...(row?.querySelectorAll('td')||[])].map(td=>td.textContent.trim());
-    const nums = cells.filter(c=>/^\d{1,2}$/.test(c)).map(Number);
-    let dorsal=null, age=null;
-    const ageMatch = rowText.match(/(\d{2})\s*años/i);
-    if(ageMatch) age = parseInt(ageMatch[1]);
-    if(nums.length){
-      if(age!==null){ dorsal = nums.find(n=>n!==age) ?? null; }
-      else { dorsal = nums[0] ?? null; age = nums.find(n=>n>=15&&n<=49&&n!==dorsal) ?? null; }
+    // ── JUGADOR ──
+    const demText = cells[3] ? cells[3].textContent.trim() : '';
+    const ageCellTxt = cells[5] ? cells[5].textContent.replace(/\s+/g,' ').trim() : '';
+    const age = ageCellTxt ? (parseInt(ageCellTxt)||null) : null;
+    const sub23 = /sub\s*-?\s*23/i.test(ageCellTxt);
+
+    // Estado (Renovado / Nuevo Fichaje) desde el icono con title en la celda de nombre
+    const stateIcon = nameCell ? nameCell.querySelector('img[title]') : null;
+    const stateTitle = stateIcon ? (stateIcon.getAttribute('title')||'') : '';
+    let estado = null, procedencia = null;
+    if(/renovado/i.test(stateTitle)) estado = 'renovado';
+    else if(/nuevo\s+fichaje/i.test(stateTitle)){
+      estado = 'nuevo_fichaje';
+      const procMatch = stateTitle.match(/\(([^)]+)\)/);
+      if(procMatch) procedencia = procMatch[1].trim();
     }
 
-    const sub23 = /sub\s*-?\s*23/i.test(rowText);
-    let estado = null;
-    if(/renovado/i.test(rowText)) estado='renovado';
-    else if(/nuevo\s+fichaje/i.test(rowText)) estado='nuevo_fichaje';
-    let procedencia = null;
-    const procMatch = rowText.match(/procedente\s+del?\s+([^.,;()]{3,60})/i);
-    if(procMatch) procedencia = procMatch[1].trim();
+    // Dorsal: en esta plantilla la columna suele venir vacía — se respeta tal cual (null si vacío)
+    const dorsalTxt = cells[1] ? cells[1].textContent.trim() : '';
+    const dorsal = /^\d+$/.test(dorsalTxt) ? parseInt(dorsalTxt) : null;
 
-    players.push({ jId, name, dorsal,
-      pos: lpMapPos(demarc),
-      dem: demarc ? demarc.charAt(0).toUpperCase()+demarc.slice(1) : '',
+    players.push({
+      jId, name: fullName||alias, dorsal,
+      pos: lpMapPos(demText),
+      dem: demText,
       age, sub23, estado, procedencia,
-      from: procedencia||'', fotoSrc });
+      from: procedencia||'', fotoSrc
+    });
   });
 
-  return { players, staff };
+  return { players, staff, _debugRows: debugRows };
 }
 
 /* Foto → Cloudinary (Cloudinary hace el fetch remoto de la URL) */
