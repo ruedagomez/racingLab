@@ -1,332 +1,597 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1"/>
 <title>Racing Lab · Racing Club Portuense</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --r:#e8192c;--r2:rgba(232,25,44,0.1);--r3:rgba(232,25,44,0.25);
+  --r:#e8192c;--r2:rgba(232,25,44,.1);--r3:rgba(232,25,44,.25);
   --blk:#0b0b0b;--txt:#111;--mid:#737373;--faint:#b0b0b0;
   --bdr:#e2e2e2;--bg:#f3f3f1;--wh:#fff;
+  --fit:#15803d;--fit-bg:#f0fdf4;
+  --warn:#c2410c;--warn-bg:#fff7ed;
 }
-html,body,#root{height:100%;font-family:'Barlow',sans-serif;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+html,body{min-height:100%;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--txt);}
+button{font-family:inherit;cursor:pointer;border:none;outline:none;}
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes scaleX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-@keyframes cardIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-@keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-@keyframes dot{0%,100%{opacity:1}50%{opacity:.3}}
-/* LOGIN */
-.lw{display:flex;min-height:100vh;animation:fadeIn .35s ease;}
+@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ── LOGIN ── */
+#login-screen{display:flex;min-height:100vh;animation:fadeIn .35s ease;}
 .ll{width:42%;background:var(--blk);position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:52px 48px;overflow:hidden;}
 .ll::before{content:'';position:absolute;top:0;right:0;width:3px;height:100%;background:var(--r);}
-.ll::after{content:'';position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,rgba(255,255,255,.055) 1px,transparent 1px);background-size:26px 26px;}
-.ll-logo{position:relative;z-index:1;animation:fadeUp .6s ease .15s both;}
-.ll-eyebrow{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.28em;color:var(--r);text-transform:uppercase;margin-bottom:18px;}
-.ll-brand{font-family:'Bebas Neue',sans-serif;font-size:104px;line-height:.83;color:var(--wh);letter-spacing:-1px;}
-.ll-brand span{color:var(--r);}
-.ll-sub{margin-top:28px;font-size:13px;font-weight:300;color:rgba(255,255,255,.38);line-height:1.7;letter-spacing:.02em;}
-.ll-bottom{position:relative;z-index:1;animation:fadeUp .6s ease .35s both;}
-.ll-line{width:36px;height:2px;background:var(--r);margin-bottom:12px;transform-origin:left;animation:scaleX .6s ease .8s both;}
-.ll-foot{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:.16em;color:rgba(255,255,255,.22);text-transform:uppercase;}
-.lr{flex:1;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:48px;}
-.lf{width:100%;max-width:390px;animation:fadeUp .6s ease .25s both;}
-.lf-title{font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:700;color:var(--txt);letter-spacing:.03em;margin-bottom:5px;}
-.lf-sub{font-size:13px;color:var(--mid);margin-bottom:40px;}
-.fg{margin-bottom:22px;}
-.fl{display:block;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.2em;color:var(--mid);text-transform:uppercase;margin-bottom:8px;}
-.fi{width:100%;height:50px;padding:0 16px;background:var(--wh);border:1.5px solid var(--bdr);border-radius:4px;font-family:'Barlow',sans-serif;font-size:15px;color:var(--txt);outline:none;transition:border-color .2s,box-shadow .2s;}
-.fi:focus{border-color:var(--r);box-shadow:0 0 0 3px var(--r2);}
-.fe{margin-top:8px;font-size:12px;color:var(--r);font-weight:500;}
-.btn-in{width:100%;height:52px;background:var(--r);color:var(--wh);border:none;border-radius:4px;cursor:pointer;margin-top:10px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;transition:background .2s,transform .15s,box-shadow .2s;}
-.btn-in:hover{background:#c8151f;transform:translateY(-1px);box-shadow:0 8px 22px var(--r3);}
-.btn-in:active{transform:translateY(0);}
-.lf-hint{margin-top:20px;font-size:12px;color:var(--faint);text-align:center;font-family:'JetBrains Mono',monospace;}
-/* DASHBOARD */
-.dr{min-height:100vh;background:var(--bg);animation:fadeIn .35s ease;}
-.nav{height:62px;background:var(--wh);border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;padding:0 40px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(0,0,0,.05);}
-.nav-left{display:flex;align-items:center;gap:14px;}
-.nb{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--txt);letter-spacing:.5px;line-height:1;}
-.nb span{color:var(--r);}
-.ndiv{width:1px;height:22px;background:var(--bdr);}
-.ns{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--mid);text-transform:uppercase;}
+.ll::after{content:'RACING LAB';position:absolute;bottom:-20px;left:-10px;font-family:'Bebas Neue',sans-serif;font-size:140px;color:rgba(255,255,255,.025);letter-spacing:4px;pointer-events:none;white-space:nowrap;}
+.ll-dots{display:flex;gap:5px;margin-bottom:48px;}
+.ll-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.15);}
+.ll-dot.a{background:var(--r);}
+.ll-logo{font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--wh);letter-spacing:1px;line-height:1;}
+.ll-logo span{color:var(--r);}
+.ll-club{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.24em;color:rgba(255,255,255,.25);text-transform:uppercase;margin-top:8px;}
+.ll-tagline{font-size:13px;font-weight:300;color:rgba(255,255,255,.3);line-height:1.6;margin-top:auto;padding-top:40px;}
+.lr{flex:1;display:flex;align-items:center;justify-content:center;padding:40px;background:var(--bg);}
+.lf{width:100%;max-width:360px;animation:fadeUp .4s ease .1s both;}
+.lf-pre{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.28em;color:var(--r);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.lf-pre::before{content:'';display:inline-block;width:18px;height:1.5px;background:var(--r);}
+.lf h2{font-family:'Bebas Neue',sans-serif;font-size:42px;color:var(--txt);letter-spacing:.5px;margin-bottom:32px;line-height:1;}
+.fg{margin-bottom:18px;}
+.fg label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--mid);margin-bottom:8px;}
+.fg input{width:100%;background:var(--wh);border:1.5px solid var(--bdr);border-radius:4px;padding:12px 14px;font-size:16px;color:var(--txt);transition:border-color .2s;font-family:'Barlow',sans-serif;}
+.fg input:focus{outline:none;border-color:var(--r);}
+.lf-err{font-size:12px;color:var(--r);margin-bottom:14px;display:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.06em;}
+.lf-err.show{display:block;}
+.lf-btn{width:100%;padding:14px;background:var(--r);color:var(--wh);border:none;border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:background .2s,box-shadow .2s;}
+.lf-btn:hover{background:#c8151f;box-shadow:0 6px 18px var(--r3);}
+.lf-note{font-size:11px;color:var(--faint);text-align:center;margin-top:20px;font-family:'Barlow Condensed',sans-serif;}
+
+/* ── DASHBOARD SHELL ── */
+#dashboard-screen{display:none;min-height:100vh;flex-direction:column;}
+#dashboard-screen.active{display:flex;}
+
+/* NAV */
+.nav{height:64px;background:var(--blk);display:flex;align-items:center;justify-content:space-between;padding:0 32px;flex-shrink:0;position:sticky;top:0;z-index:100;}
+.nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--r);}
+.nav-brand{display:flex;align-items:baseline;gap:10px;}
+.nav-logo{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--wh);letter-spacing:.5px;}
+.nav-logo span{color:var(--r);}
+.nav-club{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.18em;color:rgba(255,255,255,.25);text-transform:uppercase;}
 .nav-right{display:flex;align-items:center;gap:14px;}
-.nav-av{width:34px;height:34px;border-radius:50%;background:var(--r);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--wh);flex-shrink:0;}
-.nav-ui{line-height:1.25;}
-.nav-un{font-size:13px;font-weight:600;color:var(--txt);}
-.nav-ur{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--r);text-transform:uppercase;}
-.nav-user{display:flex;align-items:center;gap:9px;}
-.btn-out{height:33px;padding:0 14px;background:transparent;border:1.5px solid var(--bdr);border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--mid);text-transform:uppercase;cursor:pointer;transition:all .2s;}
-.btn-out:hover{border-color:var(--r);color:var(--r);}
-.hero{background:var(--blk);padding:56px 40px;position:relative;overflow:hidden;}
-.hero::before{content:'RACING LAB';position:absolute;right:-12px;top:50%;transform:translateY(-50%);font-family:'Bebas Neue',sans-serif;font-size:200px;color:rgba(255,255,255,.025);pointer-events:none;white-space:nowrap;letter-spacing:4px;}
-.hero::after{content:'';position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,rgba(255,255,255,.04) 1px,transparent 1px);background-size:28px 28px;}
-.hi{max-width:1200px;margin:0 auto;position:relative;z-index:1;}
-.he{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.28em;color:var(--r);text-transform:uppercase;margin-bottom:14px;animation:fadeUp .5s ease .1s both;display:flex;align-items:center;gap:8px;}
-.he::before{content:'';display:inline-block;width:22px;height:1.5px;background:var(--r);}
-.ht{font-family:'Bebas Neue',sans-serif;font-size:80px;color:var(--wh);letter-spacing:.5px;line-height:.88;animation:fadeUp .5s ease .16s both;}
-.hstats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-top:52px;animation:fadeUp .5s ease .24s both;}
-.hs{background:rgba(255,255,255,.055);padding:26px 28px;border-left:3px solid transparent;transition:all .3s;cursor:default;}
-.hs:hover{background:rgba(255,255,255,.085);border-left-color:var(--r);}
-.hs-lbl{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.22em;color:rgba(255,255,255,.3);text-transform:uppercase;margin-bottom:10px;}
-.hs-val{font-family:'Bebas Neue',sans-serif;font-size:40px;color:var(--wh);letter-spacing:1px;line-height:1;}
-.hs-sub{font-size:11px;color:rgba(255,255,255,.28);font-weight:300;margin-top:5px;}
-.dc{max-width:1200px;margin:0 auto;padding:48px 40px 32px;}
-.sh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:32px;padding-bottom:18px;border-bottom:1px solid var(--bdr);}
-.st{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:900;letter-spacing:.1em;color:var(--txt);text-transform:uppercase;}
+.nav-badge{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;color:rgba(255,255,255,.3);text-transform:uppercase;padding:4px 12px;border:1px solid rgba(255,255,255,.08);border-radius:2px;}
+.nav-logout{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);cursor:pointer;padding:6px 12px;border-radius:4px;background:none;border:1px solid rgba(255,255,255,.08);transition:all .2s;}
+.nav-logout:hover{border-color:var(--r);color:var(--r);}
+
+/* HERO */
+.hero{background:var(--blk);padding:36px 32px 32px;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.038) 1px,transparent 1px);background-size:26px 26px;pointer-events:none;}
+.hero::after{content:'RACING LAB';position:absolute;right:-10px;top:50%;transform:translateY(-50%);font-family:'Bebas Neue',sans-serif;font-size:150px;color:rgba(255,255,255,.02);pointer-events:none;white-space:nowrap;letter-spacing:6px;}
+.hero-inner{max-width:1320px;margin:0 auto;position:relative;z-index:1;}
+.hero-pre{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.28em;color:var(--r);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;animation:fadeUp .5s ease .05s both;}
+.hero-pre::before{content:'';display:inline-block;width:22px;height:1.5px;background:var(--r);}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:46px;color:var(--wh);letter-spacing:.5px;line-height:.9;animation:fadeUp .5s ease .1s both;}
+
+/* WRAP */
+.dc{max-width:1320px;margin:0 auto;padding:28px 32px 64px;}
+.sh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--bdr);}
+.st{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;letter-spacing:.12em;color:var(--txt);text-transform:uppercase;}
 .sc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);}
-.mg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
-.mc{background:var(--wh);border:1px solid var(--bdr);border-left:3px solid transparent;border-radius:6px;padding:26px 22px 22px;cursor:pointer;position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:176px;transition:transform .25s,box-shadow .25s,border-color .25s;}
-.mc::after{content:attr(data-num);position:absolute;right:-8px;bottom:-16px;font-family:'Bebas Neue',sans-serif;font-size:88px;color:rgba(0,0,0,.04);line-height:1;pointer-events:none;user-select:none;}
-.mc:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,.09);border-color:transparent;border-left-color:var(--r);}
-.mc.disabled{cursor:default;}
-.mc.disabled:hover{transform:none;box-shadow:none;border-color:var(--bdr);border-left-color:transparent;}
-.cn{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:var(--faint);letter-spacing:.05em;margin-bottom:10px;}
-.cname{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;color:var(--txt);line-height:1.2;letter-spacing:.02em;flex:1;margin-bottom:8px;}
-.cdesc{font-size:12px;color:var(--mid);line-height:1.5;margin-bottom:16px;}
-.cs{display:inline-flex;align-items:center;gap:5px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;border-radius:2px;}
-.s-active{background:#f0fdf4;color:#15803d;}
-.s-dev{background:#fff4e6;color:#c2410c;}
-.s-soon{background:#f5f5f5;color:#a3a3a3;}
+
+/* ── WIDGETS GRID ── */
+.wg-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-bottom:40px;}
+.widget{background:var(--wh);border:1px solid var(--bdr);border-radius:8px;padding:18px;display:flex;flex-direction:column;animation:cardIn .4s ease both;}
+.widget-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.widget-title{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);display:flex;align-items:center;gap:6px;}
+.widget-icon{font-size:13px;}
+.widget-link{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);text-decoration:none;transition:color .18s;}
+.widget-link:hover{color:var(--r);}
+.widget-empty{font-size:12px;color:var(--faint);text-align:center;padding:20px 0;font-style:italic;}
+
+/* Calendar widget */
+.w-calendar{grid-column:span 4;}
+.cal-item{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(226,226,226,.6);}
+.cal-item:last-child{border-bottom:none;}
+.cal-date{width:40px;flex-shrink:0;text-align:center;}
+.cal-day{font-family:'Bebas Neue',sans-serif;font-size:20px;line-height:1;color:var(--txt);}
+.cal-mon{font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);}
+.cal-info{flex:1;min-width:0;}
+.cal-title{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-type{font-size:10px;color:var(--mid);text-transform:capitalize;}
+.cal-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.dot-entrenamiento{background:var(--faint);}
+.dot-amistoso{background:#2563eb;}
+.dot-liga{background:var(--r);}
+.dot-libre{background:#d1d5db;}
+.dot-club{background:#eab308;}
+
+/* Squad widget */
+.w-squad{grid-column:span 4;}
+.squad-total{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;}
+.squad-total-n{font-family:'Bebas Neue',sans-serif;font-size:40px;color:var(--r);line-height:1;}
+.squad-total-l{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);}
+.squad-bars{display:flex;flex-direction:column;gap:9px;}
+.squad-row{display:flex;align-items:center;gap:10px;}
+.squad-lbl{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--mid);width:52px;flex-shrink:0;}
+.squad-track{flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;}
+.squad-fill{height:100%;border-radius:4px;background:var(--r);transition:width .5s ease;}
+.squad-n{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--txt);width:18px;text-align:right;flex-shrink:0;}
+
+/* Rival widget */
+.w-rival{grid-column:span 4;justify-content:center;}
+.rival-empty-icon{font-size:26px;text-align:center;opacity:.2;margin-bottom:8px;}
+.rival-name{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--txt);text-align:center;line-height:1;margin-bottom:6px;}
+.rival-date{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--r);text-align:center;text-transform:uppercase;letter-spacing:.06em;}
+.rival-countdown{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);text-align:center;margin-top:6px;}
+
+/* Standings widget */
+.w-standings{grid-column:span 7;}
+.standings-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.standings-tbl th{padding:6px 8px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);border-bottom:1.5px solid var(--bdr);}
+.standings-tbl th.c,.standings-tbl td.c{text-align:center;}
+.standings-tbl td{padding:8px;border-bottom:1px solid rgba(226,226,226,.5);}
+.standings-tbl tr:last-child td{border-bottom:none;}
+.st-pos{width:26px;font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--faint);}
+.st-row-1 .st-pos{color:var(--fit);}
+.st-row-promo .st-pos{color:var(--warn);}
+.st-club{font-weight:700;display:flex;align-items:center;gap:8px;}
+.st-club.us{color:var(--r);}
+.st-pill{width:4px;height:18px;border-radius:2px;flex-shrink:0;}
+.pill-asc{background:var(--fit);}
+.pill-promo{background:var(--warn);}
+.pill-none{background:transparent;}
+.st-pts{font-family:'JetBrains Mono',monospace;font-weight:700;}
+.standings-legend{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--mid);}
+.leg-dot{width:8px;height:8px;border-radius:2px;}
+
+/* Sanciones widget */
+.w-sanciones{grid-column:span 5;}
+.sanc-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(226,226,226,.5);}
+.sanc-row:last-child{border-bottom:none;}
+.sanc-dorsal{font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--faint);width:24px;flex-shrink:0;}
+.sanc-name{flex:1;font-size:12px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sanc-cards{display:flex;gap:6px;flex-shrink:0;}
+.sanc-card-badge{display:flex;align-items:center;gap:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mid);}
+.card-icon{width:11px;height:14px;border-radius:1.5px;display:inline-block;}
+.card-y{background:#eab308;}
+.card-r{background:var(--r);}
+
+/* ── MODULES ── */
+.mg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.mc{background:var(--wh);border:1px solid var(--bdr);border-left:3px solid transparent;border-radius:6px;padding:18px 16px 14px;cursor:pointer;transition:transform .22s,box-shadow .22s,border-color .22s;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;min-height:120px;animation:cardIn .35s ease both;}
+.mc::after{content:attr(data-num);position:absolute;right:-6px;bottom:-10px;font-family:'Bebas Neue',sans-serif;font-size:64px;color:rgba(0,0,0,.04);line-height:1;pointer-events:none;}
+.mc:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.09);border-left-color:var(--r);}
+.mc.disabled{cursor:default;opacity:.6;}
+.mc.disabled:hover{transform:none;box-shadow:none;border-left-color:transparent;}
+.cn{font-family:'Bebas Neue',sans-serif;font-size:12px;color:var(--faint);letter-spacing:1px;margin-bottom:3px;}
+.cname{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;letter-spacing:.05em;color:var(--txt);margin-bottom:5px;line-height:1.1;}
+.cdesc{font-size:11px;color:var(--mid);line-height:1.4;}
+.cs{display:inline-flex;align-items:center;gap:5px;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:10px;padding:3px 8px;border-radius:2px;}
+.s-active{background:var(--r2);color:var(--r);}
+.s-dev{background:#fff7ed;color:#c2410c;}
+.s-soon{background:#f5f5f5;color:var(--faint);}
 .cs-dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
-.s-active .cs-dot{animation:dot 2s infinite;}
-.mc:nth-child(1){animation:cardIn .4s ease .08s both}
-.mc:nth-child(2){animation:cardIn .4s ease .11s both}
-.mc:nth-child(3){animation:cardIn .4s ease .14s both}
-.mc:nth-child(4){animation:cardIn .4s ease .17s both}
-.mc:nth-child(5){animation:cardIn .4s ease .20s both}
-.mc:nth-child(6){animation:cardIn .4s ease .23s both}
-.mc:nth-child(7){animation:cardIn .4s ease .26s both}
-.mc:nth-child(8){animation:cardIn .4s ease .29s both}
-.mc:nth-child(9){animation:cardIn .4s ease .32s both}
-.mc:nth-child(10){animation:cardIn .4s ease .35s both}
-.mc:nth-child(11){animation:cardIn .4s ease .38s both}
-.mc:nth-child(12){animation:cardIn .4s ease .41s both}
-.mc:nth-child(13){animation:cardIn .4s ease .44s both}
-.mc:nth-child(14){animation:cardIn .4s ease .47s both}
-.ft{border-top:1px solid var(--bdr);padding:24px 40px;display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:16px auto 0;}
-.ft-b{font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--faint);letter-spacing:1px;}
-.ft-b span{color:var(--r);}
-.ft-i{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);letter-spacing:.06em;}
-.toast{position:fixed;bottom:32px;right:32px;background:var(--blk);color:var(--wh);padding:14px 20px 14px 16px;border-radius:4px;border-left:3px solid var(--r);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;letter-spacing:.04em;animation:toastIn .3s ease;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.2);max-width:320px;display:flex;align-items:center;gap:10px;}
-@media(max-width:1100px){.mg{grid-template-columns:repeat(3,1fr);}}
-@media(max-width:800px){
-  .lw{flex-direction:column;}
-  .ll{width:100%;padding:36px 32px;min-height:auto;}
-  .ll-brand{font-size:72px;}
-  .lr{padding:36px 32px;}
-  .mg{grid-template-columns:repeat(2,1fr);}
-  .nav{padding:0 20px;}
-  .hero{padding:40px 20px;}
-  .ht{font-size:60px;}
-  .hstats{grid-template-columns:repeat(2,1fr);}
-  .dc{padding:36px 20px 24px;}
-  .ns{display:none;}
-  .ft{padding:20px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;left:20px;background:var(--blk);color:var(--wh);padding:12px 18px 12px 14px;border-radius:4px;border-left:3px solid var(--r);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:toastIn .3s ease;display:none;text-align:center;}
+.toast.show{display:block;}
+
+/* ══════════ RESPONSIVE ══════════ */
+@media(min-width:640px){
+  .toast{left:auto;right:28px;max-width:340px;text-align:left;}
 }
-@media(max-width:480px){
+@media(max-width:1100px){
+  .w-calendar,.w-squad,.w-rival{grid-column:span 6;}
+  .w-standings{grid-column:span 7;}
+  .w-sanciones{grid-column:span 5;}
+  .mg{grid-template-columns:repeat(3,1fr);}
+}
+@media(max-width:900px){
   .ll{display:none;}
+  .lr{padding:24px;}
+  .hero-title{font-size:36px;}
+  .dc{padding:24px 20px;}
+  .w-standings{grid-column:span 12;}
+  .w-sanciones{grid-column:span 12;}
+}
+@media(max-width:700px){
+  .nav{padding:0 18px;}
+  .nav-club{display:none;}
+  .hero{padding:26px 18px 22px;}
+  .wg-grid{grid-template-columns:1fr;gap:12px;}
+  .w-calendar,.w-squad,.w-rival,.w-standings,.w-sanciones{grid-column:1/-1;}
+  .mg{grid-template-columns:repeat(2,1fr);}
+  .standings-tbl{font-size:11px;}
+  .standings-tbl th,.standings-tbl td{padding:6px 4px;}
+}
+@media(max-width:420px){
   .mg{grid-template-columns:1fr;}
-  .hstats{grid-template-columns:1fr;}
+  .hero-title{font-size:30px;}
 }
 </style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel">
-const { useState } = React;
 
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="ll">
+    <div>
+      <div class="ll-dots"><div class="ll-dot a"></div><div class="ll-dot"></div><div class="ll-dot"></div></div>
+      <div class="ll-logo">RACING <span>LAB</span></div>
+      <div class="ll-club">Racing Club Portuense · Temporada 2026/27</div>
+    </div>
+    <div class="ll-tagline">Plataforma interna de gestión técnica.<br/>El Puerto de Santa María · Tercera Federación.</div>
+  </div>
+  <div class="lr">
+    <div class="lf">
+      <div class="lf-pre">Acceso restringido</div>
+      <h2>Iniciar<br/>Sesión</h2>
+      <div class="fg">
+        <label>Usuario</label>
+        <input type="text" id="inp-user" placeholder="usuario" autocomplete="username"/>
+      </div>
+      <div class="fg">
+        <label>Contraseña</label>
+        <input type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <div class="lf-err" id="login-err">Usuario o contraseña incorrectos</div>
+      <button class="lf-btn" onclick="doLogin()">Entrar</button>
+      <div class="lf-note">Racing Club Portuense · Uso interno</div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard-screen">
+  <nav class="nav">
+    <div class="nav-brand">
+      <div class="nav-logo">RACING <span>LAB</span></div>
+      <div class="nav-club">Racing Club Portuense</div>
+    </div>
+    <div class="nav-right">
+      <div class="nav-badge">2026/27</div>
+      <button class="nav-logout" onclick="doLogout()">Salir</button>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="hero-pre">Tercera Federación · Grupo X</div>
+      <div class="hero-title">PANEL DE CONTROL</div>
+    </div>
+  </div>
+
+  <div class="dc">
+
+    <!-- ══ WIDGETS ══ -->
+    <div class="wg-grid">
+
+      <!-- Próximos eventos -->
+      <div class="widget w-calendar">
+        <div class="widget-head">
+          <div class="widget-title"><span class="widget-icon">📅</span>Próximos Eventos</div>
+          <a class="widget-link" href="calendario.html">Ver todo →</a>
+        </div>
+        <div id="w-cal-body"><div class="widget-empty">Cargando…</div></div>
+      </div>
+
+      <!-- Plantilla por posición -->
+      <div class="widget w-squad">
+        <div class="widget-head">
+          <div class="widget-title"><span class="widget-icon">👥</span>Plantilla</div>
+          <a class="widget-link" href="plantilla.html">Ver todo →</a>
+        </div>
+        <div id="w-squad-body"><div class="widget-empty">Cargando…</div></div>
+      </div>
+
+      <!-- Próximo rival -->
+      <div class="widget w-rival">
+        <div class="widget-head">
+          <div class="widget-title"><span class="widget-icon">🆚</span>Próximo Rival</div>
+          <a class="widget-link" href="calendario.html">Calendario →</a>
+        </div>
+        <div id="w-rival-body"><div class="widget-empty">Cargando…</div></div>
+      </div>
+
+      <!-- Clasificación -->
+      <div class="widget w-standings">
+        <div class="widget-head">
+          <div class="widget-title"><span class="widget-icon">🏆</span>Clasificación · Tercera RFEF Grupo X</div>
+          <a class="widget-link" href="tercera.html">Ver grupo →</a>
+        </div>
+        <div id="w-standings-body"></div>
+      </div>
+
+      <!-- Sanciones -->
+      <div class="widget w-sanciones">
+        <div class="widget-head">
+          <div class="widget-title"><span class="widget-icon">🟨</span>Tarjetas · Plantilla</div>
+          <span class="widget-link">Temporada 2026/27</span>
+        </div>
+        <div id="w-sanciones-body"><div class="widget-empty">Cargando…</div></div>
+      </div>
+
+    </div>
+
+    <!-- ══ MODULES ══ -->
+    <div class="sh">
+      <div class="st">Módulos del Sistema</div>
+      <div class="sc" id="modules-count">— módulos</div>
+    </div>
+    <div class="mg" id="modules-grid"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
+  authDomain:"racing-portuense-scouting.firebaseapp.com",
+  projectId:"racing-portuense-scouting",
+  storageBucket:"racing-portuense-scouting.firebasestorage.app",
+  messagingSenderId:"1073919975511",
+  appId:"1:1073919975511:web:7c7f59495d1f67f6f44312"
+});
+const db = getFirestore(app);
+
+/* ══════════ MODULES ══════════ */
 const MODULES = [
-  { id:"01", name:"Plantilla", desc:"Gestión de jugadores, dorsales y fichas", status:"active" },
-  { id:"02", name:"Cuerpo Técnico",         desc:"Staff, roles y responsabilidades del cuerpo técnico", status:"active" },
-  { id:"03", name:"Preparación Física",     desc:"Cargas, periodización y seguimiento del fitness",    status:"dev"    },
-  { id:"04", name:"Tercera RFEF · Grupo X", desc:"Clasificación, jornadas y estadísticas de liga",    status:"active" },
-  { id:"05", name:"Performance FC",         desc:"Métricas de rendimiento individual y colectivo",     status:"active" },
-  { id:"06", name:"Entrenamientos", desc:"Planificación de sesiones y microciclos", status:"active" },
-  { id:"07", name:"Análisis",               desc:"Vídeo, datos y reportes post-partido",               status:"active" },
-  { id:"08", name:"Sanciones",              desc:"Control de amonestaciones y expulsiones",            status:"dev"    },
-  { id:"09", name:"Scouting",               desc:"Seguimiento y prospección de jugadores",             status:"soon"   },
-  { id:"10", name:"Cantera",                desc:"Equipos base y desarrollo de jóvenes talentos",      status:"soon"   },
-  { id:"11", name:"Calendario",             desc:"Vista unificada de partidos y entrenamientos",       status:"dev"    },
-  { id:"12", name:"Comunicación",           desc:"Avisos internos, convocatorias y novedades",         status:"soon"   },
-  { id:"13", name:"Documentación",          desc:"Informes, actas y archivos del club",                status:"soon"   },
-  { id:"14", name:"Accesos", desc:"Gestión de usuarios, roles y permisos del sistema", status:"soon" },
-  { id:"15", name:"Asistencia & Multas", desc:"Control de asistencia diaria, multas y sanciones económicas", status:"active" },
+  { id:'01', name:'Plantilla',             desc:'Gestión de jugadores, dorsales y fichas',          status:'active', url:'plantilla.html'       },
+  { id:'02', name:'Cuerpo Técnico',        desc:'Staff, roles y responsabilidades',                 status:'active', url:'cuerpo-tecnico.html'   },
+  { id:'04', name:'Tercera RFEF',          desc:'Rivales, plantillas y análisis del Grupo X',       status:'active', url:'tercera.html'          },
+  { id:'05', name:'Performance FC',        desc:'Rendimiento individual, lesiones y tests',         status:'active', url:'performance.html'      },
+  { id:'06', name:'Entrenamientos',        desc:'Sesiones, pizarra táctica y planificación',        status:'active', url:'entrenamientos.html'   },
+  { id:'07', name:'Análisis',              desc:'Vídeo, datos y reportes post-partido',             status:'dev',    url:null                    },
+  { id:'08', name:'Sanciones',             desc:'Amonestaciones y suspensiones RFEF',               status:'dev',    url:null                    },
+  { id:'11', name:'Calendario',            desc:'Vista unificada de partidos y entrenamientos',     status:'active', url:'calendario.html'       },
+  { id:'13', name:'Documentación',         desc:'Informes, actas y archivos del club',              status:'soon',   url:null                    },
+  { id:'14', name:'Accesos',               desc:'Usuarios, roles y permisos del sistema',           status:'soon',   url:null                    },
+  { id:'15', name:'Asistencia y Multas',   desc:'Control de asistencia y sanciones económicas',     status:'active', url:'asistencia.html'       },
+  { id:'16', name:'Estadísticas',          desc:'Datos y métricas del club, alimentado por el resto de módulos', status:'dev', url:null         },
 ];
-
-const STATUS = {
-  active: { label:"Activo",        cls:"s-active" },
-  dev:    { label:"En desarrollo", cls:"s-dev"    },
-  soon:   { label:"Próximamente",  cls:"s-soon"   },
+const STATUS_CFG = {
+  active: { label:'Activo',        cls:'s-active' },
+  dev:    { label:'En desarrollo', cls:'s-dev'    },
+  soon:   { label:'Próximamente',  cls:'s-soon'   },
 };
 
-const TOAST_MSG = {
-  active: n => `${n} — módulo en construcción`,
-  dev:    n => `${n} — en desarrollo`,
-  soon:   n => `${n} — próximamente disponible`,
+function renderModules(){
+  const grid = document.getElementById('modules-grid');
+  document.getElementById('modules-count').textContent = MODULES.length + ' módulos · v2.1';
+  grid.innerHTML = MODULES.map((m, i) => {
+    const s = STATUS_CFG[m.status];
+    const disabled = m.status !== 'active';
+    return `<div class="mc${disabled?' disabled':''}" data-num="${m.id}"
+              style="animation-delay:${i*0.03}s"
+              onclick="handleModuleClick('${m.id}')">
+      <div>
+        <div class="cn">${m.id}</div>
+        <div class="cname">${m.name}</div>
+        <div class="cdesc">${m.desc}</div>
+      </div>
+      <span class="cs ${s.cls}"><div class="cs-dot"></div>${s.label}</span>
+    </div>`;
+  }).join('');
+}
+window.handleModuleClick = function(id){
+  const m = MODULES.find(m => m.id === id);
+  if(!m) return;
+  if(m.url){ window.location.href = m.url; }
+  else {
+    const msgs = { dev:'Módulo en desarrollo', soon:'Próximamente disponible' };
+    showToast(m.name + ' — ' + (msgs[m.status]||''));
+  }
 };
 
-function Login({ onLogin }) {
-  const [user, setUser] = useState("");
-  const [pass, setPass] = useState("");
-  const [err, setErr]   = useState("");
+/* ══════════ AUTH ══════════ */
+window.doLogin = function(){
+  const u = document.getElementById('inp-user').value.trim();
+  const p = document.getElementById('inp-pass').value;
+  const err = document.getElementById('login-err');
+  if(u === 'admin' && p === 'admin'){
+    sessionStorage.setItem('rl_auth','1');
+    err.classList.remove('show');
+    showDashboard();
+  } else {
+    err.classList.add('show');
+    document.getElementById('inp-pass').value = '';
+    document.getElementById('inp-pass').focus();
+  }
+};
+window.doLogout = function(){
+  sessionStorage.removeItem('rl_auth');
+  document.getElementById('dashboard-screen').classList.remove('active');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('inp-user').value = '';
+  document.getElementById('inp-pass').value = '';
+};
+function showDashboard(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard-screen').classList.add('active');
+  renderModules();
+  loadWidgets();
+}
 
-  const attempt = () => {
-    if (user.toLowerCase() === "admin" && pass === "admin") {
-      onLogin();
+/* ══════════ WIDGET: CALENDARIO (próximos 3 + próximo rival) — Firebase live ══════════ */
+const TYPE_LABELS = {entrenamiento:'Entrenamiento',amistoso:'Amistoso',liga:'Liga',libre:'Día libre',club:'Club',festivo:'Festivo'};
+async function loadCalendarWidgets(){
+  const calBody = document.getElementById('w-cal-body');
+  const rivalBody = document.getElementById('w-rival-body');
+  try{
+    const snap = await getDocs(collection(db,'calEvents'));
+    const today = new Date(); today.setHours(0,0,0,0);
+    const events = snap.docs.map(d=>d.data())
+      .filter(e=>e.date)
+      .map(e=>({...e, _d:new Date(e.date+'T00:00:00')}))
+      .filter(e=>e._d>=today)
+      .sort((a,b)=>a._d-b._d);
+
+    // Próximos 3 eventos (cualquier tipo)
+    const next3 = events.slice(0,3);
+    calBody.innerHTML = next3.length ? next3.map(e=>{
+      const dow = e._d.toLocaleDateString('es-ES',{day:'2-digit'});
+      const mon = e._d.toLocaleDateString('es-ES',{month:'short'}).replace('.','');
+      return `<div class="cal-item">
+        <div class="cal-date"><div class="cal-day">${dow}</div><div class="cal-mon">${mon}</div></div>
+        <div class="cal-info"><div class="cal-title">${e.title||'—'}</div><div class="cal-type">${TYPE_LABELS[e.type]||e.type||''}</div></div>
+        <div class="cal-dot dot-${e.type||'club'}"></div>
+      </div>`;
+    }).join('') : '<div class="widget-empty">Sin eventos próximos</div>';
+
+    // Próximo rival: primer evento de tipo amistoso o liga
+    const nextMatch = events.find(e=>e.type==='amistoso'||e.type==='liga');
+    if(nextMatch){
+      const daysLeft = Math.round((nextMatch._d-today)/86400000);
+      const dateStr = nextMatch._d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+      rivalBody.innerHTML = `
+        <div class="rival-name">${nextMatch.title}</div>
+        <div class="rival-date">${TYPE_LABELS[nextMatch.type]} · ${dateStr}</div>
+        <div class="rival-countdown">${daysLeft===0?'Es hoy':daysLeft===1?'Mañana':`En ${daysLeft} días`}</div>`;
     } else {
-      setErr("Credenciales incorrectas. Inténtalo de nuevo.");
+      rivalBody.innerHTML = '<div class="rival-empty-icon">⚽</div><div class="widget-empty">Sin próximo partido programado</div>';
     }
-  };
-  const key = e => { if (e.key === "Enter") attempt(); };
-
-  return (
-    <div className="lw">
-      <div className="ll">
-        <div className="ll-logo">
-          <div className="ll-eyebrow">Sistema de Gestión Técnica</div>
-          <div className="ll-brand">RACING<br/><span>LAB</span></div>
-          <div className="ll-sub">
-            Racing Club Portuense<br/>
-            Tercera Federación · Grupo X<br/>
-            Temporada 2026 / 27
-          </div>
-        </div>
-        <div className="ll-bottom">
-          <div className="ll-line"/>
-          <div className="ll-foot">El Puerto de Santa María · Cádiz</div>
-        </div>
-      </div>
-      <div className="lr">
-        <div className="lf">
-          <div className="lf-title">Acceso al sistema</div>
-          <div className="lf-sub">Introduce tus credenciales para continuar</div>
-          <div className="fg">
-            <label className="fl">Usuario</label>
-            <input className="fi" type="text" placeholder="admin"
-              value={user} onChange={e=>{setUser(e.target.value);setErr("");}} onKeyDown={key}/>
-          </div>
-          <div className="fg">
-            <label className="fl">Contraseña</label>
-            <input className="fi" type="password" placeholder="••••••••"
-              value={pass} onChange={e=>{setPass(e.target.value);setErr("");}} onKeyDown={key}/>
-            {err && <div className="fe">{err}</div>}
-          </div>
-          <button className="btn-in" onClick={attempt}>Iniciar sesión →</button>
-          <div className="lf-hint">admin / admin</div>
-        </div>
-      </div>
-    </div>
-  );
+  }catch(e){
+    console.error('[Dashboard] Error cargando calendario:', e);
+    calBody.innerHTML = '<div class="widget-empty">No se pudo cargar el calendario</div>';
+    rivalBody.innerHTML = '<div class="widget-empty">No se pudo cargar</div>';
+  }
 }
 
-function Dashboard({ onLogout }) {
-  const [toast, setToast] = useState(null);
+/* ══════════ WIDGET: PLANTILLA POR POSICIÓN — localStorage rl_players ══════════ */
+function loadSquadWidget(){
+  const body = document.getElementById('w-squad-body');
+  let players = [];
+  try{
+    const s = localStorage.getItem('rl_players');
+    if(s) players = JSON.parse(s).filter(p=>p.active!==false);
+  }catch(e){}
 
-  const showToast = mod => {
-    setToast(TOAST_MSG[mod.status](mod.name));
-    setTimeout(() => setToast(null), 3200);
-  };
+  if(!players.length){
+    body.innerHTML = '<div class="widget-empty">Sin datos de plantilla<br/><span style="font-size:10px">Abre el módulo Plantilla primero</span></div>';
+    return { players: [] };
+  }
 
-  return (
-    <div className="dr">
-      <nav className="nav">
-        <div className="nav-left">
-          <div className="nb">RACING <span>LAB</span></div>
-          <div className="ndiv"/>
-          <div className="ns">Temporada 2026 / 27</div>
-        </div>
-        <div className="nav-right">
-          <div className="nav-user">
-            <div className="nav-av">AD</div>
-            <div className="nav-ui">
-              <div className="nav-un">Administrador</div>
-              <div className="nav-ur">Admin</div>
-            </div>
-          </div>
-          <button className="btn-out" onClick={onLogout}>Salir</button>
-        </div>
-      </nav>
+  const groups = {POR:0,DEF:0,MED:0,DEL:0};
+  players.forEach(p=>{ if(groups[p.pos]!==undefined) groups[p.pos]++; });
+  const labels = {POR:'Porteros',DEF:'Defensas',MED:'Medios',DEL:'Delanteros'};
+  const max = Math.max(...Object.values(groups),1);
 
-      <section className="hero">
-        <div className="hi">
-          <div className="he">Racing Club Portuense · Tercera RFEF Grupo X</div>
-          <div className="ht">TEMPORADA<br/>2026 / 27</div>
-          <div className="hstats">
-            {[
-              {lbl:"Próximo Partido", val:"—", sub:"Sin confirmar"},
-              {lbl:"Clasificación",   val:"—", sub:"Temporada no iniciada"},
-              {lbl:"Plantilla",       val:"—", sub:"Por configurar"},
-              {lbl:"Sesiones",        val:"—", sub:"Temporada no iniciada"},
-            ].map((s,i) => (
-              <div className="hs" key={i}>
-                <div className="hs-lbl">{s.lbl}</div>
-                <div className="hs-val">{s.val}</div>
-                <div className="hs-sub">{s.sub}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+  body.innerHTML = `
+    <div class="squad-total"><div class="squad-total-n">${players.length}</div><div class="squad-total-l">jugadores en plantilla</div></div>
+    <div class="squad-bars">
+      ${Object.entries(groups).map(([k,v])=>`
+        <div class="squad-row">
+          <div class="squad-lbl">${labels[k]}</div>
+          <div class="squad-track"><div class="squad-fill" style="width:${v/max*100}%"></div></div>
+          <div class="squad-n">${v}</div>
+        </div>`).join('')}
+    </div>`;
+  return { players };
+}
 
-      <div className="dc">
-        <div className="sh">
-          <div className="st">Módulos del Sistema</div>
-          <div className="sc">14 módulos · v1.0</div>
-        </div>
-        <div className="mg">
-          {MODULES.map(m => {
-            const s = STATUS[m.status];
-            const dis = m.status !== "active";
-            return (
-              <div key={m.id} className={`mc${dis?" disabled":""}`} data-num={m.id}
-                onClick={() => m.id==="01"?window.location.href="plantilla.html":m.id==="02"?window.location.href="cuerpo-tecnico.html":m.id==="04"?window.location.href="tercera.html":m.id==="05"?window.location.href="performance.html":m.id==="06"?window.location.href="entrenamientos.html":m.id==="11"?window.location.href="calendario.html":m.id==="15"?window.location.href="asistencia.html":showToast(m)} role="button" tabIndex={0}
-                onKeyDown={e => e.key==="Enter" && showToast(m)}>
-                <div>
-                  <div className="cn">{m.id}</div>
-                  <div className="cname">{m.name}</div>
-                  <div className="cdesc">{m.desc}</div>
-                </div>
-                <div className={`cs ${s.cls}`}>
-                  <div className="cs-dot"/>
-                  {s.label}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+/* ══════════ WIDGET: SANCIONES — 5 jugadores aleatorios (semilla diaria) ══════════ */
+function seededRandom(seed){
+  let x = Math.sin(seed)*10000;
+  return x - Math.floor(x);
+}
+function loadSancionesWidget(players){
+  const body = document.getElementById('w-sanciones-body');
+  if(!players || !players.length){
+    body.innerHTML = '<div class="widget-empty">Sin datos de plantilla</div>';
+    return;
+  }
+  // Semilla basada en el día (YYYYMMDD) para que la selección sea estable durante el día y cambie a diario
+  const todayKey = parseInt(new Date().toISOString().slice(0,10).replace(/-/g,''));
+  const shuffled = [...players]
+    .map((p,i)=>({p, r:seededRandom(todayKey+i*7919)}))
+    .sort((a,b)=>a.r-b.r)
+    .slice(0,5)
+    .map(x=>x.p);
+
+  body.innerHTML = shuffled.map(p=>`
+    <div class="sanc-row">
+      <div class="sanc-dorsal">${p.d?'#'+p.d:'—'}</div>
+      <div class="sanc-name">${p.nick||p.n}</div>
+      <div class="sanc-cards">
+        <span class="sanc-card-badge"><span class="card-icon card-y"></span>0</span>
+        <span class="sanc-card-badge"><span class="card-icon card-r"></span>0</span>
       </div>
-
-      <footer className="ft">
-        <div className="ft-b">RACING <span>LAB</span></div>
-        <div className="ft-i">Racing Club Portuense · Tercera Federación · 2026/27</div>
-      </footer>
-
-      {toast && (
-        <div className="toast">
-          <span>⚡</span>{toast}
-        </div>
-      )}
-    </div>
-  );
+    </div>`).join('');
 }
 
-function App() {
-  const [screen, setScreen] = useState(sessionStorage.getItem("rl_auth")==="1"?"dashboard":"login");
-  return screen === "login"
-    ? <Login onLogin={() => { sessionStorage.setItem("rl_auth","1"); setScreen("dashboard"); }} />
-    : <Dashboard onLogout={() => { sessionStorage.removeItem("rl_auth"); setScreen("login"); }} />;
+/* ══════════ WIDGET: CLASIFICACIÓN — Tercera RFEF Grupo X ══════════ */
+/* Editable: reflejar aquí cada jornada. Todos a 0 al inicio de temporada. */
+const STANDINGS = [
+  {pos:1, club:'Racing C. Portuense', us:true,  pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0},
+  {pos:2, club:'Dos Hermanas 1971',   us:false, pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0},
+  {pos:3, club:'RB Linense',          us:false, pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0},
+  {pos:4, club:'Bollullos CF',        us:false, pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0},
+  {pos:5, club:'Salerm Puente Genil', us:false, pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0},
+  {pos:6, club:'Egabrense',           us:false, pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0},
+];
+function loadStandingsWidget(){
+  const body = document.getElementById('w-standings-body');
+  body.innerHTML = `
+    <table class="standings-tbl">
+      <thead><tr>
+        <th></th><th>Club</th><th class="c">PJ</th><th class="c">PG</th><th class="c">PE</th><th class="c">PP</th><th class="c">GF</th><th class="c">GC</th><th class="c">Pts</th>
+      </tr></thead>
+      <tbody>
+        ${STANDINGS.map(s=>{
+          const rowCls = s.pos===1 ? 'st-row-1' : (s.pos>=2&&s.pos<=5) ? 'st-row-promo' : '';
+          const pillCls = s.pos===1 ? 'pill-asc' : (s.pos>=2&&s.pos<=5) ? 'pill-promo' : 'pill-none';
+          return `<tr class="${rowCls}">
+            <td class="st-pos">${s.pos}</td>
+            <td class="st-club${s.us?' us':''}"><span class="st-pill ${pillCls}"></span>${s.club}</td>
+            <td class="c">${s.pj}</td><td class="c">${s.pg}</td><td class="c">${s.pe}</td><td class="c">${s.pp}</td>
+            <td class="c">${s.gf}</td><td class="c">${s.gc}</td>
+            <td class="c st-pts">${s.pts}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    <div class="standings-legend">
+      <div class="leg-item"><span class="leg-dot" style="background:var(--fit)"></span>Ascenso directo</div>
+      <div class="leg-item"><span class="leg-dot" style="background:var(--warn)"></span>Playoff ascenso</div>
+    </div>`;
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+/* ══════════ INIT WIDGETS ══════════ */
+function loadWidgets(){
+  loadStandingsWidget();
+  const { players } = loadSquadWidget();
+  loadSancionesWidget(players);
+  loadCalendarWidgets();
+}
+
+/* ══════════ TOAST ══════════ */
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2800);
+}
+window.showToast = showToast;
+
+/* ══════════ BOOT ══════════ */
+if(sessionStorage.getItem('rl_auth') === '1'){
+  showDashboard();
+} else {
+  document.getElementById('inp-user').focus();
+}
 </script>
 </body>
 </html>
