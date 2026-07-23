@@ -420,8 +420,16 @@ const STATUS_CLS = {fit:'pill-green',caution:'pill-amber',injury:'pill-red'};
 const STATUS_LBL = {fit:'Disponible',caution:'Precaución',injury:'Lesionado'};
 
 /* ── STORAGE ── */
+const PLAYERS_DATA_VERSION = 3; // Incrementar cada vez que se actualice DEFAULT_PLAYERS
 function loadPlayers(){
   try{
+    const storedVersion = parseInt(localStorage.getItem('rl_players_version')||'0');
+    if(storedVersion < PLAYERS_DATA_VERSION){
+      // Datos nuevos disponibles en el código: forzar recarga desde DEFAULT_PLAYERS
+      localStorage.setItem('rl_players', JSON.stringify(DEFAULT_PLAYERS));
+      localStorage.setItem('rl_players_version', String(PLAYERS_DATA_VERSION));
+      return JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
+    }
     const s=localStorage.getItem('rl_players');
     if(s) return JSON.parse(s);
   }catch(e){}
@@ -433,11 +441,13 @@ function loadPlayers(){
       if(d.players&&d.players.length){
         const migrated=d.players.map(p=>({...p,active:p.active!==false,joined:p.joined||'2026-07-01',notes:p.notes||''}));
         localStorage.setItem('rl_players',JSON.stringify(migrated));
+        localStorage.setItem('rl_players_version', String(PLAYERS_DATA_VERSION));
         return migrated;
       }
     }
   }catch(e){}
   localStorage.setItem('rl_players',JSON.stringify(DEFAULT_PLAYERS));
+  localStorage.setItem('rl_players_version', String(PLAYERS_DATA_VERSION));
   return JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
 }
 function savePlayers(){ localStorage.setItem('rl_players',JSON.stringify(PLAYERS)); syncToPerf(); }
@@ -608,9 +618,12 @@ function renderStats(){
 }
 
 /* ── PLAYER PROFILE ── */
-function openProfile(pid){
+function openProfile(pid, keepPreviousPage){
   currentProfileId = pid;
-  previousPage = document.querySelector('.page.active')?.id || 'p-squad';
+  if(!keepPreviousPage){
+    const active = document.querySelector('.page.active')?.id;
+    previousPage = (active && active !== 'p-profile') ? active : 'p-squad';
+  }
   const p = PLAYERS.find(pl=>pl.id===pid);
   if(!p) return;
   const perf = getPerfData();
@@ -872,7 +885,7 @@ function savePlayer(){
   savePlayers();
   closeModal('modal-add-player');
   if(editId&&currentProfileId===editId){
-    openProfile(editId);
+    openProfile(editId, true);
   } else {
     renderSquad(currentFilter);
   }
