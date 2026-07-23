@@ -238,7 +238,10 @@ input,select,textarea{font-family:inherit;outline:none;}
   <div class="wrap">
     <div class="sh">
       <div class="st">Equipos del Grupo</div>
-      <div class="sc" id="grid-meta">— equipos · Clic para ver perfil</div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="sc" id="grid-meta">— equipos · Clic para ver perfil</div>
+        <button class="btn btn-ghost btn-sm" onclick="openShieldsImport()">🛡 Actualizar escudos</button>
+      </div>
     </div>
     <div class="clubs-grid" id="clubs-grid"></div>
   </div>
@@ -334,6 +337,27 @@ input,select,textarea{font-family:inherit;outline:none;}
   </div>
 </div>
 
+<!-- MODAL: IMPORTAR ESCUDOS (afecta a los 18 equipos de golpe) -->
+<div class="overlay" id="modal-shields">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-head">
+      <h3>Actualizar escudos del grupo</h3>
+      <button class="modal-close" onclick="closeModal('modal-shields')">×</button>
+    </div>
+    <div style="font-size:13px;color:var(--mid);line-height:1.7;margin-bottom:14px;">
+      <div style="margin-bottom:10px;"><strong style="color:var(--txt)">1.</strong> Abre la ficha de <strong style="color:var(--txt)">cualquier equipo</strong> del Grupo X en lapreferente (todas incluyen la barra con los 18 escudos arriba, así que solo hace falta pegar una vez).</div>
+      <div style="margin-bottom:10px;"><strong style="color:var(--txt)">2.</strong> <span class="pill pill-gray" style="font-family:'JetBrains Mono',monospace;">⌘ + ⌥ + U</span> → <span class="pill pill-gray" style="font-family:'JetBrains Mono',monospace;">⌘ + A</span> → <span class="pill pill-gray" style="font-family:'JetBrains Mono',monospace;">⌘ + C</span></div>
+      <div><strong style="color:var(--txt)">3.</strong> Pega aquí y pulsa Procesar. Se actualizan todos los equipos que aparezcan en la barra — el resto conserva su escudo actual.</div>
+    </div>
+    <a href="https://www.lapreferente.com/E161C26702-1/" target="_blank" class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:12px;">↗ Abrir Grupo X en lapreferente</a>
+    <textarea id="shields-paste-area" class="form-control" rows="7" placeholder="Pega aquí el código fuente completo de la página…" style="font-family:'JetBrains Mono',monospace;font-size:10px;"></textarea>
+    <div id="shields-progress" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);margin-top:8px;"></div>
+    <div class="modal-foot" style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--bdr);">
+      <button class="btn btn-ghost" onclick="closeModal('modal-shields')">Cancelar</button>
+      <button class="btn btn-primary" onclick="processShieldsHTML()">Procesar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL: IMPORTAR PEGANDO HTML -->
 <div class="overlay" id="modal-paste">
@@ -469,7 +493,7 @@ function renderGrid() {
 
     const shield = c.tbd
       ? grayShieldSVG('?',52)
-      : shieldSVG(c.colors[0], c.colors[1], c.short, 52);
+      : clubShieldHTML(c, 52);
 
     div.innerHTML = `
       
@@ -504,8 +528,7 @@ window.openProfile = async function(clubId) {
   document.getElementById('profile-view').classList.add('active');
 
   // Hero
-  const sh = shieldSVG(currentClub.colors[0], currentClub.colors[1], currentClub.short, 68);
-  document.getElementById('ph-shield').innerHTML = sh;
+  document.getElementById('ph-shield').innerHTML = clubShieldHTML(currentClub, 68);
   document.getElementById('ph-eyebrow').textContent = currentClub.city + ' · Tercera RFEF Grupo X';
   document.getElementById('ph-name').textContent = currentClub.name.toUpperCase();
   document.getElementById('ph-meta').innerHTML = [
@@ -1075,7 +1098,98 @@ function lpParseHTML(htmlString){
   return { players, staff, _debugRows: debugRows };
 }
 
-/* Foto → Cloudinary (Cloudinary hace el fetch remoto de la URL) */
+/* ══════════ ESCUDOS REALES — compartidos entre TODAS las secciones ══════════
+   Se guardan en Firestore colección 'clubShields' (doc id = lpId), así que
+   cualquier módulo futuro (Calendario, Estadísticas, etc.) puede leer el
+   mismo escudo real sin repetir la importación. La barra de selector de
+   equipos de lapreferente incluye los 18 escudos del grupo en CUALQUIER
+   ficha de equipo, así que un solo pegado los actualiza todos de golpe. */
+let SHIELDS = {}; // { lpId: shieldUrl }
+
+async function loadShields(){
+  try{
+    const snap = await getDocs(collection(db,'clubShields'));
+    SHIELDS = {};
+    snap.docs.forEach(d=>{ SHIELDS[d.id] = d.data().shieldUrl; });
+  }catch(e){ console.error('[Shields] load error', e); }
+}
+
+function lpParseShields(htmlString){
+  const docP = new DOMParser().parseFromString(htmlString, 'text/html');
+  const found = [];
+  const seen = new Set();
+  // Cualquier <img id="escudoNNN" src="...escudos...">, dentro o fuera de #selectorEquipos
+  docP.querySelectorAll('img[id^="escudo"]').forEach(img=>{
+    const idAttr = img.getAttribute('id')||'';
+    const m = idAttr.match(/^escudo(\d+)$/);
+    if(!m) return;
+    const lpId = m[1];
+    if(seen.has(lpId)) return;
+    const src = img.getAttribute('src')||'';
+    if(!src || !/escudo/i.test(src)) return;
+    seen.add(lpId);
+    found.push({ lpId, src: lpAbsolutize(src) });
+  });
+  return found;
+}
+
+window.openShieldsImport = function(){
+  document.getElementById('shields-paste-area').value = '';
+  document.getElementById('shields-progress').textContent = '';
+  openModal('modal-shields');
+};
+
+window.processShieldsHTML = async function(){
+  const raw = document.getElementById('shields-paste-area').value;
+  if(raw.trim().length < 500){ showToast('Pega el código fuente completo','err'); return; }
+  let found;
+  try { found = lpParseShields(raw); }
+  catch(e){ console.error('[Shields] parse error', e); showToast('Error al parsear el HTML','err'); return; }
+  if(!found.length){ showToast('No se encontraron escudos en el HTML','err'); return; }
+
+  const progress = document.getElementById('shields-progress');
+  let done = 0, ok = 0;
+  for(const { lpId, src } of found){
+    done++;
+    progress.textContent = `Subiendo escudo ${done}/${found.length}…`;
+    try{
+      const club = CLUBS.find(c=>c.lpId===lpId);
+      const fd = new FormData();
+      fd.append('file', src);
+      fd.append('upload_preset', 'racing_lab');
+      fd.append('folder', 'racing-lab/escudos');
+      const r = await fetch('https://api.cloudinary.com/v1_1/dprtymvge/image/upload', { method:'POST', body:fd });
+      const d = await r.json();
+      if(d.secure_url){
+        await setDoc(doc(db,'clubShields',lpId), {
+          name: club ? club.name : ('lpId '+lpId),
+          shieldUrl: d.secure_url,
+          updatedAt: serverTimestamp()
+        });
+        SHIELDS[lpId] = d.secure_url;
+        ok++;
+      }
+    }catch(e){ console.error('[Shields] upload error for', lpId, e); }
+  }
+  progress.textContent = '';
+  closeModal('modal-shields');
+  showToast(`Escudos actualizados: ${ok}/${found.length}`,'ok');
+  renderGrid();
+  if(currentClub){
+    const shield = SHIELDS[currentClub.lpId];
+    if(shield) document.getElementById('ph-shield').innerHTML = `<img src="${shield}" alt="" style="width:100%;height:100%;object-fit:contain;"/>`;
+  }
+};
+
+/* Devuelve HTML del escudo: real si existe en SHIELDS, si no el SVG generado */
+function clubShieldHTML(c, size){
+  const real = c.lpId && SHIELDS[c.lpId];
+  if(real) return `<img src="${real}" alt="" style="width:${size}px;height:${Math.round(size*1.13)}px;object-fit:contain;" onerror="this.parentElement.innerHTML=${JSON.stringify(shieldSVG(c.colors[0],c.colors[1],c.short,size)).replace(/</g,'\\u003c')}"/>`;
+  return shieldSVG(c.colors[0], c.colors[1], c.short, size);
+}
+
+
+/* Foto de jugador → Cloudinary (Cloudinary hace el fetch remoto de la URL) */
 async function lpPhoto(rec){
   if(!rec.fotoSrc) return null;
   try{
@@ -1223,7 +1337,8 @@ window.showToast = function(msg,type=''){
 document.getElementById('hm-equipos').textContent = N_EQUIPOS;
 document.getElementById('hm-jornadas').textContent = N_JORNADAS;
 document.getElementById('grid-meta').textContent = N_EQUIPOS + ' equipos · Clic para ver perfil';
-renderGrid();
+renderGrid(); // primera pintura inmediata con SVG generado (no bloquea por la carga de Firebase)
+loadShields().then(renderGrid); // repinta con escudos reales en cuanto llegan
 document.getElementById('sync-dot').style.background='#15803d';
 document.getElementById('sync-lbl').textContent='Firebase OK';
 
