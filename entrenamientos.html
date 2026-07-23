@@ -202,6 +202,14 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
 .kv.red{color:var(--r);}
 .kl{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);margin-top:2px;}
 .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;}
+.vocab-row{display:flex;align-items:center;gap:14px;padding:13px 16px;background:var(--wh);border:1px solid var(--bdr);border-left:3px solid transparent;border-radius:6px;margin-bottom:8px;cursor:pointer;transition:all .18s;}
+.vocab-row:hover{border-left-color:var(--r);transform:translateX(2px);}
+.vocab-name{flex:1;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--txt);}
+.vocab-count{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--r);line-height:1;}
+.vocab-count-lbl{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);}
+.vocab-arrow{color:var(--faint);font-size:14px;flex-shrink:0;}
+.filter-chip{display:inline-flex;align-items:center;gap:8px;background:var(--r2);color:var(--r);font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;padding:6px 10px 6px 14px;border-radius:20px;margin-bottom:14px;}
+.filter-chip button{background:none;border:none;color:var(--r);font-size:16px;line-height:1;cursor:pointer;padding:0 2px;}
 .bar-lbl{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--mid);width:160px;flex-shrink:0;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;font-size:10px;}
 .bar-track{flex:1;height:7px;background:var(--bg);border-radius:4px;overflow:hidden;}
 .bar-fill{height:100%;background:var(--r);border-radius:4px;transition:width .5s ease;}
@@ -289,6 +297,7 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
     <div class="nav-item" onclick="nav('p-history',this)"><span class="ni">◫</span>Historial <span class="nb2 gray" id="nb-sessions">0</span></div>
     <div class="sb-sec">Recursos</div>
     <div class="nav-item" onclick="nav('p-library',this)"><span class="ni">📚</span>Librería <span class="nb2 gray" id="nb-library">0</span></div>
+    <div class="nav-item" onclick="nav('p-vocab',this)"><span class="ni">🏷</span>Vocabulario <span class="nb2 gray" id="nb-vocab">0</span></div>
     <div class="sb-sec">Análisis</div>
     <div class="nav-item" onclick="nav('p-dashboard',this)"><span class="ni">◧</span>Dashboard</div>
     <div class="sb-sec">Gestión</div>
@@ -371,6 +380,7 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
 
         <!-- Tasks -->
         <div id="tasks-wrap"></div>
+        <datalist id="tipo-vocab-list"></datalist>
         <button class="add-task-btn" onclick="addTask()">+ Añadir nueva tarea</button>
 
         <!-- Carga -->
@@ -417,6 +427,12 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
   <div class="page" id="p-library">
     <div class="sh"><div class="st">Librería de Ejercicios</div><div class="sc" id="lib-count"></div></div>
     <div class="lib-grid" id="lib-grid"></div>
+  </div>
+
+  <!-- VOCABULARIO -->
+  <div class="page" id="p-vocab">
+    <div class="sh"><div><div class="st">Vocabulario de Ejercicios</div><div class="sc">Tipos de tarea usados en el histórico · toca uno para ver sus sesiones</div></div></div>
+    <div id="vocab-list"></div>
   </div>
 
   <!-- DASHBOARD -->
@@ -610,7 +626,7 @@ function taskCardHTML(i){
   return `<div class="task-card" id="task-card-${i}">
     <div class="task-head">
       <div class="task-num">T${i+1}</div>
-      <input class="task-tipo-input" id="t${i}-tipo" type="text" placeholder="Tipo de tarea (ej: Posesión 4x4+3, 3x2, Partido reducido…)"/>
+      <input class="task-tipo-input" id="t${i}-tipo" type="text" list="tipo-vocab-list" placeholder="Tipo de tarea (ej: Posesión 4x4+3, 3x2, Partido reducido…)"/>
       <button class="lib-btn" onclick="openLibPicker(${i})" title="Cargar desde librería">📚 Librería</button>
       ${i>=4?`<button class="btn btn-ghost btn-sm" onclick="removeTask(${i})" style="color:#dc2626;padding:3px 7px;">✕</button>`:''}
     </div>
@@ -1101,7 +1117,9 @@ function startListeners(){
     trash=snap.docs.map(d=>({id:d.id,...d.data()})).filter(s=>s.deleted);
     document.getElementById('sync-dot').style.background='#15803d';
     updateBadges();
+    renderTipoDatalist();
     if(document.getElementById('p-history').classList.contains('active')) renderHistory();
+    if(document.getElementById('p-vocab').classList.contains('active')) renderVocabPage();
     if(document.getElementById('p-trash').classList.contains('active')) renderTrash();
     if(document.getElementById('p-dashboard').classList.contains('active')) renderDashboard();
     // Auto-purge trash older than 30 days
@@ -1120,13 +1138,69 @@ function updateBadges(){
   document.getElementById('nb-sessions').textContent=sessions.length;
   document.getElementById('nb-library').textContent=library.length;
   document.getElementById('nb-trash').textContent=trash.length;
+  const vocab=buildTipoVocab();
+  document.getElementById('nb-vocab').textContent=vocab.length;
 }
+
+/* ══════════ VOCABULARIO DE TIPOS DE TAREA ══════════
+   Se deriva automáticamente de las sesiones ya guardadas — cada "Tipo de
+   tarea" que se escribe queda disponible como sugerencia (autocompletar)
+   y como entrada del listado navegable, sin mantenimiento manual. */
+function buildTipoVocab(){
+  const count={};
+  sessions.forEach(s=>(s.tasks||[]).forEach(t=>{
+    const tipo=(t.tipo||'').trim();
+    if(!tipo) return;
+    count[tipo]=(count[tipo]||0)+1;
+  }));
+  return Object.entries(count).map(([tipo,n])=>({tipo,count:n})).sort((a,b)=>b.count-a.count);
+}
+
+function renderTipoDatalist(){
+  const vocab=buildTipoVocab();
+  const dl=document.getElementById('tipo-vocab-list');
+  if(dl) dl.innerHTML=vocab.map(v=>`<option value="${v.tipo.replace(/"/g,'&quot;')}">`).join('');
+}
+
+function renderVocabPage(){
+  const vocab=buildTipoVocab();
+  document.getElementById('vocab-list').innerHTML=vocab.length
+    ? vocab.map(v=>`
+        <div class="vocab-row" onclick="filterHistoryByTipo('${v.tipo.replace(/'/g,"\\'")}')">
+          <div class="vocab-name">${v.tipo}</div>
+          <div style="text-align:right;">
+            <div class="vocab-count">${v.count}</div>
+            <div class="vocab-count-lbl">${v.count===1?'vez':'veces'}</div>
+          </div>
+          <div class="vocab-arrow">→</div>
+        </div>`).join('')
+    : '<div class="card" style="text-align:center;padding:40px;color:var(--faint);font-family:\'Barlow Condensed\',sans-serif;font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">Aún no hay tipos de tarea registrados</div>';
+}
+
+let historyFilterTipo=null;
+window.filterHistoryByTipo=function(tipo){
+  historyFilterTipo=tipo;
+  nav('p-history', document.querySelectorAll('.nav-item')[1]);
+};
+window.clearHistoryFilter=function(){
+  historyFilterTipo=null;
+  renderHistory();
+};
 
 /* ── HISTORY ── */
 function renderHistory(){
-  document.getElementById('hist-count').textContent=sessions.length+' sesiones';
-  document.getElementById('hist-list').innerHTML=sessions.length
-    ? sessions.map(s=>{
+  const filtered = historyFilterTipo
+    ? sessions.filter(s=>(s.tasks||[]).some(t=>(t.tipo||'').trim()===historyFilterTipo))
+    : sessions;
+
+  document.getElementById('hist-count').textContent=filtered.length+' sesiones'+(historyFilterTipo?' (filtradas)':'');
+
+  const chipHtml = historyFilterTipo
+    ? `<div class="filter-chip">🏷 ${historyFilterTipo}<button onclick="clearHistoryFilter()" title="Quitar filtro">×</button></div>`
+    : '';
+
+  document.getElementById('hist-list').innerHTML = chipHtml + (filtered.length
+    ? filtered.map(s=>{
         const allTags=[...new Set((s.tasks||[]).flatMap(t=>t.tags||[]))];
         return `<div class="hist-card">
           <div class="hist-thumb" onclick="openDetail('${s.id}')">
@@ -1151,7 +1225,9 @@ function renderHistory(){
           </div>
         </div>`;
       }).join('')
-    : '<div class="card" style="text-align:center;padding:40px;color:var(--faint);font-family:\'Barlow Condensed\',sans-serif;font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">Sin sesiones registradas aún</div>';
+    : historyFilterTipo
+      ? `<div class="card" style="text-align:center;padding:40px;color:var(--faint);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">Sin sesiones con este tipo de tarea</div>`
+      : '<div class="card" style="text-align:center;padding:40px;color:var(--faint);font-family:\'Barlow Condensed\',sans-serif;font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">Sin sesiones registradas aún</div>');
 }
 
 /* ── DELETE / TRASH ── */
@@ -1340,7 +1416,7 @@ function getWeekKey(d){
 }
 
 /* ── NAVIGATION ── */
-const PAGE_TITLES={'p-register':'Registrar Sesión','p-history':'Historial','p-library':'Librería','p-dashboard':'Dashboard','p-trash':'Papelera'};
+const PAGE_TITLES={'p-register':'Registrar Sesión','p-history':'Historial','p-library':'Librería','p-vocab':'Vocabulario','p-dashboard':'Dashboard','p-trash':'Papelera'};
 window.nav=function(id,el){
   document.getElementById('detail-wrap').classList.remove('active');
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1350,6 +1426,7 @@ window.nav=function(id,el){
   document.getElementById('page-title').textContent=PAGE_TITLES[id]||'';
   if(id==='p-history') renderHistory();
   if(id==='p-library') renderLibrary();
+  if(id==='p-vocab') renderVocabPage();
   if(id==='p-dashboard') renderDashboard();
   if(id==='p-trash') renderTrash();
 };
