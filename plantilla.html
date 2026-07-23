@@ -542,7 +542,7 @@ function playerCardHtml(p,perf){
     <div class="pc-dorsal">${p.d ? '#'+p.d : '—'}</div>
     <div class="pc-avatar">${p.photo?`<img src="${p.photo}" alt="" onerror="this.parentElement.innerHTML='${initials(p.nick)}'"/>`:initials(p.nick)}</div>
     <div class="pc-nick">${p.nick}</div>
-    <div class="pc-name">${shortName(p.n)}</div>
+    <div class="pc-name">${p.n}</div>
     <div class="pc-dem">${p.dem}</div>
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
       <span class="pill ${statusCls}">${statusLbl}</span>
@@ -568,7 +568,7 @@ function renderInactive(){
         return `<div class="player-card inactive" data-d="${p.d||''}">
           <div class="pc-dorsal">${p.d?'#'+p.d:'—'}</div>
           <div class="pc-nick">${p.nick}</div>
-          <div class="pc-name">${shortName(p.n)}</div>
+          <div class="pc-name">${p.n}</div>
           <div class="pc-dem">${p.dem}</div>
           <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
             <span class="pill pill-gray">Baja · ${p.deactivated_reason||'—'}</span>
