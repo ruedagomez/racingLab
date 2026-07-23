@@ -109,6 +109,10 @@ input,select,textarea{font-family:inherit;outline:none;}
 .player-card::after{content:attr(data-d);position:absolute;right:-6px;bottom:-10px;font-family:'Bebas Neue',sans-serif;font-size:72px;color:rgba(0,0,0,.04);line-height:1;pointer-events:none;}
 .player-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.08);border-left-color:var(--r);}
 .player-card.inactive{opacity:.45;filter:grayscale(.5);}
+.pc-avatar{width:52px;height:52px;border-radius:50%;overflow:hidden;background:var(--blk);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:rgba(255,255,255,.35);margin-bottom:10px;flex-shrink:0;border:1px solid var(--bdr);}
+.pc-avatar img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;}
+.ph-photo{width:92px;height:92px;border-radius:50%;overflow:hidden;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:32px;color:rgba(255,255,255,.3);flex-shrink:0;border:2px solid rgba(255,255,255,.15);margin-right:20px;}
+.ph-photo img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;}
 .pc-dorsal{font-family:'Bebas Neue',sans-serif;font-size:13px;color:var(--faint);letter-spacing:.5px;margin-bottom:4px;}
 .pc-nick{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--txt);line-height:1.1;margin-bottom:2px;}
 .pc-name{font-size:11px;color:var(--mid);margin-bottom:10px;line-height:1.3;}
@@ -250,6 +254,7 @@ input,select,textarea{font-family:inherit;outline:none;}
     </button>
     <div class="profile-hero" id="profile-hero-block" data-dorsal="">
       <div class="ph-inner">
+        <div class="ph-photo" id="ph-photo"></div>
         <div class="ph-left">
           <div class="ph-dorsal" id="ph-pos"></div>
           <div class="ph-nick" id="ph-nick"></div>
@@ -376,33 +381,32 @@ input,select,textarea{font-family:inherit;outline:none;}
    Fuente única: localStorage key 'rl_players'
    Performance y Asistencia leen de aquí.
 ══════════════════════════════════════════════════════ */
+const CLOUD_PLANTILLA = 'https://res.cloudinary.com/dprtymvge/image/upload/racing-lab/plantilla-2627/';
 const DEFAULT_PLAYERS = [
-  {id:'p00',d:0,  nick:'Castañeda',    n:'Alejandro Castañeda Sánchez',    pos:'POR',dem:'Portero',            age:20,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p13',d:13, nick:'Juanma',       n:'Juan Manuel Lozano Álvarez',     pos:'POR',dem:'Portero',            age:23,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p01',d:1,  nick:'Manu',         n:'Manuel López García',            pos:'POR',dem:'Portero',            age:32,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p06',d:6,  nick:'Alberto Durán',n:'Alberto Durán López',            pos:'DEF',dem:'Central',            age:28,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p20',d:20, nick:'Barba',        n:'Roberto Barba Castillo',         pos:'DEF',dem:'Lateral Izquierdo',  age:27,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p02',d:2,  nick:'Carmelo',      n:'Carmelo Manuel Humanes Porras',  pos:'DEF',dem:'Central',            age:25,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p04',d:4,  nick:'Kevin',        n:'Kevin Roberto Gil Navarro',      pos:'DEF',dem:'Central',            age:31,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p42',d:42, nick:'Lainez',       n:'Daniel Lainez Herrera',          pos:'DEF',dem:'Lateral Derecho',    age:26,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p11',d:11, nick:'Manu Moreno',  n:'Manuel Domínguez Moreno',        pos:'DEF',dem:'Lateral Izquierdo',  age:27,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p18',d:18, nick:'Oca',          n:'Antonio Miguel Oca Contreras',   pos:'DEF',dem:'Central',            age:35,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p15',d:15, nick:'Rodri',        n:'José Luis Rodríguez Muñoz',      pos:'DEF',dem:'Central',            age:29,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p28',d:28, nick:'Adri Cuevas',  n:'Adrián Cuevas',                  pos:'MED',dem:'Medio Centro',       age:36,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p14',d:14, nick:'Adri Romero',  n:'Adrián Romero Rodríguez',        pos:'MED',dem:'Media Punta',        age:32,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p10',d:10, nick:'Chicho',       n:'Antonio Jesús Garrido Fernández',pos:'MED',dem:'Media Punta',        age:23,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p05',d:5,  nick:'Fernando',     n:'Fernando Ramos Delgado',         pos:'MED',dem:'MC Ofensivo',        age:0, h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p21',d:21, nick:'Fran García',  n:'Francisco José García Pavón',    pos:'MED',dem:'Medio Centro',       age:27,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p08',d:8,  nick:'Kevin B.',     n:'Juan Kevin Bonilla Durán',       pos:'MED',dem:'Media Punta',        age:34,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p16',d:16, nick:'Borja',        n:'Borja Jiménez Macías',           pos:'DEL',dem:'Extremo Derecho',    age:32,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p99',d:0,  nick:'Elías',        n:'Elías Sebastián Palacio',        pos:'DEL',dem:'Extremo Izquierdo',  age:28,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p17',d:17, nick:'Fran Jiménez', n:'Francisco Jiménez Cruz',         pos:'DEL',dem:'Delantero Centro',   age:28,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p30',d:30, nick:'Hugo',         n:'Hugo Rodríguez Romero',          pos:'DEL',dem:'Extremo Izquierdo',  age:36,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p24',d:24, nick:'Jacobo',       n:'Jacobo Cornejo Salas',           pos:'DEL',dem:'Extremo Derecho',    age:30,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p09',d:9,  nick:'Javi Tamayo',  n:'Manuel Javier Tamayo Pacheco',   pos:'DEL',dem:'Delantero Centro',   age:35,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p07',d:7,  nick:'Manu Heredia', n:'Manuel Heredia Montoya',         pos:'DEL',dem:'Extremo Izquierdo',  age:31,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p27',d:27, nick:'Pepe Sáinz',   n:'José Luis Sáinz Hugues',         pos:'DEL',dem:'Delantero',          age:24,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
-  {id:'p19',d:19, nick:'Tocino',       n:'Antonio Jesús Tocino Sánchez',   pos:'DEL',dem:'Extremo Derecho',    age:22,h:0,w:0,active:true,joined:'2026-07-01',notes:''},
+  {id:'p00',d:0,  nick:'Fernando',     n:'Fernando Valencia González',      pos:'POR',dem:'Portero',            age:19,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Fernando.jpeg'},
+  {id:'p_jc',d:0, nick:'Jesús Castaño',n:'Jesús Castaño Flores',            pos:'POR',dem:'Portero',            age:21,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Jesus-Castaño.jpeg'},
+  {id:'p13',d:13, nick:'Juanma',       n:'Juan Manuel Lozano Álvarez',      pos:'POR',dem:'Portero',            age:23,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Juanma.jpeg'},
+  {id:'p15',d:15, nick:'Amengual',     n:'Daniel Amengual Barroso',         pos:'DEF',dem:'Lateral Izquierdo',  age:22,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Amengual.jpeg'},
+  {id:'p02',d:2,  nick:'Carmelo',      n:'Carmelo Manuel Humanes Porras',   pos:'DEF',dem:'Lateral Derecho',    age:25,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Carmelo.jpeg'},
+  {id:'p20',d:20, nick:'Farrando',     n:'Manuel Farrando Stiepovich',      pos:'DEF',dem:'Central',            age:31,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Manu-Farrando.jpeg'},
+  {id:'p21',d:21, nick:'Lainez',       n:'Daniel Lainez Herrera',           pos:'DEF',dem:'Lateral Derecho',    age:26,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Dani-Lainez.jpeg'},
+  {id:'p05',d:5,  nick:'Rodri',        n:'José Luis Rodríguez Muñoz',       pos:'DEF',dem:'Central',            age:29,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Rodri.jpeg'},
+  {id:'p22',d:22, nick:'Víctor Olmo',  n:'Víctor Olmo Durán',               pos:'DEF',dem:'Lateral Izquierdo',  age:25,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Victor-Olmo.jpeg'},
+  {id:'p08',d:8,  nick:'Adri Cuevas',  n:'Adrián Cuevas Algeciras',         pos:'MED',dem:'Medio Centro',       age:36,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Adri-Cuevas.jpeg'},
+  {id:'p04',d:4,  nick:'Adri Rodríguez',n:'Adrián Rodríguez López',         pos:'MED',dem:'Pivote Defensivo',   age:31,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Adri-Rodriguez.jpeg'},
+  {id:'p18',d:18, nick:'Brandon',      n:'Brandon Axel Varela',             pos:'MED',dem:'Media Punta',        age:22,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Brandon.jpeg'},
+  {id:'p24',d:24, nick:'Fuentes',      n:'Alberto Fuentes Gómez',           pos:'MED',dem:'Mediocentro Ofensivo',age:26,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Alberto-Fuentes.jpeg'},
+  {id:'p06',d:6,  nick:'Lolo Garrido', n:'José Manuel Garrido Fernández',   pos:'MED',dem:'Medio Centro',       age:33,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Lolo-Garrido.jpeg'},
+  {id:'p11',d:11, nick:'Rubén Sánchez',n:'Rubén Sánchez Gil',               pos:'MED',dem:'Media Punta',        age:22,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Ruben-Sanchez.jpeg'},
+  {id:'p_hp',d:0, nick:'Héctor Peña',  n:'Héctor Peña Perea',               pos:'DEL',dem:'Extremo Derecho',    age:24,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:null},
+  {id:'p10',d:10, nick:'Hugo Rodríguez',n:'Hugo Rodríguez Romero',          pos:'DEL',dem:'Extremo Izquierdo',  age:36,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Hugo-Rodriguez.jpeg'},
+  {id:'p07',d:7,  nick:'Jacobo',       n:'Jacobo Cornejo Salas',            pos:'DEL',dem:'Extremo Derecho',    age:31,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Jacobo.jpeg'},
+  {id:'p09',d:9,  nick:'Javi Tamayo',  n:'Francisco Javier Tamayo Pacheco', pos:'DEL',dem:'Delantero Centro',   age:35,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Javi-Tamayo.jpeg'},
+  {id:'p12',d:12, nick:'Lupu',         n:'Andrei Daniel Lupu',              pos:'DEL',dem:'Delantero Centro',   age:28,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Lupu.jpeg'},
+  {id:'p19',d:19, nick:'Marcos',       n:'Marcos García Torres',            pos:'DEL',dem:'Delantero',          age:20,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Marcos-Garcia.jpeg'},
+  {id:'p23',d:23, nick:'Marcos Talavera',n:'Marcos Talavera Hinarejos',     pos:'DEL',dem:'Delantero Centro',   age:20,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Marcos-Talavera.jpeg'},
+  {id:'p_rs',d:14,nick:'Rodrigo Sanz', n:'Rodrigo Sanz Garro',              pos:'DEL',dem:'Extremo Derecho',    age:33,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:null},
+  {id:'p_lo',d:0, nick:'Luis Ortega',  n:'Luis Ortega',                     pos:'DEL',dem:'Delantero',          age:0, h:0,w:0,active:true,joined:'2026-07-01',notes:'A prueba',photo:CLOUD_PLANTILLA+'Luis-Ortega.jpeg'},
 ];
 
 const DEM_BY_POS = {
@@ -536,6 +540,7 @@ function playerCardHtml(p,perf){
 
   return `<div class="player-card" data-d="${p.d||''}" onclick="openProfile('${p.id}')">
     <div class="pc-dorsal">${p.d ? '#'+p.d : '—'}</div>
+    <div class="pc-avatar">${p.photo?`<img src="${p.photo}" alt="" onerror="this.parentElement.innerHTML='${initials(p.nick)}'"/>`:initials(p.nick)}</div>
     <div class="pc-nick">${p.nick}</div>
     <div class="pc-name">${shortName(p.n)}</div>
     <div class="pc-dem">${p.dem}</div>
@@ -548,6 +553,10 @@ function playerCardHtml(p,perf){
       </div>
     </div>
   </div>`;
+}
+function initials(name){
+  const p=(name||'').trim().split(/\s+/);
+  return p.length>=2?(p[0][0]+p[p.length-1][0]).toUpperCase():(name||'?').slice(0,2).toUpperCase();
 }
 
 /* ── INACTIVE ── */
@@ -609,6 +618,9 @@ function openProfile(pid){
 
   // Hero
   document.getElementById('profile-hero-block').setAttribute('data-dorsal', p.d||'');
+  document.getElementById('ph-photo').innerHTML = p.photo
+    ? `<img src="${p.photo}" alt="" onerror="this.parentElement.textContent='${initials(p.nick)}'"/>`
+    : initials(p.nick);
   document.getElementById('ph-pos').textContent = POS_NAMES[p.pos]+' · '+p.dem;
   document.getElementById('ph-nick').textContent = p.nick.toUpperCase();
   document.getElementById('ph-fullname').textContent = p.n;
