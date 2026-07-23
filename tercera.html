@@ -1181,11 +1181,22 @@ window.processShieldsHTML = async function(){
   }
 };
 
-/* Devuelve HTML del escudo: real si existe en SHIELDS, si no el SVG generado */
+/* Devuelve HTML del escudo: real si existe en SHIELDS, si no el SVG generado.
+   El fallback ante error de carga usa una función global por nombre en vez
+   de incrustar el SVG dentro del propio atributo onerror — incrustarlo
+   directamente rompía el HTML porque el SVG también usa comillas dobles. */
+window.__shieldFallback = function(clubId, size){
+  const c = CLUBS.find(x=>x.id===clubId);
+  const wrap = document.getElementById('shield-'+clubId+'-'+size);
+  if(c && wrap) wrap.innerHTML = shieldSVG(c.colors[0], c.colors[1], c.short, size);
+};
 function clubShieldHTML(c, size){
   const real = c.lpId && SHIELDS[c.lpId];
-  if(real) return `<img src="${real}" alt="" style="width:${size}px;height:${Math.round(size*1.13)}px;object-fit:contain;" onerror="this.parentElement.innerHTML=${JSON.stringify(shieldSVG(c.colors[0],c.colors[1],c.short,size)).replace(/</g,'\\u003c')}"/>`;
-  return shieldSVG(c.colors[0], c.colors[1], c.short, size);
+  if(!real) return shieldSVG(c.colors[0], c.colors[1], c.short, size);
+  const wrapId = 'shield-'+c.id+'-'+size;
+  return `<span id="${wrapId}" style="display:inline-block;width:${size}px;height:${Math.round(size*1.13)}px;line-height:0;">`
+       + `<img src="${real}" alt="" style="width:100%;height:100%;object-fit:contain;" onerror="window.__shieldFallback('${c.id}',${size})"/>`
+       + `</span>`;
 }
 
 
