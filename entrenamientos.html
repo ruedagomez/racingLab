@@ -1112,27 +1112,41 @@ let sessions=[], library=[], trash=[];
 function startListeners(){
   // Sessions
   const q=query(collection(db,'trainingSessions'),orderBy('date','desc'));
-  onSnapshot(q,snap=>{
-    sessions=snap.docs.map(d=>({id:d.id,...d.data()})).filter(s=>!s.deleted);
-    trash=snap.docs.map(d=>({id:d.id,...d.data()})).filter(s=>s.deleted);
-    document.getElementById('sync-dot').style.background='#15803d';
-    updateBadges();
-    renderTipoDatalist();
-    if(document.getElementById('p-history').classList.contains('active')) renderHistory();
-    if(document.getElementById('p-vocab').classList.contains('active')) renderVocabPage();
-    if(document.getElementById('p-trash').classList.contains('active')) renderTrash();
-    if(document.getElementById('p-dashboard').classList.contains('active')) renderDashboard();
-    // Auto-purge trash older than 30 days
-    const thirtyDaysAgo=Date.now()-30*24*60*60*1000;
-    trash.filter(s=>s.deletedAt?.toMillis&&s.deletedAt.toMillis()<thirtyDaysAgo)
-      .forEach(s=>deleteDoc(doc(db,'trainingSessions',s.id)));
-  });
+  onSnapshot(q,
+    snap=>{
+      sessions=snap.docs.map(d=>({id:d.id,...d.data()})).filter(s=>!s.deleted);
+      trash=snap.docs.map(d=>({id:d.id,...d.data()})).filter(s=>s.deleted);
+      document.getElementById('sync-dot').style.background='#15803d';
+      document.getElementById('sync-dot').title='Conectado a Firebase';
+      updateBadges();
+      renderTipoDatalist();
+      if(document.getElementById('p-history').classList.contains('active')) renderHistory();
+      if(document.getElementById('p-vocab').classList.contains('active')) renderVocabPage();
+      if(document.getElementById('p-trash').classList.contains('active')) renderTrash();
+      if(document.getElementById('p-dashboard').classList.contains('active')) renderDashboard();
+      const thirtyDaysAgo=Date.now()-30*24*60*60*1000;
+      trash.filter(s=>s.deletedAt?.toMillis&&s.deletedAt.toMillis()<thirtyDaysAgo)
+        .forEach(s=>deleteDoc(doc(db,'trainingSessions',s.id)));
+    },
+    err=>{
+      // Antes este error se perdía en silencio: 0 sesiones sin ninguna pista de por qué.
+      console.error('[Firebase] Error al escuchar trainingSessions:', err);
+      document.getElementById('sync-dot').style.background='#dc2626';
+      document.getElementById('sync-dot').title='Error de conexión: '+err.message;
+      showToast('Sin conexión a Firebase — revisa tu red o vuelve a cargar la página','err');
+    }
+  );
   // Library
-  onSnapshot(collection(db,'exerciseLibrary'),snap=>{
-    library=snap.docs.map(d=>({id:d.id,...d.data()}));
-    updateBadges();
-    if(document.getElementById('p-library').classList.contains('active')) renderLibrary();
-  });
+  onSnapshot(collection(db,'exerciseLibrary'),
+    snap=>{
+      library=snap.docs.map(d=>({id:d.id,...d.data()}));
+      updateBadges();
+      if(document.getElementById('p-library').classList.contains('active')) renderLibrary();
+    },
+    err=>{
+      console.error('[Firebase] Error al escuchar exerciseLibrary:', err);
+    }
+  );
 }
 function updateBadges(){
   document.getElementById('nb-sessions').textContent=sessions.length;
