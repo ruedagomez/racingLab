@@ -383,8 +383,8 @@ input,select,textarea{font-family:inherit;outline:none;}
 ══════════════════════════════════════════════════════ */
 const CLOUD_PLANTILLA = 'https://res.cloudinary.com/dprtymvge/image/upload/';
 const DEFAULT_PLAYERS = [
-  {id:'p00',d:0,  nick:'Fernando',     n:'Fernando Valencia González',      pos:'POR',dem:'Portero',            age:19,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Fernando_ysdpjs.jpg'},
-  {id:'p_jc',d:0, nick:'Jesús Castaño',n:'Jesús Castaño Flores',            pos:'POR',dem:'Portero',            age:21,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Jesus-Castaño_rabl6e.jpg'},
+  {id:'p00',d:25, nick:'Nando Valencia',n:'Fernando Valencia González',     pos:'POR',dem:'Portero',            age:19,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Fernando_ysdpjs.jpg'},
+  {id:'p_jc',d:1, nick:'Jesús Castaño',n:'Jesús Castaño Flores',            pos:'POR',dem:'Portero',            age:21,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Jesus-Castaño_rabl6e.jpg'},
   {id:'p13',d:13, nick:'Juanma',       n:'Juan Manuel Lozano Álvarez',      pos:'POR',dem:'Portero',            age:23,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Juanma_tvnog7.jpg'},
   {id:'p15',d:15, nick:'Amengual',     n:'Daniel Amengual Barroso',         pos:'DEF',dem:'Lateral Izquierdo',  age:22,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Amengual_ludzmk.jpg'},
   {id:'p02',d:2,  nick:'Carmelo',      n:'Carmelo Manuel Humanes Porras',   pos:'DEF',dem:'Lateral Derecho',    age:25,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Carmelo_zinjg0.jpg'},
@@ -398,15 +398,15 @@ const DEFAULT_PLAYERS = [
   {id:'p24',d:24, nick:'Fuentes',      n:'Alberto Fuentes Gómez',           pos:'MED',dem:'Mediocentro Ofensivo',age:26,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Alberto-Fuentes_ohkcmk.jpg'},
   {id:'p06',d:6,  nick:'Lolo Garrido', n:'José Manuel Garrido Fernández',   pos:'MED',dem:'Medio Centro',       age:33,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Lolo-Garrido_zlkg18.jpg'},
   {id:'p11',d:11, nick:'Rubén Sánchez',n:'Rubén Sánchez Gil',               pos:'MED',dem:'Media Punta',        age:22,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Ruben-Sanchez_rsyg4a.jpg'},
-  {id:'p_hp',d:0, nick:'Héctor Peña',  n:'Héctor Peña Perea',               pos:'DEL',dem:'Extremo Derecho',    age:24,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:null},
-  {id:'p10',d:10, nick:'Hugo Rodríguez',n:'Hugo Rodríguez Romero',          pos:'DEL',dem:'Extremo Izquierdo',  age:36,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Hugo-Rodriguez_ddsebh.jpg'},
-  {id:'p07',d:7,  nick:'Jacobo',       n:'Jacobo Cornejo Salas',            pos:'DEL',dem:'Extremo Derecho',    age:31,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Jacobo_qlcylg.jpg'},
+  {id:'p_hp',d:17,nick:'Héctor Peña',  n:'Héctor Peña Perea',               pos:'DEL',dem:'Extremo Derecho',    age:24,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:null},
+  {id:'p10',d:10, nick:'Hugo Rodríguez',n:'Hugo Rodríguez Romero',          pos:'MED',dem:'Media Punta',        age:36,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Hugo-Rodriguez_ddsebh.jpg'},
+  {id:'p07',d:7,  nick:'Jacobo',       n:'Jacobo Cornejo Salas',            pos:'MED',dem:'Media Punta',        age:31,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Jacobo_qlcylg.jpg'},
   {id:'p09',d:9,  nick:'Javi Tamayo',  n:'Francisco Javier Tamayo Pacheco', pos:'DEL',dem:'Delantero Centro',   age:35,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Javi-Tamayo_cyuend.jpg'},
   {id:'p12',d:12, nick:'Lupu',         n:'Andrei Daniel Lupu',              pos:'DEL',dem:'Delantero Centro',   age:28,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Lupu_im9wja.jpg'},
   {id:'p19',d:19, nick:'Marcos',       n:'Marcos García Torres',            pos:'DEL',dem:'Delantero',          age:20,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Marcos-Garcia_qtyu1a.jpg'},
   {id:'p23',d:23, nick:'Marcos Talavera',n:'Marcos Talavera Hinarejos',     pos:'DEL',dem:'Delantero Centro',   age:20,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:CLOUD_PLANTILLA+'Marcos-Talavera_k3leas.jpg'},
   {id:'p_rs',d:14,nick:'Rodrigo Sanz', n:'Rodrigo Sanz Garro',              pos:'DEL',dem:'Extremo Derecho',    age:33,h:0,w:0,active:true,joined:'2026-07-01',notes:'',photo:null},
-  {id:'p_lo',d:0, nick:'Luis Ortega',  n:'Luis Ortega',                     pos:'DEL',dem:'Delantero',          age:0, h:0,w:0,active:true,joined:'2026-07-01',notes:'A prueba',photo:CLOUD_PLANTILLA+'Luis-Ortega_cyoleu.jpg'},
+  {id:'p_lo',d:null,nick:'Luis Ortega',n:'Luis Ortega',                     pos:'DEF',dem:'Central',            age:0, h:0,w:0,active:true,joined:'2026-07-01',notes:'A prueba',photo:CLOUD_PLANTILLA+'Luis-Ortega_cyoleu.jpg'},
 ];
 
 const DEM_BY_POS = {
@@ -419,40 +419,63 @@ const POS_NAMES = {POR:'Porteros',DEF:'Defensas',MED:'Centrocampistas',DEL:'Dela
 const STATUS_CLS = {fit:'pill-green',caution:'pill-amber',injury:'pill-red'};
 const STATUS_LBL = {fit:'Disponible',caution:'Precaución',injury:'Lesionado'};
 
-/* ── STORAGE ── */
-const PLAYERS_DATA_VERSION = 3; // Incrementar cada vez que se actualice DEFAULT_PLAYERS
-function loadPlayers(){
-  try{
-    const storedVersion = parseInt(localStorage.getItem('rl_players_version')||'0');
-    if(storedVersion < PLAYERS_DATA_VERSION){
-      // Datos nuevos disponibles en el código: forzar recarga desde DEFAULT_PLAYERS
-      localStorage.setItem('rl_players', JSON.stringify(DEFAULT_PLAYERS));
-      localStorage.setItem('rl_players_version', String(PLAYERS_DATA_VERSION));
-      return JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
-    }
-    const s=localStorage.getItem('rl_players');
-    if(s) return JSON.parse(s);
-  }catch(e){}
-  // Migrate from performance module if exists
-  try{
-    const perf=localStorage.getItem('rl_perf_v2');
-    if(perf){
-      const d=JSON.parse(perf);
-      if(d.players&&d.players.length){
-        const migrated=d.players.map(p=>({...p,active:p.active!==false,joined:p.joined||'2026-07-01',notes:p.notes||''}));
-        localStorage.setItem('rl_players',JSON.stringify(migrated));
-        localStorage.setItem('rl_players_version', String(PLAYERS_DATA_VERSION));
-        return migrated;
-      }
-    }
-  }catch(e){}
-  localStorage.setItem('rl_players',JSON.stringify(DEFAULT_PLAYERS));
-  localStorage.setItem('rl_players_version', String(PLAYERS_DATA_VERSION));
-  return JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
-}
-function savePlayers(){ localStorage.setItem('rl_players',JSON.stringify(PLAYERS)); syncToPerf(); }
+/* ── FIREBASE (import dinámico: el resto del script sigue siendo clásico
+   a propósito, para no romper los onclick="" que llaman a funciones
+   globales por todo el archivo) ── */
+let db, FS = {};
+const firebaseReady = (async () => {
+  const [{initializeApp}, firestore] = await Promise.all([
+    import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'),
+    import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js')
+  ]);
+  FS = firestore;
+  const app = initializeApp({
+    apiKey:"AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
+    authDomain:"racing-portuense-scouting.firebaseapp.com",
+    projectId:"racing-portuense-scouting",
+    storageBucket:"racing-portuense-scouting.firebasestorage.app",
+    messagingSenderId:"1073919975511",
+    appId:"1:1073919975511:web:7c7f59495d1f67f6f44312"
+  });
+  db = FS.getFirestore(app);
+})();
 
-// Keep performance module in sync
+/* ── SYNC DE PLANTILLA — Firestore colección 'players', tiempo real
+   entre todos los dispositivos. Migración única: si Firestore está
+   vacío, siembra desde localStorage si hay datos reales ahí (para no
+   perder ediciones ya hechas en este navegador), si no desde
+   DEFAULT_PLAYERS. A partir de ahí Firestore es la única fuente. ── */
+async function initPlayersSync(){
+  await firebaseReady;
+  const colRef = FS.collection(db,'players');
+  const snap = await FS.getDocs(colRef);
+  if(snap.empty){
+    let seed = DEFAULT_PLAYERS;
+    try{
+      const local = localStorage.getItem('rl_players');
+      if(local){
+        const parsed = JSON.parse(local);
+        if(Array.isArray(parsed) && parsed.length) seed = parsed;
+      }
+    }catch(e){}
+    for(const p of seed){
+      await FS.setDoc(FS.doc(db,'players',p.id), {...p, updatedAt: FS.serverTimestamp()});
+    }
+  }
+  FS.onSnapshot(colRef, snap=>{
+    PLAYERS.length = 0;
+    snap.docs.forEach(d=>PLAYERS.push({id:d.id, ...d.data()}));
+    syncToPerf();
+    const activePage = document.querySelector('.page.active');
+    if(activePage) renderPage(activePage.id);
+    if(currentProfileId && document.getElementById('profile-view')?.classList.contains('active')){
+      const p = PLAYERS.find(pl=>pl.id===currentProfileId);
+      if(p) openProfile(currentProfileId, true);
+    }
+  });
+}
+
+// Keep performance module in sync (performance.html sigue leyendo de localStorage)
 function syncToPerf(){
   try{
     const s=localStorage.getItem('rl_perf_v2');
@@ -466,7 +489,7 @@ function syncToPerf(){
 function getPerfData(){ try{const s=localStorage.getItem('rl_perf_v2');return s?JSON.parse(s):{injuries:[],tests:[]};}catch(e){return{injuries:[],tests:[]};} }
 function getAttData(){ try{const s=localStorage.getItem('rl_att_v1');return s?JSON.parse(s):{attendance:[],fines:[],fineTypes:[]};}catch(e){return{attendance:[],fines:[],fineTypes:[]};} }
 
-let PLAYERS = loadPlayers();
+let PLAYERS = [];
 let currentFilter = '';
 let currentProfileId = null;
 let previousPage = 'p-squad';
@@ -859,7 +882,7 @@ function openEditPlayer(pid){
   openModal('modal-add-player');
 }
 
-function savePlayer(){
+async function savePlayer(){
   const nick = document.getElementById('np-nick').value.trim();
   const n = document.getElementById('np-name').value.trim();
   if(!nick&&!n){showToast('El nombre es obligatorio','err');return;}
@@ -874,21 +897,17 @@ function savePlayer(){
     w:parseInt(document.getElementById('np-w').value)||0,
     notes:document.getElementById('np-notes').value.trim(),
   };
+  await firebaseReady;
   if(editId){
-    const idx=PLAYERS.findIndex(p=>p.id===editId);
-    if(idx>=0) PLAYERS[idx]={...PLAYERS[idx],...data};
+    await FS.updateDoc(FS.doc(db,'players',editId), {...data, updatedAt: FS.serverTimestamp()});
     showToast('Ficha actualizada','ok');
   } else {
-    PLAYERS.push({id:'p'+Date.now(),active:true,joined:new Date().toISOString().slice(0,10),...data});
+    const newId = 'p'+Date.now();
+    await FS.setDoc(FS.doc(db,'players',newId), {active:true,joined:new Date().toISOString().slice(0,10),...data, updatedAt: FS.serverTimestamp()});
     showToast('Jugador añadido','ok');
   }
-  savePlayers();
   closeModal('modal-add-player');
-  if(editId&&currentProfileId===editId){
-    openProfile(editId, true);
-  } else {
-    renderSquad(currentFilter);
-  }
+  // El listener onSnapshot refresca la vista automáticamente
 }
 
 function updateDemOptions(){
@@ -907,29 +926,34 @@ function openDeactivate(pid){
   openModal('modal-deactivate');
 }
 
-function confirmDeactivate(){
+async function confirmDeactivate(){
   const pid = document.getElementById('deact-player-id').value;
   const p = PLAYERS.find(pl=>pl.id===pid);
   if(!p) return;
-  p.active = false;
-  p.deactivated_date = document.getElementById('deact-date').value;
-  p.deactivated_reason = document.getElementById('deact-reason').value;
-  p.deactivated_notes = document.getElementById('deact-notes').value;
-  savePlayers();
+  await firebaseReady;
+  await FS.updateDoc(FS.doc(db,'players',pid), {
+    active:false,
+    deactivated_date: document.getElementById('deact-date').value,
+    deactivated_reason: document.getElementById('deact-reason').value,
+    deactivated_notes: document.getElementById('deact-notes').value,
+    updatedAt: FS.serverTimestamp()
+  });
   closeModal('modal-deactivate');
   showToast(p.nick+' dado de baja','ok');
   closeProfile();
 }
 
-function reactivate(pid){
+async function reactivate(pid){
   const p = PLAYERS.find(pl=>pl.id===pid);
   if(!p) return;
-  p.active = true;
-  delete p.deactivated_date;
-  delete p.deactivated_reason;
-  delete p.deactivated_notes;
-  savePlayers();
-  renderInactive();
+  await firebaseReady;
+  await FS.updateDoc(FS.doc(db,'players',pid), {
+    active:true,
+    deactivated_date: FS.deleteField(),
+    deactivated_reason: FS.deleteField(),
+    deactivated_notes: FS.deleteField(),
+    updatedAt: FS.serverTimestamp()
+  });
   showToast(p.nick+' reactivado','ok');
 }
 
@@ -950,7 +974,7 @@ function showToast(msg,type='ok'){
 
 /* ── INIT ── */
 updateDemOptions();
-renderSquad('');
+initPlayersSync();
 </script>
 </body>
 </html>
