@@ -559,12 +559,13 @@ function setSynced(ok) {
   else   { dot.style.background='var(--inj)'; lbl.textContent='Sin conexión'; }
 }
 
-/* ── PLAYERS (from rl_players localStorage, read only) ── */
+/* ── PLAYERS — Firestore colección 'players' (misma que plantilla.html),
+   en tiempo real. Antes leía una copia congelada de localStorage que
+   dejó de actualizarse en cuanto plantilla.html se migró a Firebase. ── */
 function loadPlayers() {
-  try {
-    const s = localStorage.getItem('rl_players');
-    if(s) PLAYERS = JSON.parse(s).filter(p => p.active !== false);
-  } catch(e) { PLAYERS = []; }
+  onSnapshot(collection(db, 'players'), snap => {
+    PLAYERS = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.active !== false);
+  });
 }
 
 /* ── FIRESTORE LISTENERS ── */
