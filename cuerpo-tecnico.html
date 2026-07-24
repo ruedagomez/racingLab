@@ -354,6 +354,7 @@ const DEFAULT_STAFF = [
   {
     id:'bruno',
     active:true,
+    order:0,
     name:'Bruno Herrero',
     role:'Entrenador Principal',
     roleShort:'Entrenador',
@@ -382,6 +383,7 @@ const DEFAULT_STAFF = [
   {
     id:'pedro',
     active:true,
+    order:1,
     name:'Pedro Ríos',
     role:'2º Entrenador',
     roleShort:'2º Entrenador',
@@ -409,6 +411,7 @@ const DEFAULT_STAFF = [
   {
     id:'alejandro-garcia',
     active:true,
+    order:2,
     name:'Alejandro García',
     role:'Preparador Físico',
     roleShort:'Prep. Físico',
@@ -436,6 +439,7 @@ const DEFAULT_STAFF = [
   {
     id:'alejandro-aguilera',
     active:true,
+    order:4,
     name:'Alejandro Aguilera',
     role:'Entrenador de Porteros',
     roleShort:'Entren. Porteros',
@@ -463,6 +467,7 @@ const DEFAULT_STAFF = [
   {
     id:'carlos',
     active:true,
+    order:3,
     name:'Carlos Rueda',
     role:'Analista',
     roleShort:'Analista',
@@ -491,6 +496,7 @@ const DEFAULT_STAFF = [
   {
     id:'fisio',
     active:true,
+    order:5,
     name:'Fisioterapeuta',
     role:'Fisioterapeuta',
     roleShort:'Fisio',
@@ -507,6 +513,7 @@ const DEFAULT_STAFF = [
   {
     id:'fisio-asist',
     active:true,
+    order:6,
     name:'Fisio Asistente',
     role:'Fisioterapeuta Asist.',
     roleShort:'Fisio Asist.',
@@ -523,6 +530,7 @@ const DEFAULT_STAFF = [
   {
     id:'delegado',
     active:true,
+    order:7,
     name:'Delegado de Equipo',
     role:'Delegado de Equipo',
     roleShort:'Delegado',
@@ -539,6 +547,7 @@ const DEFAULT_STAFF = [
   {
     id:'borja',
     active:true,
+    order:8,
     name:'Borja Domínguez',
     role:'Utillero',
     roleShort:'Utillero',
@@ -565,6 +574,7 @@ const DEFAULT_STAFF = [
   {
     id:'javier',
     active:true,
+    order:9,
     name:'Javier Romero',
     role:'Utillero',
     roleShort:'Utillero',
@@ -591,6 +601,7 @@ const DEFAULT_STAFF = [
   {
     id:'ramon',
     active:true,
+    order:10,
     name:'Ramón Herrera',
     role:'Delegado de Campo',
     roleShort:'Delegado Campo',
@@ -641,6 +652,11 @@ const firebaseReady = (async () => {
 /* ── SYNC DE CUERPO TÉCNICO — Firestore colección 'staff', tiempo real
    entre todos los dispositivos. Migración única desde localStorage/
    DEFAULT_STAFF si Firestore está vacío, igual que en plantilla.html. ── */
+const DEFAULT_ORDER_BY_ID = {
+  bruno:0, pedro:1, 'alejandro-garcia':2, carlos:3, 'alejandro-aguilera':4,
+  fisio:5, 'fisio-asist':6, delegado:7, borja:8, javier:9, ramon:10
+};
+
 async function initStaffSync(){
   await firebaseReady;
   const colRef = FS.collection(db,'staff');
@@ -656,6 +672,17 @@ async function initStaffSync(){
     }catch(e){}
     for(const s of seed){
       await FS.setDoc(FS.doc(db,'staff',s.id), {...s, updatedAt: FS.serverTimestamp()});
+    }
+  } else {
+    // Datos ya migrados antes de que existiera el orden: rellenar 'order'
+    // una sola vez para quien no lo tenga, sin tocar nada más de su ficha.
+    let maxKnown = Math.max(...Object.values(DEFAULT_ORDER_BY_ID), -1);
+    for(const d of snap.docs){
+      const data = d.data();
+      if(typeof data.order !== 'number'){
+        const fallback = DEFAULT_ORDER_BY_ID[d.id] ?? (++maxKnown);
+        await FS.updateDoc(FS.doc(db,'staff',d.id), {order: fallback});
+      }
     }
   }
   FS.onSnapshot(colRef, snap=>{
@@ -674,7 +701,8 @@ let STAFF = [];
 function renderGrid() {
   const grid = document.getElementById('staff-grid');
   grid.innerHTML = '';
-  const visible = STAFF.filter(s=>s.active!==false);
+  const visible = STAFF.filter(s=>s.active!==false)
+    .sort((a,b)=>(a.order??999)-(b.order??999));
   document.querySelector('.sc').textContent = visible.length + ' miembros · Temporada 2026/27';
   visible.forEach((s,i) => {
     const div = document.createElement('div');
@@ -684,6 +712,8 @@ function renderGrid() {
     const photoHtml = s.photo
       ? `<img src="${s.photo}" alt="${s.name}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'card-photo-placeholder\\'><div class=\\'card-photo-initials\\'>${initials(s.name)}</div></div>'">`
       : `<div class="card-photo-placeholder"><div class="card-photo-initials">${initials(s.name)}</div></div>`;
+
+    const isFirst = i===0, isLast = i===visible.length-1;
 
     div.innerHTML = `
       <div class="card-photo">${photoHtml}</div>
@@ -698,6 +728,8 @@ function renderGrid() {
         ${!s.tbd?'<div class="card-arrow">→</div>':''}
       </div>
       <div class="card-actions">
+        ${!isFirst?`<button class="card-action-btn" onclick="event.stopPropagation();moveStaff('${s.id}',-1)" title="Subir">↑</button>`:''}
+        ${!isLast?`<button class="card-action-btn" onclick="event.stopPropagation();moveStaff('${s.id}',1)" title="Bajar">↓</button>`:''}
         <button class="card-action-btn" onclick="event.stopPropagation();openEditStaff('${s.id}')" title="Editar">✏️</button>
         <button class="card-action-btn" onclick="event.stopPropagation();openDeactivateStaff('${s.id}')" title="Dar de baja">🗑</button>
       </div>`;
@@ -921,8 +953,9 @@ async function saveStaffMember(){
     showToast('Ficha actualizada','ok');
   } else {
     const newId = 'm'+Date.now();
+    const nextOrder = Math.max(-1, ...STAFF.map(s=>s.order??-1)) + 1;
     await FS.setDoc(FS.doc(db,'staff',newId), {
-      name, role, roleShort, photo, tbd:false, active:true, quote,
+      name, role, roleShort, photo, tbd:false, active:true, quote, order: nextOrder,
       responsibilities:{ entrenamiento:{before:[],during:[],after:[]}, partido:{before:[],during:[],after:[]} },
       objectives:[], ficha:fichaData, updatedAt: FS.serverTimestamp()
     });
@@ -941,6 +974,23 @@ function openDeactivateStaff(id){
   document.getElementById('deact-staff-date').value = new Date().toISOString().slice(0,10);
   document.getElementById('deact-staff-reason').value = '';
   openModal('modal-staff-deactivate');
+}
+
+/* ── REORDENAR (admin) — intercambia el orden con el vecino y lo guarda
+   en Firestore, así el nuevo orden se ve igual en todos los dispositivos ── */
+async function moveStaff(id, direction){
+  const visible = STAFF.filter(s=>s.active!==false).sort((a,b)=>(a.order??999)-(b.order??999));
+  const idx = visible.findIndex(s=>s.id===id);
+  const targetIdx = idx + direction;
+  if(idx<0 || targetIdx<0 || targetIdx>=visible.length) return;
+  const a = visible[idx], b = visible[targetIdx];
+  const orderA = a.order ?? idx, orderB = b.order ?? targetIdx;
+  await firebaseReady;
+  await Promise.all([
+    FS.updateDoc(FS.doc(db,'staff',a.id), {order: orderB}),
+    FS.updateDoc(FS.doc(db,'staff',b.id), {order: orderA}),
+  ]);
+  // El listener onSnapshot repinta la cuadrícula con el nuevo orden
 }
 
 async function confirmDeactivateStaff(){
