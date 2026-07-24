@@ -329,6 +329,10 @@ input,select,textarea{font-family:inherit;outline:none;}
       </div>
     </div>
     <div class="form-group">
+      <label class="form-label">Foto (URL de Cloudinary)</label>
+      <input type="text" class="form-control" id="np-photo" placeholder="https://res.cloudinary.com/..."/>
+    </div>
+    <div class="form-group">
       <label class="form-label">Notas</label>
       <textarea class="form-control" id="np-notes" rows="2" placeholder="Observaciones…"></textarea>
     </div>
@@ -855,7 +859,7 @@ function renderProfileFines(p,att){
 function openAddPlayer(){
   document.getElementById('modal-player-title').textContent = 'Nuevo Jugador';
   document.getElementById('np-edit-id').value = '';
-  ['np-dorsal','np-nick','np-name','np-notes'].forEach(id=>document.getElementById(id).value='');
+  ['np-dorsal','np-nick','np-name','np-notes','np-photo'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('np-age').value='';
   document.getElementById('np-h').value='';
   document.getElementById('np-w').value='';
@@ -876,6 +880,7 @@ function openEditPlayer(pid){
   document.getElementById('np-h').value = p.h||'';
   document.getElementById('np-w').value = p.w||'';
   document.getElementById('np-notes').value = p.notes||'';
+  document.getElementById('np-photo').value = p.photo||'';
   document.getElementById('np-pos').value = p.pos;
   updateDemOptions();
   document.getElementById('np-dem').value = p.dem;
@@ -896,6 +901,7 @@ async function savePlayer(){
     h:parseInt(document.getElementById('np-h').value)||0,
     w:parseInt(document.getElementById('np-w').value)||0,
     notes:document.getElementById('np-notes').value.trim(),
+    photo:document.getElementById('np-photo').value.trim()||null,
   };
   await firebaseReady;
   if(editId){
