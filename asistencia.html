@@ -134,6 +134,29 @@ input,select,textarea{font-family:inherit;outline:none;}
 .att-toggle button{padding:4px 10px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:transparent;color:var(--mid);border:none;cursor:pointer;transition:all .15s;}
 .att-toggle button.on-p{background:var(--fit);color:var(--wh);}
 .att-toggle button.on-a{background:var(--inj);color:var(--wh);}
+
+/* Lista táctil de 4 estados + multa condicional */
+.att-row2{border:1px solid var(--bdr);border-radius:6px;margin-bottom:8px;overflow:hidden;background:var(--wh);transition:border-color .2s;}
+.att-row2-head{display:flex;align-items:center;gap:10px;padding:9px 12px;}
+.att-row2-num{font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--faint);width:20px;flex-shrink:0;text-align:right;}
+.att-row2-name{flex:1;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--txt);}
+.status-seg{display:flex;border:1.5px solid var(--bdr);border-radius:4px;overflow:hidden;flex-shrink:0;}
+.status-seg button{padding:5px 8px;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:transparent;color:var(--mid);border:none;cursor:pointer;transition:all .15s;border-right:1px solid var(--bdr);white-space:nowrap;}
+.status-seg button:last-child{border-right:none;}
+.status-seg button.sel-presente{background:var(--fit);color:var(--wh);}
+.status-seg button.sel-retraso{background:#d97706;color:var(--wh);}
+.status-seg button.sel-ausencia{background:var(--inj);color:var(--wh);}
+.status-seg button.sel-justificada{background:#6b7280;color:var(--wh);}
+.att-row2.st-presente{border-color:rgba(21,128,61,.3);}
+.att-row2.st-retraso{border-color:rgba(217,119,6,.35);}
+.att-row2.st-ausencia{border-color:rgba(220,38,38,.3);}
+.att-row2.st-justificada{border-color:rgba(107,114,128,.35);}
+.att-row2-fine{display:none;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--bdr);background:var(--bg);}
+.att-row2-fine.show{display:flex;}
+.fine-check-lbl{display:flex;align-items:center;gap:5px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mid);cursor:pointer;flex-shrink:0;}
+.fine-check-lbl input{accent-color:var(--r);width:14px;height:14px;}
+.fine-type-sel{flex:1;font-family:'Barlow',sans-serif;font-size:11px;padding:4px 6px;border:1.5px solid var(--bdr);border-radius:3px;background:var(--wh);color:var(--txt);}
+.fine-type-sel:disabled{opacity:.4;}
 .processing-overlay{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:56px;background:var(--wh);border:1px solid var(--bdr);border-radius:6px;}
 .spinner{width:32px;height:32px;border:3px solid var(--bdr);border-top-color:var(--r);border-radius:50%;animation:spin .7s linear infinite;}
 .proc-msg{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.08em;color:var(--mid);text-transform:uppercase;}
@@ -214,7 +237,8 @@ input,select,textarea{font-family:inherit;outline:none;}
     <div class="sb-section">Asistencia</div>
     <div class="nav-item active" onclick="nav('p-register',this)"><span class="nav-icon">📷</span>Registrar</div>
     <div class="nav-item" onclick="nav('p-history',this)"><span class="nav-icon">◫</span>Historial</div>
-    <div class="nav-item" onclick="nav('p-setup',this)"><span class="nav-icon">◈</span>Configurar zonas</div>
+    <!-- Zonas/Vision retirado — ver nota en el JS junto a checkZonesState() -->
+    <!-- <div class="nav-item" onclick="nav('p-setup',this)"><span class="nav-icon">◈</span>Configurar zonas</div> -->
     <div class="sb-section">Multas</div>
     <div class="nav-item" onclick="nav('p-fines',this)"><span class="nav-icon">◉</span>Registro <span class="nav-badge" id="unpaid-badge">0</span></div>
     <div class="nav-item" onclick="nav('p-fine-types',this)"><span class="nav-icon">◐</span>Catálogo</div>
@@ -238,13 +262,6 @@ input,select,textarea{font-family:inherit;outline:none;}
 
   <!-- REGISTER -->
   <div class="page active" id="p-register">
-    <div id="reg-no-zones" style="display:none;">
-      <div class="card" style="text-align:center;padding:48px;">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;margin-bottom:10px;color:var(--mid);">Sin zonas configuradas</div>
-        <div style="font-size:13px;color:var(--faint);margin-bottom:20px;">Configura primero las zonas de firma del papel.</div>
-        <button class="btn btn-primary" onclick="nav('p-setup',null)">Ir a Configurar zonas →</button>
-      </div>
-    </div>
     <div id="reg-upload">
       <div class="sh">
         <div class="st">Registrar Asistencia</div>
@@ -262,14 +279,14 @@ input,select,textarea{font-family:inherit;outline:none;}
     <div id="reg-processing" style="display:none;">
       <div class="processing-overlay">
         <div class="spinner"></div>
-        <div class="proc-msg" id="proc-msg">Analizando zonas de firma…</div>
-        <div style="font-size:12px;color:var(--faint);">Claude está revisando cada zona del papel</div>
+        <div class="proc-msg" id="proc-msg">Subiendo foto…</div>
+        <div style="font-size:12px;color:var(--faint);">Un momento</div>
       </div>
     </div>
     <div id="reg-results" style="display:none;">
       <div class="sh">
         <div>
-          <div class="st">Resultado del análisis</div>
+          <div class="st">Marcar asistencia</div>
           <div class="sc" id="result-meta"></div>
         </div>
         <div style="display:flex;gap:8px;">
@@ -284,7 +301,7 @@ input,select,textarea{font-family:inherit;outline:none;}
         </div>
         <div>
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);margin-bottom:12px;">
-            Asistencia detectada <span style="font-weight:400;font-family:'Barlow',sans-serif;color:var(--faint)">(corrige si es necesario)</span>
+            Lista de firma <span style="font-weight:400;font-family:'Barlow',sans-serif;color:var(--faint)">(mismo orden que el papel · todos parten como Presente)</span>
           </div>
           <div id="att-result-list"></div>
         </div>
@@ -604,7 +621,6 @@ function startListeners() {
         if(SETUP_IMG && document.getElementById('p-setup').classList.contains('active')) {
           loadImageOnCanvas(SETUP_IMG);
         }
-        checkZonesState();
       }
     });
   });
@@ -647,97 +663,138 @@ function renderPage(id) {
 function initRegister() {
   document.getElementById('reg-date-label').textContent =
     new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
-  checkZonesState();
 }
 
-function checkZonesState() {
-  const noZ = document.getElementById('reg-no-zones');
-  const up  = document.getElementById('reg-upload');
-  if(!ZONES.length) { noZ.style.display='block'; up.style.display='none'; }
-  else              { noZ.style.display='none';  up.style.display='block';}
+/* ── MAPEO NÚMERO DE HOJA → JUGADOR ──
+   La hoja física "Racing Club Portuense 26/27" tiene los números 1-30
+   impresos de forma fija; cada número corresponde siempre al mismo
+   jugador. Se empareja por 'nick' contra la plantilla EN VIVO (Firestore),
+   así que si algún día cambia el nick de alguien solo hay que tocar
+   este mapa, no toda la lógica. Los huecos en blanco de la hoja son null.
+   Zonas/Claude Vision retirado: los píxeles nunca coinciden entre fotos
+   tomadas desde ángulos distintos, y aquí no hace falta "leer" nada —
+   el número ya nos dice de quién es la casilla. */
+const SHEET_NUMBERS = {
+  1:'Jesús Castaño', 2:'Carmelo', 3:null, 4:'Adri Rodríguez', 5:'Rodri',
+  6:'Lolo Garrido', 7:'Jacobo', 8:'Adri Cuevas', 9:'Javi Tamayo', 10:'Hugo Rodríguez',
+  11:'Rubén Sánchez', 12:'Lupu', 13:'Juanma', 14:'Rodrigo Sanz', 15:'Amengual',
+  16:null, 17:'Héctor Peña', 18:'Brandon', 19:'Marcos', 20:'Farrando',
+  21:'Lainez', 22:'Víctor Olmo', 23:'Marcos Talavera', 24:'Fuentes', 25:'Nando Valencia',
+  26:null, 27:null, 28:null, 29:null, 30:null,
+};
+
+function buildRosterFromSheet(){
+  const byNick = {};
+  PLAYERS.forEach(p => { byNick[p.nick] = p; });
+  const used = new Set();
+  const roster = [];
+  for(let n=1; n<=30; n++){
+    const nick = SHEET_NUMBERS[n];
+    if(!nick) continue;
+    const p = byNick[nick];
+    if(!p) continue;
+    used.add(p.id);
+    roster.push({ sheetNum:n, playerId:p.id, playerName:p.nick });
+  }
+  // Jugadores en plantilla pero sin número asignado en la hoja (ej. altas nuevas)
+  PLAYERS.filter(p=>!used.has(p.id)).forEach(p=>{
+    roster.push({ sheetNum:null, playerId:p.id, playerName:p.nick });
+  });
+  return roster;
 }
+
+const STATUS_LABELS = {presente:'Presente', retraso:'Retraso', ausencia:'Ausencia', justificada:'Justificada'};
 
 window.handlePhoto = async function(input) {
   const file = input.files[0];
   if(!file) return;
   currentPhotoFile = file;
   const reader = new FileReader();
-  reader.onload = async e => {
+  reader.onload = e => {
     currentPhotoB64 = e.target.result;
     document.getElementById('reg-upload').style.display='none';
-    document.getElementById('reg-processing').style.display='block';
-    document.getElementById('reg-results').style.display='none';
-    await analyzePhoto(e.target.result);
+    document.getElementById('reg-processing').style.display='none';
+    attendanceResults = buildRosterFromSheet().map(r => ({
+      ...r, status:'presente', fine:false, fineTypeId:''
+    }));
+    showResults();
   };
   reader.readAsDataURL(file);
 };
 
-async function analyzePhoto(b64) {
-  const base64 = b64.split(',')[1];
-  const zones  = ZONES.map((z,i) =>
-    `Zone ${i+1} (${z.playerName}): from (${Math.round(z.x*100)}%,${Math.round(z.y*100)}%) to (${Math.round((z.x+z.w)*100)}%,${Math.round((z.y+z.h)*100)}%)`
-  ).join('\n');
-
-  const prompt = `You are analyzing an attendance sheet from a football training session.
-Each player always signs in a fixed position on the paper.
-Zones defined:\n${zones}\n
-For each zone, determine if there is a handwritten signature or mark (present) or blank (absent).
-Respond ONLY with a JSON array, no markdown:\n[{"zone":1,"player":"Name","present":true},...]
-Include all ${ZONES.length} zones.`;
-
-  try {
-    document.getElementById('proc-msg').textContent = 'Enviando a Claude Vision…';
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        messages:[{ role:'user', content:[
-          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:base64}},
-          {type:'text',text:prompt}
-        ]}]
-      })
-    });
-    const data = await res.json();
-    const raw  = data.content[0].text.trim().replace(/```json|```/g,'').trim();
-    const parsed = JSON.parse(raw);
-    attendanceResults = parsed.map((r,i) => ({
-      playerId:   ZONES[r.zone-1]?.playerId,
-      playerName: r.player || ZONES[r.zone-1]?.playerName,
-      present:    r.present
-    }));
-  } catch(e) {
-    attendanceResults = ZONES.map(z => ({ playerId:z.playerId, playerName:z.playerName, present:false }));
-    showToast('Error en la API — revisa manualmente','err');
-  }
-  showResults();
-}
-
 function showResults() {
-  document.getElementById('reg-processing').style.display='none';
   document.getElementById('reg-results').style.display='block';
   document.getElementById('result-img').src = currentPhotoB64;
-  const p = attendanceResults.filter(r=>r.present).length;
-  document.getElementById('result-meta').textContent = `${p} presentes · ${attendanceResults.length-p} ausencias`;
+  updateResultMeta();
   document.getElementById('att-result-list').innerHTML = attendanceResults.map((r,i) => `
-    <div class="att-result-row ${r.present?'present':'absent'}" id="row-${i}">
-      <div class="att-pname">${r.playerName}</div>
-      <div class="att-toggle">
-        <button onclick="toggleAtt(${i},true)"  class="${r.present?'on-p':''}">✓ Presente</button>
-        <button onclick="toggleAtt(${i},false)" class="${!r.present?'on-a':''}">✗ Ausente</button>
+    <div class="att-row2 st-${r.status}" id="row-${i}">
+      <div class="att-row2-head">
+        <div class="att-row2-num">${r.sheetNum ?? '—'}</div>
+        <div class="att-row2-name">${r.playerName}</div>
+        <div class="status-seg">
+          ${Object.keys(STATUS_LABELS).map(st=>`
+            <button class="${r.status===st?'sel-'+st:''}" onclick="setAttStatus(${i},'${st}')">${STATUS_LABELS[st]}</button>
+          `).join('')}
+        </div>
+      </div>
+      <div class="att-row2-fine ${r.status!=='presente'?'show':''}" id="fine-${i}">
+        <label class="fine-check-lbl">
+          <input type="checkbox" ${r.fine?'checked':''} onchange="toggleFine(${i},this.checked)"/> Multa
+        </label>
+        <select class="fine-type-sel" id="finetype-${i}" onchange="setFineType(${i},this.value)" ${r.fine?'':'disabled'}>
+          <option value="">— Tipo de multa —</option>
+          ${FINE_TYPES.map(t=>`<option value="${t.id}" ${r.fineTypeId===t.id?'selected':''}>${t.name} (${t.amount}€)</option>`).join('')}
+        </select>
       </div>
     </div>`).join('');
 }
 
-window.toggleAtt = function(i, present) {
-  attendanceResults[i].present = present;
+function updateResultMeta(){
+  const counts = {presente:0,retraso:0,ausencia:0,justificada:0};
+  attendanceResults.forEach(r=>counts[r.status]++);
+  document.getElementById('result-meta').textContent =
+    `${counts.presente} presentes · ${counts.retraso} retrasos · ${counts.ausencia} ausencias · ${counts.justificada} justificadas`;
+}
+
+window.setAttStatus = function(i, status){
+  const r = attendanceResults[i];
+  r.status = status;
+  // Multa por defecto: justificada nunca la lleva por defecto (pero se puede marcar a mano);
+  // ausencia y retraso sí, como ya hacía el sistema anterior de multas automáticas.
+  if(status==='presente'){ r.fine=false; r.fineTypeId=''; }
+  else if(status==='justificada'){ r.fine=false; }
+  else { r.fine=true; }
+  // Preselección razonable de tipo de multa si no hay una elegida ya
+  if(r.fine && !r.fineTypeId){
+    const guess = FINE_TYPES.find(t=>{
+      const n=t.name.toLowerCase();
+      if(status==='ausencia') return n.includes('ausencia') && !n.includes('justific');
+      if(status==='retraso')  return n.includes('retraso');
+      return false;
+    });
+    if(guess) r.fineTypeId = guess.id;
+  }
   const row = document.getElementById('row-'+i);
-  row.className = 'att-result-row '+(present?'present':'absent');
-  row.querySelectorAll('button')[0].className = present?'on-p':'';
-  row.querySelectorAll('button')[1].className = !present?'on-a':'';
-  const p = attendanceResults.filter(r=>r.present).length;
-  document.getElementById('result-meta').textContent = `${p} presentes · ${attendanceResults.length-p} ausencias`;
+  row.className = 'att-row2 st-'+status;
+  row.querySelectorAll('.status-seg button').forEach(b=>{
+    b.className = Object.keys(STATUS_LABELS).find(st=>STATUS_LABELS[st]===b.textContent)===status ? 'sel-'+status : '';
+  });
+  const fineBlock = document.getElementById('fine-'+i);
+  fineBlock.className = 'att-row2-fine'+(status!=='presente'?' show':'');
+  fineBlock.querySelector('input[type=checkbox]').checked = r.fine;
+  const sel = document.getElementById('finetype-'+i);
+  sel.disabled = !r.fine;
+  sel.value = r.fineTypeId||'';
+  updateResultMeta();
+};
+
+window.toggleFine = function(i, checked){
+  attendanceResults[i].fine = checked;
+  document.getElementById('finetype-'+i).disabled = !checked;
+};
+
+window.setFineType = function(i, typeId){
+  attendanceResults[i].fineTypeId = typeId;
 };
 
 window.saveSession = async function() {
@@ -746,43 +803,44 @@ window.saveSession = async function() {
   document.getElementById('reg-results').style.display='none';
   document.getElementById('reg-processing').style.display='block';
 
+  // La foto SIEMPRE se sube y se guarda como prueba/histórico, marcación
+  // manual o no — esto no depende de si hay detección automática.
   let photoUrl = null;
   try {
     photoUrl = await uploadToCloudinary(currentPhotoFile);
   } catch(e) {
-    showToast('No se pudo subir la foto','err');
+    showToast('No se pudo subir la foto — la sesión se guarda igualmente','err');
   }
 
-  // Save session to Firestore
   await addDoc(collection(db, 'attendance'), {
-    date, results: attendanceResults, photoUrl,
+    date,
+    results: attendanceResults.map(r=>({
+      playerId:r.playerId, playerName:r.playerName, sheetNum:r.sheetNum,
+      status:r.status, present: r.status==='presente' // compat con lecturas antiguas
+    })),
+    photoUrl,
     createdAt: serverTimestamp()
   });
 
-  // Auto-generate absence fines
-  const absType = FINE_TYPES.find(t => t.cat==='asistencia' && t.name.toLowerCase().includes('sin'));
-  const absent  = attendanceResults.filter(r => !r.present);
-  let autoFines = 0;
-  if(absType) {
-    for(const r of absent) {
-      await addDoc(collection(db, 'fines'), {
-        playerId:   r.playerId,
-        playerName: r.playerName,
-        typeId:     absType.id,
-        typeName:   absType.name,
-        amount:     absType.amount,
-        date, paid: false, recurrent:'no',
-        notes: 'Generada automáticamente · asistencia',
-        auto: true,
-        createdAt: serverTimestamp()
-      });
-      autoFines++;
-    }
+  // Multas: solo las que el staff marcó explícitamente en cada fila
+  let finesCreated = 0;
+  for(const r of attendanceResults){
+    if(!r.fine) continue;
+    const type = FINE_TYPES.find(t=>t.id===r.fineTypeId);
+    await addDoc(collection(db, 'fines'), {
+      playerId:r.playerId, playerName:r.playerName,
+      typeId: type?.id||null, typeName: type?.name||'Sin especificar',
+      amount: type?.amount||0,
+      date, paid:false, recurrent:'no',
+      notes: `Generada desde asistencia · ${STATUS_LABELS[r.status]}`,
+      auto:true, createdAt: serverTimestamp()
+    });
+    finesCreated++;
   }
 
   document.getElementById('reg-processing').style.display='none';
   resetReg();
-  showToast(`Sesión guardada · ${autoFines} multa(s) generada(s)`,'ok');
+  showToast(`Sesión guardada · ${finesCreated} multa(s) generada(s)`,'ok');
 };
 
 window.resetReg = function() {
@@ -790,7 +848,7 @@ window.resetReg = function() {
   document.getElementById('att-file').value = '';
   document.getElementById('reg-results').style.display='none';
   document.getElementById('reg-processing').style.display='none';
-  checkZonesState();
+  document.getElementById('reg-upload').style.display='block';
 };
 
 /* ── HISTORY ── */
@@ -965,7 +1023,6 @@ window.clearZones = function() {
 window.saveZones = async function() {
   await setDoc(doc(db,'config','zones'), { zones:ZONES, setupImg:SETUP_IMG||null });
   showToast(ZONES.length+' zonas guardadas en Firebase','ok');
-  checkZonesState();
 };
 
 /* ── FINES ── */
