@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>El Almacén · Racing Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --r:#e8192c;--r2:rgba(232,25,44,.1);--r3:rgba(232,25,44,.25);
+  --blk:#0b0b0b;--txt:#111;--mid:#737373;--faint:#b0b0b0;
+  --bdr:#e2e2e2;--bg:#f3f3f1;--wh:#fff;
+  --fit:#15803d;--fit-bg:#f0fdf4;--warn:#c2410c;--warn-bg:#fff7ed;
+}
+html,body{height:100%;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--txt);}
+button{font-family:inherit;cursor:pointer;border:none;outline:none;}
+input,select,textarea{font-family:inherit;outline:none;}
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes cardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:240px;flex-shrink:0;background:var(--blk);display:flex;flex-direction:column;position:relative;z-index:10;border-right:3px solid var(--r);}
+.sidebar::after{content:'';position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,rgba(255,255,255,.03) 1px,transparent 1px);background-size:22px 22px;}
+.sb-brand{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.07);position:relative;z-index:1;}
+.sb-back{display:flex;align-items:center;gap:6px;margin-bottom:14px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.14em;color:rgba(255,255,255,.28);text-transform:uppercase;cursor:pointer;background:none;border:none;padding:0;transition:color .2s;}
+.sb-back:hover{color:var(--r);}
+.sb-back svg{width:10px;height:10px;stroke:currentColor;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.sb-name{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--wh);letter-spacing:.5px;line-height:1;}
+.sb-name span{color:var(--r);}
+.sb-sub{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;color:rgba(255,255,255,.25);text-transform:uppercase;margin-top:4px;}
+.sb-nav{flex:1;padding:12px 10px;overflow-y:auto;position:relative;z-index:1;}
+.sb-sec{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.2em;color:rgba(255,255,255,.2);text-transform:uppercase;padding:14px 10px 5px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:4px;cursor:pointer;transition:all .18s;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.04em;color:rgba(255,255,255,.4);margin-bottom:1px;border-left:2px solid transparent;}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.8);}
+.nav-item.active{background:rgba(232,25,44,.12);color:var(--wh);border-left-color:var(--r);}
+.ni{width:18px;text-align:center;font-size:13px;flex-shrink:0;}
+.nb2{margin-left:auto;font-size:9px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.08em;background:rgba(255,255,255,.1);color:rgba(255,255,255,.3);padding:2px 6px;border-radius:10px;}
+.sb-foot{padding:14px 18px;border-top:1px solid rgba(255,255,255,.07);position:relative;z-index:1;}
+.sb-status{display:flex;align-items:center;gap:8px;padding:8px;border-radius:4px;border:1px solid rgba(255,255,255,.08);}
+.sb-status-dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex-shrink:0;}
+.sb-status-dot.on{background:var(--fit);}
+.sb-status-dot.off{background:var(--r);}
+.sb-status-txt{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.04em;}
+
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+.topbar{height:58px;background:var(--wh);border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;padding:0 36px;flex-shrink:0;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.topbar-title{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;letter-spacing:.1em;color:var(--txt);text-transform:uppercase;}
+.page{display:none;padding:28px 36px 56px;animation:fadeUp .3s ease;}
+.page.active{display:block;}
+
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--bdr);flex-wrap:wrap;gap:10px;}
+.st{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;letter-spacing:.12em;color:var(--txt);text-transform:uppercase;}
+.sc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);}
+.card{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;padding:18px;}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;transition:all .18s;cursor:pointer;border:none;}
+.btn-primary{background:var(--r);color:var(--wh);}
+.btn-primary:hover{background:#c8151f;}
+.btn-ghost{background:transparent;border:1.5px solid var(--bdr);color:var(--mid);}
+.btn-ghost:hover{border-color:var(--r);color:var(--r);}
+.btn-sm{padding:4px 10px;font-size:11px;}
+
+/* CONNECT SCREEN */
+.connect-wrap{max-width:520px;margin:60px auto;text-align:center;}
+.connect-icon{font-size:48px;margin-bottom:16px;}
+.connect-title{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:1px;margin-bottom:10px;}
+.connect-sub{font-size:14px;color:var(--mid);line-height:1.6;margin-bottom:28px;}
+
+/* FILTERS */
+.filters{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.filters select,.filters input{background:var(--wh);border:1.5px solid var(--bdr);border-radius:4px;padding:8px 12px;font-size:13px;color:var(--txt);}
+.filters input{flex:1;min-width:180px;}
+
+/* DOC GRID */
+.doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.doc-card{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;padding:16px;cursor:pointer;transition:all .18s;border-left:3px solid transparent;position:relative;}
+.doc-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.08);border-left-color:var(--r);}
+.doc-icon{font-size:24px;margin-bottom:10px;}
+.doc-name{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--txt);margin-bottom:4px;word-break:break-word;}
+.doc-meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);margin-bottom:10px;}
+.doc-tags{display:flex;gap:4px;flex-wrap:wrap;}
+.doc-tag{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:2px;background:var(--bg);color:var(--mid);}
+.doc-tag.tipo{background:var(--r2);color:var(--r);}
+.doc-unindexed{position:absolute;top:10px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--warn);}
+.doc-empty{grid-column:1/-1;text-align:center;padding:48px;color:var(--faint);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);}
+.overlay.open{display:flex;}
+.modal{background:var(--wh);border:1px solid var(--bdr);border-radius:8px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:26px;box-shadow:0 24px 60px rgba(0,0,0,.15);animation:fadeUp .25s ease;}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bdr);}
+.modal-head h3{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;}
+.modal-close{background:none;border:none;font-size:22px;color:var(--faint);cursor:pointer;padding:0;line-height:1;}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--bdr);}
+.form-group{margin-bottom:14px;}
+.form-label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--mid);margin-bottom:6px;}
+.form-control{width:100%;background:var(--bg);border:1.5px solid var(--bdr);border-radius:4px;color:var(--txt);padding:9px 12px;font-size:13px;transition:border-color .18s;font-family:'Barlow',sans-serif;}
+.form-control:focus{border-color:var(--r);outline:none;}
+.tags-cloud{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;}
+.tag-pill{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:3px;border:1.5px solid var(--bdr);background:var(--wh);color:var(--mid);cursor:pointer;transition:all .14s;}
+.tag-pill.selected{background:var(--r);border-color:var(--r);color:var(--wh);}
+.tag-add-row{display:flex;gap:5px;}
+
+.toast{position:fixed;bottom:20px;right:20px;background:var(--blk);color:var(--wh);padding:11px 16px 11px 12px;border-radius:4px;border-left:3px solid var(--r);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.2);display:none;}
+.toast.show{display:block;}
+.toast.ok{border-left-color:#15803d;}
+.toast.err{border-left-color:#dc2626;}
+
+@media(max-width:700px){.sidebar{display:none;}.page{padding:18px 14px 40px;}.doc-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="sidebar">
+  <div class="sb-brand">
+    <button class="sb-back" onclick="window.location.href='index.html'">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Volver al Lab
+    </button>
+    <div class="sb-name">RACING <span>LAB</span></div>
+    <div class="sb-sub">El Almacén</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-sec">Documentos</div>
+    <div class="nav-item active" onclick="nav('p-browse',this)"><span class="ni">📂</span>Explorar <span class="nb2" id="nb-docs">0</span></div>
+    <div class="nav-item" onclick="nav('p-unindexed',this)"><span class="ni">⚠️</span>Sin clasificar <span class="nb2" id="nb-unindexed">0</span></div>
+  </nav>
+  <div class="sb-foot">
+    <div class="sb-status">
+      <div class="sb-status-dot" id="sb-status-dot"></div>
+      <div class="sb-status-txt" id="sb-status-txt">Comprobando…</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Explorar</div>
+    <div id="topbar-actions"></div>
+  </div>
+
+  <!-- CONNECT -->
+  <div class="page" id="p-connect">
+    <div class="connect-wrap">
+      <div class="connect-icon">📦</div>
+      <div class="connect-title">Conectar Dropbox</div>
+      <div class="connect-sub">
+        El Almacén indexa y organiza los documentos que ya tienes en Dropbox —
+        presentaciones, análisis, actas — sin moverlos de sitio.
+        Solo hace falta conectar una vez.
+      </div>
+      <button class="btn btn-primary" onclick="startDropboxAuth()" style="padding:12px 28px;font-size:13px;">🔗 Conectar con Dropbox</button>
+    </div>
+  </div>
+
+  <!-- BROWSE -->
+  <div class="page active" id="p-browse">
+    <div class="sh">
+      <div class="st">Explorar Documentos</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="sc" id="doc-count">— documentos</div>
+        <button class="btn btn-ghost btn-sm" onclick="refreshDropboxListing()">↻ Actualizar</button>
+      </div>
+    </div>
+    <div class="filters">
+      <input type="text" id="f-search" placeholder="Buscar por nombre…" oninput="renderDocGrid()"/>
+      <select id="f-tipo" onchange="renderDocGrid()">
+        <option value="">Todos los tipos</option>
+        <option>Presentación</option><option>Informe</option>
+        <option>Análisis Rival</option><option>Análisis Propio</option>
+        <option>Acta</option><option>Administrativo</option><option>Otro</option>
+      </select>
+      <select id="f-rival" onchange="renderDocGrid()">
+        <option value="">Todos los rivales</option>
+      </select>
+    </div>
+    <div class="doc-grid" id="doc-grid"></div>
+  </div>
+
+  <!-- UNINDEXED -->
+  <div class="page" id="p-unindexed">
+    <div class="sh">
+      <div class="st">Sin Clasificar</div>
+      <div class="sc" id="unindexed-count">— documentos</div>
+    </div>
+    <div style="font-size:13px;color:var(--mid);margin-bottom:16px;">
+      Archivos detectados en <code>/RacingLab</code> que aún no tienen tipo, rival ni etiquetas asignadas. Tócalos para clasificarlos.
+    </div>
+    <div class="doc-grid" id="unindexed-grid"></div>
+  </div>
+
+</div>
+</div>
+
+<!-- INDEX MODAL -->
+<div class="overlay" id="modal-index">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="index-modal-title">Clasificar documento</h3>
+      <button class="modal-close" onclick="closeModal('modal-index')">×</button>
+    </div>
+    <div id="index-filename" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);margin-bottom:16px;word-break:break-all;"></div>
+    <input type="hidden" id="idx-path"/>
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <select class="form-control" id="idx-tipo">
+        <option value="">— Sin especificar —</option>
+        <option>Presentación</option><option>Informe</option>
+        <option>Análisis Rival</option><option>Análisis Propio</option>
+        <option>Acta</option><option>Administrativo</option><option>Otro</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Rival (opcional)</label>
+      <select class="form-control" id="idx-rival">
+        <option value="">— No aplica —</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Jornada / Fecha</label>
+      <input type="text" class="form-control" id="idx-jornada" placeholder="Ej: Jornada 4, o 12/09/2026"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Etiquetas</label>
+      <div class="tags-cloud" id="idx-tags-cloud"></div>
+      <div class="tag-add-row">
+        <input type="text" class="form-control" id="idx-tag-input" placeholder="Nueva etiqueta…" onkeydown="if(event.key==='Enter'){addIdxTag();event.preventDefault();}"/>
+        <button class="btn btn-ghost btn-sm" onclick="addIdxTag()">+</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-index')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveIndexEntry()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs, updateDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
+  authDomain:"racing-portuense-scouting.firebaseapp.com",
+  projectId:"racing-portuense-scouting",
+  storageBucket:"racing-portuense-scouting.firebasestorage.app",
+  messagingSenderId:"1073919975511",
+  appId:"1:1073919975511:web:7c7f59495d1f67f6f44312"
+});
+const db = getFirestore(app);
+
+/* ══════════ DROPBOX — OAuth2 PKCE (sin backend, sin secreto) ══════════
+   App key pública (no es secreta, es normal exponerla en cliente).
+   El flujo PKCE es precisamente el diseñado para apps sin servidor. */
+const DBX_APP_KEY = 'myo4q3uz371fn0a';
+const DBX_REDIRECT = 'https://ruedagomez.github.io/racingLab/almacen.html';
+const DBX_ROOT = '/RacingLab';
+
+let dbxAccessToken = null;
+let dbxTokenExpiry  = 0;
+
+/* ── PKCE helpers ── */
+function b64url(buf){
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function sha256(str){
+  return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+}
+function randomString(len=64){
+  const arr = new Uint8Array(len);
+  crypto.getRandomValues(arr);
+  return b64url(arr.buffer).slice(0,len);
+}
+
+window.startDropboxAuth = async function(){
+  const verifier = randomString(64);
+  sessionStorage.setItem('dbx_verifier', verifier);
+  const challenge = b64url(await sha256(verifier));
+  const url = new URL('https://www.dropbox.com/oauth2/authorize');
+  url.searchParams.set('client_id', DBX_APP_KEY);
+  url.searchParams.set('redirect_uri', DBX_REDIRECT);
+  url.searchParams.set('response_type', 'code');
+  url.searchParams.set('code_challenge', challenge);
+  url.searchParams.set('code_challenge_method', 'S256');
+  url.searchParams.set('token_access_type', 'offline'); // pide refresh_token
+  window.location.href = url.toString();
+};
+
+async function exchangeCodeForToken(code){
+  const verifier = sessionStorage.getItem('dbx_verifier');
+  const body = new URLSearchParams({
+    code, grant_type:'authorization_code',
+    client_id: DBX_APP_KEY, redirect_uri: DBX_REDIRECT,
+    code_verifier: verifier
+  });
+  const res = await fetch('https://api.dropboxapi.com/oauth2/token', { method:'POST', body });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error_description||data.error);
+  return data; // { access_token, refresh_token, expires_in }
+}
+
+async function refreshAccessToken(refreshToken){
+  const body = new URLSearchParams({
+    refresh_token: refreshToken, grant_type:'refresh_token', client_id: DBX_APP_KEY
+  });
+  const res = await fetch('https://api.dropboxapi.com/oauth2/token', { method:'POST', body });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error_description||data.error);
+  return data; // { access_token, expires_in }
+}
+
+/* ── Conexión compartida: el token de refresco vive en Firestore,
+   así todo el staff usa la misma conexión sin volver a autenticarse ── */
+async function ensureDropboxToken(){
+  const snap = await getDoc(doc(db,'config','dropbox'));
+  if(!snap.exists() || !snap.data().refresh_token) return false;
+  const refreshToken = snap.data().refresh_token;
+  try{
+    const t = await refreshAccessToken(refreshToken);
+    dbxAccessToken = t.access_token;
+    dbxTokenExpiry = Date.now() + (t.expires_in*1000) - 60000;
+    return true;
+  }catch(e){
+    console.error('[Dropbox] Error refrescando token:', e);
+    return false;
+  }
+}
+
+async function dbxFetch(endpoint, body, isContentApi=false){
+  if(!dbxAccessToken || Date.now() > dbxTokenExpiry){
+    const ok = await ensureDropboxToken();
+    if(!ok) throw new Error('Sin conexión a Dropbox');
+  }
+  const base = isContentApi ? 'https://content.dropboxapi.com/2/' : 'https://api.dropboxapi.com/2/';
+  const res = await fetch(base+endpoint, {
+    method:'POST',
+    headers:{ 'Authorization':'Bearer '+dbxAccessToken, 'Content-Type':'application/json' },
+    body: body?JSON.stringify(body):undefined
+  });
+  const data = await res.json();
+  if(data.error_summary) throw new Error(data.error_summary);
+  return data;
+}
+
+/* ══════════ CLUBES (misma lista que tercera.html, para el desplegable de rival) ══════════ */
+const CLUBS = [
+  {id:'racing',name:'Racing Club Portuense'},{id:'san-roque',name:'San Roque de Lepe'},
+  {id:'xerez-dfc',name:'Xerez DFC'},{id:'onubense',name:'Atlético Onubense'},
+  {id:'cadiz-b',name:'Cádiz CF Mirandilla'},{id:'pozoblanco',name:'CD Pozoblanco'},
+  {id:'ceuta-b',name:'AD Ceuta FC B'},{id:'bollullos',name:'Bollullos CF'},
+  {id:'puente-genil',name:'Salerm Puente Genil'},{id:'dos-hermanas',name:'Dos Hermanas CF 1971'},
+  {id:'egabrense',name:'Egabrense'},{id:'linense',name:'RB Linense'},
+  {id:'tomares',name:'UD Tomares'},{id:'utrera',name:'CD Utrera'},
+  {id:'chiclana',name:'Chiclana CF'},{id:'conil',name:'Conil CF'},
+  {id:'cordoba-b',name:'Córdoba CF B'},{id:'betis-c',name:'Real Betis C'},
+];
+function populateRivalSelects(){
+  const opts = CLUBS.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  document.getElementById('f-rival').innerHTML += opts;
+  document.getElementById('idx-rival').innerHTML += opts;
+}
+
+/* ══════════ ÍNDICE (Firestore) + LISTADO (Dropbox en vivo) ══════════
+   Dropbox es la fuente de qué archivos existen (siempre en vivo, nunca
+   se duplica ni se cachea de forma que pueda quedar desactualizado).
+   Firestore solo guarda los METADATOS de clasificación, enlazados por
+   la ruta del archivo en Dropbox. */
+let dbxFiles = [];       // listado en vivo desde Dropbox
+let indexData = {};      // { path: {tipo, rival, jornada, tags[], indexedBy, dropboxLink} }
+let allTags = [];
+
+async function loadIndex(){
+  const snap = await getDocs(collection(db,'almacenIndex'));
+  indexData = {};
+  snap.docs.forEach(d=>{ indexData[d.id] = d.data(); });
+  allTags = [...new Set(Object.values(indexData).flatMap(v=>v.tags||[]))];
+}
+
+window.refreshDropboxListing = async function(){
+  setSidebarStatus('checking');
+  try{
+    let entries = [];
+    let cursor = null, hasMore = true;
+    while(hasMore){
+      const data = cursor
+        ? await dbxFetch('files/list_folder/continue', {cursor})
+        : await dbxFetch('files/list_folder', {path:DBX_ROOT, recursive:true});
+      entries = entries.concat(data.entries.filter(e=>e['.tag']==='file'));
+      hasMore = data.has_more;
+      cursor = data.cursor;
+    }
+    dbxFiles = entries;
+    setSidebarStatus('connected');
+    await loadIndex();
+    renderDocGrid();
+    renderUnindexed();
+    updateBadges();
+  }catch(e){
+    console.error('[Dropbox] Error listando archivos:', e);
+    setSidebarStatus('error');
+    showToast('Error al leer Dropbox — revisa la conexión','err');
+  }
+};
+
+function updateBadges(){
+  document.getElementById('nb-docs').textContent = dbxFiles.length;
+  const unindexedCount = dbxFiles.filter(f=>!indexData[f.path_lower]).length;
+  document.getElementById('nb-unindexed').textContent = unindexedCount;
+}
+
+function fileIcon(name){
+  const ext = name.split('.').pop().toLowerCase();
+  if(['ppt','pptx'].includes(ext)) return '📊';
+  if(['doc','docx'].includes(ext)) return '📝';
+  if(['xls','xlsx'].includes(ext)) return '📈';
+  if(ext==='pdf') return '📕';
+  if(['jpg','jpeg','png'].includes(ext)) return '🖼️';
+  return '📄';
+}
+function clubName(id){ return CLUBS.find(c=>c.id===id)?.name || id; }
+
+function renderDocGrid(){
+  const search = document.getElementById('f-search').value.toLowerCase();
+  const fTipo  = document.getElementById('f-tipo').value;
+  const fRival = document.getElementById('f-rival').value;
+
+  const filtered = dbxFiles.filter(f=>{
+    const idx = indexData[f.path_lower]||{};
+    if(search && !f.name.toLowerCase().includes(search)) return false;
+    if(fTipo && idx.tipo!==fTipo) return false;
+    if(fRival && idx.rival!==fRival) return false;
+    return true;
+  }).sort((a,b)=>new Date(b.client_modified)-new Date(a.client_modified));
+
+  document.getElementById('doc-count').textContent = filtered.length+' documentos';
+  document.getElementById('doc-grid').innerHTML = filtered.length ? filtered.map(f=>docCardHTML(f)).join('')
+    : '<div class="doc-empty">No hay documentos con estos filtros</div>';
+}
+
+function renderUnindexed(){
+  const unindexed = dbxFiles.filter(f=>!indexData[f.path_lower]);
+  document.getElementById('unindexed-count').textContent = unindexed.length+' documentos';
+  document.getElementById('unindexed-grid').innerHTML = unindexed.length ? unindexed.map(f=>docCardHTML(f)).join('')
+    : '<div class="doc-empty">Todo está clasificado ✓</div>';
+}
+
+function docCardHTML(f){
+  const idx = indexData[f.path_lower];
+  const date = f.client_modified ? new Date(f.client_modified).toLocaleDateString('es-ES') : '';
+  return `<div class="doc-card" onclick="openDocument('${f.path_lower.replace(/'/g,"\\'")}')">
+    ${!idx?'<div class="doc-unindexed" title="Sin clasificar"></div>':''}
+    <div class="doc-icon">${fileIcon(f.name)}</div>
+    <div class="doc-name">${f.name}</div>
+    <div class="doc-meta">${date}</div>
+    <div class="doc-tags">
+      ${idx?.tipo?`<span class="doc-tag tipo">${idx.tipo}</span>`:''}
+      ${idx?.rival?`<span class="doc-tag">${clubName(idx.rival)}</span>`:''}
+      ${(idx?.tags||[]).map(t=>`<span class="doc-tag">${t}</span>`).join('')}
+    </div>
+  </div>`;
+}
+
+/* ── Abrir documento: clasificar si no lo está, o abrir enlace si ya lo está ── */
+window.openDocument = function(pathLower){
+  const f = dbxFiles.find(x=>x.path_lower===pathLower);
+  if(!f) return;
+  const idx = indexData[pathLower];
+  if(idx && idx.dropboxLink){
+    window.open(idx.dropboxLink, '_blank');
+  } else {
+    openIndexModal(f);
+  }
+};
+
+function openIndexModal(f){
+  document.getElementById('index-modal-title').textContent = indexData[f.path_lower] ? 'Editar clasificación' : 'Clasificar documento';
+  document.getElementById('index-filename').textContent = f.path_display;
+  document.getElementById('idx-path').value = f.path_lower;
+  const idx = indexData[f.path_lower] || {};
+  document.getElementById('idx-tipo').value = idx.tipo || '';
+  document.getElementById('idx-rival').value = idx.rival || '';
+  document.getElementById('idx-jornada').value = idx.jornada || '';
+  window.__idxTags = new Set(idx.tags||[]);
+  renderIdxTagsCloud();
+  openModal('modal-index');
+}
+
+function renderIdxTagsCloud(){
+  document.getElementById('idx-tags-cloud').innerHTML = allTags.map(t=>`
+    <div class="tag-pill${window.__idxTags.has(t)?' selected':''}" onclick="toggleIdxTag('${t.replace(/'/g,"\\'")}')">${t}</div>
+  `).join('');
+}
+window.toggleIdxTag = function(t){
+  if(window.__idxTags.has(t)) window.__idxTags.delete(t); else window.__idxTags.add(t);
+  renderIdxTagsCloud();
+};
+window.addIdxTag = function(){
+  const input = document.getElementById('idx-tag-input');
+  const val = input.value.trim().toLowerCase();
+  if(!val) return;
+  if(!allTags.includes(val)) allTags.push(val);
+  window.__idxTags.add(val);
+  input.value='';
+  renderIdxTagsCloud();
+};
+
+window.saveIndexEntry = async function(){
+  const path = document.getElementById('idx-path').value;
+  const f = dbxFiles.find(x=>x.path_lower===path);
+  let dropboxLink = indexData[path]?.dropboxLink || null;
+
+  if(!dropboxLink){
+    try{
+      const linkRes = await dbxFetch('sharing/create_shared_link_with_settings', { path: f.path_lower });
+      dropboxLink = linkRes.url.replace('?dl=0','?dl=1');
+    }catch(e){
+      // Puede que ya exista un enlace compartido — recuperarlo
+      try{
+        const existing = await dbxFetch('sharing/list_shared_links', { path: f.path_lower, direct_only:true });
+        if(existing.links?.length) dropboxLink = existing.links[0].url.replace('?dl=0','?dl=1');
+      }catch(e2){ console.error(e2); }
+    }
+  }
+
+  const entry = {
+    tipo: document.getElementById('idx-tipo').value,
+    rival: document.getElementById('idx-rival').value,
+    jornada: document.getElementById('idx-jornada').value.trim(),
+    tags: [...window.__idxTags],
+    dropboxLink, fileName: f.name,
+    indexedAt: new Date().toISOString()
+  };
+  await setDoc(doc(db,'almacenIndex',path), entry);
+  indexData[path] = entry;
+  closeModal('modal-index');
+  renderDocGrid(); renderUnindexed(); updateBadges();
+  showToast('Documento clasificado','ok');
+};
+
+/* ══════════ UI / NAV ══════════ */
+const PAGE_TITLES = {'p-browse':'Explorar','p-unindexed':'Sin Clasificar'};
+window.nav = function(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.getElementById('page-title').textContent = PAGE_TITLES[id]||'';
+};
+
+function setSidebarStatus(state){
+  const dot = document.getElementById('sb-status-dot');
+  const txt = document.getElementById('sb-status-txt');
+  dot.className = 'sb-status-dot';
+  if(state==='connected'){ dot.classList.add('on'); txt.textContent='Conectado a Dropbox'; }
+  else if(state==='error'){ dot.classList.add('off'); txt.textContent='Sin conexión'; }
+  else { txt.textContent='Comprobando…'; }
+}
+
+window.openModal = id => document.getElementById(id).classList.add('open');
+window.closeModal = id => document.getElementById(id).classList.remove('open');
+
+let toastTimer=null;
+window.showToast = function(msg,type=''){
+  let t=document.querySelector('.toast');
+  t.textContent=msg; t.className='toast show '+(type==='ok'?'ok':type==='err'?'err':'');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),3200);
+};
+
+/* ══════════ INIT ══════════ */
+populateRivalSelects();
+
+async function init(){
+  // ¿Venimos de vuelta de Dropbox con un código de autorización?
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+
+  if(code){
+    try{
+      const tokens = await exchangeCodeForToken(code);
+      // Guardamos el refresh_token compartido — todo el staff lo usará sin volver a conectar
+      await setDoc(doc(db,'config','dropbox'), {
+        refresh_token: tokens.refresh_token,
+        connectedAt: new Date().toISOString()
+      });
+      dbxAccessToken = tokens.access_token;
+      dbxTokenExpiry = Date.now() + (tokens.expires_in*1000) - 60000;
+      window.history.replaceState({}, '', DBX_REDIRECT); // limpiar ?code= de la URL
+      showToast('Dropbox conectado','ok');
+    }catch(e){
+      console.error('[Dropbox] Error en el intercambio de token:', e);
+      showToast('Error al conectar con Dropbox','err');
+    }
+  }
+
+  const connected = dbxAccessToken ? true : await ensureDropboxToken();
+  if(!connected){
+    setSidebarStatus('error');
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('p-connect').classList.add('active');
+    document.getElementById('page-title').textContent = 'Conectar Dropbox';
+    return;
+  }
+  setSidebarStatus('connected');
+  await refreshDropboxListing();
+}
+init();
+</script>
+</body>
+</html>
