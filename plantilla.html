@@ -479,7 +479,8 @@ async function initPlayersSync(){
   });
 }
 
-// Keep performance module in sync (performance.html sigue leyendo de localStorage)
+// Keep performance module in sync (performance.html sigue leyendo de localStorage
+// — migración completa pendiente como sesión aparte, ver nota en INIT)
 function syncToPerf(){
   try{
     const s=localStorage.getItem('rl_perf_v2');
@@ -488,10 +489,34 @@ function syncToPerf(){
     localStorage.setItem('rl_perf_v2',JSON.stringify(perf));
   }catch(e){}
 }
-
-// Cross-module readers
 function getPerfData(){ try{const s=localStorage.getItem('rl_perf_v2');return s?JSON.parse(s):{injuries:[],tests:[]};}catch(e){return{injuries:[],tests:[]};} }
-function getAttData(){ try{const s=localStorage.getItem('rl_att_v1');return s?JSON.parse(s):{attendance:[],fines:[],fineTypes:[]};}catch(e){return{attendance:[],fines:[],fineTypes:[]};} }
+
+/* ── ASISTENCIA/MULTAS — Firestore en vivo, misma colección que asistencia.html.
+   Antes leía 'rl_att_v1' de localStorage, una clave que dejó de tener quien la
+   escribiera en cuanto asistencia.html se migró a Firebase — por eso la pestaña
+   de Asistencia de cada jugador mostraba siempre 0%, en cualquier dispositivo. ── */
+let ATT_CACHE = { attendance: [], fines: [] };
+function getAttData(){ return ATT_CACHE; }
+
+async function initAttSync(){
+  await firebaseReady;
+  FS.onSnapshot(FS.collection(db,'attendance'), snap=>{
+    ATT_CACHE.attendance = snap.docs.map(d=>({id:d.id,...d.data()}));
+    refreshAfterAttChange();
+  });
+  FS.onSnapshot(FS.collection(db,'fines'), snap=>{
+    ATT_CACHE.fines = snap.docs.map(d=>({id:d.id,...d.data()}));
+    refreshAfterAttChange();
+  });
+}
+function refreshAfterAttChange(){
+  const activePage = document.querySelector('.page.active');
+  if(activePage) renderPage(activePage.id);
+  if(currentProfileId && document.getElementById('profile-view')?.classList.contains('active')){
+    const p = PLAYERS.find(pl=>pl.id===currentProfileId);
+    if(p) openProfile(currentProfileId, true);
+  }
+}
 
 let PLAYERS = [];
 let currentFilter = '';
@@ -981,6 +1006,7 @@ function showToast(msg,type='ok'){
 /* ── INIT ── */
 updateDemOptions();
 initPlayersSync();
+initAttSync();
 </script>
 </body>
 </html>
