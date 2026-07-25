@@ -498,15 +498,29 @@ function docCardHTML(f){
 }
 
 /* ── Abrir documento: clasificar si no lo está, o abrir enlace si ya lo está ── */
-window.openDocument = function(pathLower){
+window.openDocument = async function(pathLower){
   const f = dbxFiles.find(x=>x.path_lower===pathLower);
   if(!f) return;
   const idx = indexData[pathLower];
   if(idx && idx.dropboxLink){
     window.open(idx.dropboxLink, '_blank');
-  } else {
-    openIndexModal(f);
+    return;
   }
+  if(idx){
+    // Ya está clasificado pero no tiene enlace (fallo anterior al generarlo) —
+    // reintentar solo el enlace, sin pedir clasificar otra vez de cero.
+    showToast('Generando enlace de Dropbox…');
+    const link = await getOrCreateShareLink(f);
+    if(link){
+      idx.dropboxLink = link;
+      await setDoc(doc(db,'almacenIndex',pathLower), idx);
+      window.open(link, '_blank');
+    } else {
+      showToast('No se pudo generar el enlace — revisa la conexión a Dropbox','err');
+    }
+    return;
+  }
+  openIndexModal(f);
 };
 
 function openIndexModal(f){
@@ -541,38 +555,58 @@ window.addIdxTag = function(){
   renderIdxTagsCloud();
 };
 
+/* Intenta crear un enlace compartido; si ya existe uno, lo recupera.
+   Devuelve null (nunca lanza) si Dropbox falla por completo, para que
+   quien la llame pueda decidir qué mostrar en vez de romperse en silencio. */
+async function getOrCreateShareLink(f){
+  try{
+    const linkRes = await dbxFetch('sharing/create_shared_link_with_settings', { path: f.path_lower });
+    return linkRes.url.replace('?dl=0','?dl=1');
+  }catch(e){
+    console.warn('[Almacén] No se pudo crear enlace nuevo, probando a recuperar uno existente:', e.message);
+    try{
+      const existing = await dbxFetch('sharing/list_shared_links', { path: f.path_lower, direct_only:true });
+      if(existing.links?.length) return existing.links[0].url.replace('?dl=0','?dl=1');
+    }catch(e2){
+      console.error('[Almacén] Tampoco se pudo recuperar un enlace existente:', e2.message);
+    }
+    return null;
+  }
+}
+
 window.saveIndexEntry = async function(){
   const path = document.getElementById('idx-path').value;
   const f = dbxFiles.find(x=>x.path_lower===path);
-  let dropboxLink = indexData[path]?.dropboxLink || null;
-
-  if(!dropboxLink){
-    try{
-      const linkRes = await dbxFetch('sharing/create_shared_link_with_settings', { path: f.path_lower });
-      dropboxLink = linkRes.url.replace('?dl=0','?dl=1');
-    }catch(e){
-      // Puede que ya exista un enlace compartido — recuperarlo
-      try{
-        const existing = await dbxFetch('sharing/list_shared_links', { path: f.path_lower, direct_only:true });
-        if(existing.links?.length) dropboxLink = existing.links[0].url.replace('?dl=0','?dl=1');
-      }catch(e2){ console.error(e2); }
-    }
+  if(!f){
+    showToast('No se encontró el archivo — actualiza el listado e inténtalo de nuevo','err');
+    return;
   }
 
-  const entry = {
-    tipo: document.getElementById('idx-tipo').value,
-    rival: document.getElementById('idx-rival').value,
-    jornada: document.getElementById('idx-jornada').value.trim(),
-    tags: [...window.__idxTags],
-    dropboxLink, fileName: f.name,
-    indexedAt: new Date().toISOString()
-  };
-  await setDoc(doc(db,'almacenIndex',path), entry);
-  indexData[path] = entry;
-  closeModal('modal-index');
-  renderTagFilterCloud();
-  renderDocGrid(); renderUnindexed(); updateBadges();
-  showToast('Documento clasificado','ok');
+  try{
+    let dropboxLink = indexData[path]?.dropboxLink || null;
+    if(!dropboxLink) dropboxLink = await getOrCreateShareLink(f);
+
+    const entry = {
+      tipo: document.getElementById('idx-tipo').value,
+      rival: document.getElementById('idx-rival').value,
+      jornada: document.getElementById('idx-jornada').value.trim(),
+      tags: [...window.__idxTags],
+      dropboxLink, fileName: f.name,
+      indexedAt: new Date().toISOString()
+    };
+    await setDoc(doc(db,'almacenIndex',path), entry);
+    indexData[path] = entry;
+    closeModal('modal-index');
+    renderTagFilterCloud();
+    renderDocGrid(); renderUnindexed(); updateBadges();
+
+    if(dropboxLink) showToast('Documento clasificado','ok');
+    else showToast('Clasificación guardada, pero no se pudo generar el enlace — se reintentará al abrirlo','err');
+  }catch(e){
+    // Antes esto fallaba en silencio: modal atascado, sin guardar, sin aviso.
+    console.error('[Almacén] Error al guardar la clasificación:', e);
+    showToast('Error al guardar: '+e.message,'err');
+  }
 };
 
 /* ══════════ UI / NAV ══════════ */
