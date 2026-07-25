@@ -104,6 +104,9 @@ input,select,textarea{font-family:inherit;outline:none;}
 .form-control{width:100%;background:var(--bg);border:1.5px solid var(--bdr);border-radius:4px;color:var(--txt);padding:9px 12px;font-size:13px;transition:border-color .18s;font-family:'Barlow',sans-serif;}
 .form-control:focus{border-color:var(--r);outline:none;}
 .tags-cloud{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;}
+.tag-filter-cloud{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;}
+.tag-filter-clear{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--r);cursor:pointer;padding:3px 8px;display:none;align-items:center;gap:3px;}
+.tag-filter-clear.show{display:inline-flex;}
 .tag-pill{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:3px;border:1.5px solid var(--bdr);background:var(--wh);color:var(--mid);cursor:pointer;transition:all .14s;}
 .tag-pill.selected{background:var(--r);border-color:var(--r);color:var(--wh);}
 .tag-add-row{display:flex;gap:5px;}
@@ -170,7 +173,7 @@ input,select,textarea{font-family:inherit;outline:none;}
       </div>
     </div>
     <div class="filters">
-      <input type="text" id="f-search" placeholder="Buscar por nombre…" oninput="renderDocGrid()"/>
+      <input type="text" id="f-search" placeholder="Buscar por nombre o jornada…" oninput="renderDocGrid()"/>
       <select id="f-tipo" onchange="renderDocGrid()">
         <option value="">Todos los tipos</option>
         <option>Presentación</option><option>Informe</option>
@@ -181,6 +184,7 @@ input,select,textarea{font-family:inherit;outline:none;}
         <option value="">Todos los rivales</option>
       </select>
     </div>
+    <div class="tag-filter-cloud" id="f-tags-cloud"></div>
     <div class="doc-grid" id="doc-grid"></div>
   </div>
 
@@ -380,6 +384,7 @@ function populateRivalSelects(){
 let dbxFiles = [];       // listado en vivo desde Dropbox
 let indexData = {};      // { path: {tipo, rival, jornada, tags[], indexedBy, dropboxLink} }
 let allTags = [];
+let activeTagFilters = new Set(); // etiquetas seleccionadas en el filtro de búsqueda
 
 async function loadIndex(){
   const snap = await getDocs(collection(db,'almacenIndex'));
@@ -404,6 +409,7 @@ window.refreshDropboxListing = async function(){
     dbxFiles = entries;
     setSidebarStatus('connected');
     await loadIndex();
+    renderTagFilterCloud();
     renderDocGrid();
     renderUnindexed();
     updateBadges();
@@ -438,9 +444,10 @@ function renderDocGrid(){
 
   const filtered = dbxFiles.filter(f=>{
     const idx = indexData[f.path_lower]||{};
-    if(search && !f.name.toLowerCase().includes(search)) return false;
+    if(search && !f.name.toLowerCase().includes(search) && !(idx.jornada||'').toLowerCase().includes(search)) return false;
     if(fTipo && idx.tipo!==fTipo) return false;
     if(fRival && idx.rival!==fRival) return false;
+    if(activeTagFilters.size && !(idx.tags||[]).some(t=>activeTagFilters.has(t))) return false;
     return true;
   }).sort((a,b)=>new Date(b.client_modified)-new Date(a.client_modified));
 
@@ -448,6 +455,24 @@ function renderDocGrid(){
   document.getElementById('doc-grid').innerHTML = filtered.length ? filtered.map(f=>docCardHTML(f)).join('')
     : '<div class="doc-empty">No hay documentos con estos filtros</div>';
 }
+
+function renderTagFilterCloud(){
+  const wrap = document.getElementById('f-tags-cloud');
+  if(!allTags.length){ wrap.innerHTML=''; return; }
+  wrap.innerHTML = allTags.map(t=>`
+    <div class="tag-pill${activeTagFilters.has(t)?' selected':''}" onclick="toggleTagFilter('${t.replace(/'/g,"\\'")}')">${t}</div>
+  `).join('') + `<span class="tag-filter-clear${activeTagFilters.size?' show':''}" onclick="clearTagFilters()">✕ Limpiar etiquetas</span>`;
+}
+window.toggleTagFilter = function(t){
+  if(activeTagFilters.has(t)) activeTagFilters.delete(t); else activeTagFilters.add(t);
+  renderTagFilterCloud();
+  renderDocGrid();
+};
+window.clearTagFilters = function(){
+  activeTagFilters.clear();
+  renderTagFilterCloud();
+  renderDocGrid();
+};
 
 function renderUnindexed(){
   const unindexed = dbxFiles.filter(f=>!indexData[f.path_lower]);
@@ -545,6 +570,7 @@ window.saveIndexEntry = async function(){
   await setDoc(doc(db,'almacenIndex',path), entry);
   indexData[path] = entry;
   closeModal('modal-index');
+  renderTagFilterCloud();
   renderDocGrid(); renderUnindexed(); updateBadges();
   showToast('Documento clasificado','ok');
 };
