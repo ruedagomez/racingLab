@@ -386,10 +386,23 @@ let indexData = {};      // { path: {tipo, rival, jornada, tags[], indexedBy, dr
 let allTags = [];
 let activeTagFilters = new Set(); // etiquetas seleccionadas en el filtro de búsqueda
 
+/* Los IDs de documento de Firestore no admiten barras "/" — cada barra se
+   interpreta como un nivel de colección/documento anidado, que es justo
+   lo que rompía el guardado con rutas de Dropbox como ID directo.
+   Se codifica a base64 URL-safe (reversible, sin caracteres problemáticos)
+   y la ruta original se guarda como campo dentro del propio documento. */
+function sanitizePathId(path){
+  return btoa(unescape(encodeURIComponent(path)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
 async function loadIndex(){
   const snap = await getDocs(collection(db,'almacenIndex'));
   indexData = {};
-  snap.docs.forEach(d=>{ indexData[d.id] = d.data(); });
+  snap.docs.forEach(d=>{
+    const data = d.data();
+    indexData[data.path || d.id] = data; // 'path' es el campo fiable; d.id solo como respaldo de datos antiguos
+  });
   allTags = [...new Set(Object.values(indexData).flatMap(v=>v.tags||[]))];
 }
 
@@ -513,7 +526,8 @@ window.openDocument = async function(pathLower){
     const link = await getOrCreateShareLink(f);
     if(link){
       idx.dropboxLink = link;
-      await setDoc(doc(db,'almacenIndex',pathLower), idx);
+      idx.path = pathLower;
+      await setDoc(doc(db,'almacenIndex',sanitizePathId(pathLower)), idx);
       window.open(link, '_blank');
     } else {
       showToast('No se pudo generar el enlace — revisa la conexión a Dropbox','err');
@@ -591,10 +605,10 @@ window.saveIndexEntry = async function(){
       rival: document.getElementById('idx-rival').value,
       jornada: document.getElementById('idx-jornada').value.trim(),
       tags: [...window.__idxTags],
-      dropboxLink, fileName: f.name,
+      dropboxLink, fileName: f.name, path,
       indexedAt: new Date().toISOString()
     };
-    await setDoc(doc(db,'almacenIndex',path), entry);
+    await setDoc(doc(db,'almacenIndex',sanitizePathId(path)), entry);
     indexData[path] = entry;
     closeModal('modal-index');
     renderTagFilterCloud();
