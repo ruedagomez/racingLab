@@ -16,7 +16,7 @@
   --fit:#15803d;--fit-bg:#f0fdf4;
   --warn:#c2410c;--warn-bg:#fff7ed;
 }
-html,body{min-height:100%;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--txt);}
+html,body{min-height:100%;overflow-x:hidden;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--txt);}
 button{font-family:inherit;cursor:pointer;border:none;outline:none;}
 ::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
@@ -355,7 +355,7 @@ const MODULES = [
   { id:'07', name:'Análisis',              desc:'Vídeo, datos y reportes post-partido',             status:'dev',    url:null                    },
   { id:'08', name:'Sanciones',             desc:'Amonestaciones y suspensiones RFEF',               status:'dev',    url:null                    },
   { id:'11', name:'Calendario',            desc:'Vista unificada de partidos y entrenamientos',     status:'active', url:'calendario.html'       },
-  { id:'13', name:'Documentación',         desc:'Informes, actas y archivos del club',              status:'soon',   url:null                    },
+  { id:'13', name:'El Almacén',            desc:'Documentos, presentaciones y actas indexados desde Dropbox', status:'active', url:'almacen.html' },
   { id:'14', name:'Accesos',               desc:'Usuarios, roles y permisos del sistema',           status:'soon',   url:null                    },
   { id:'15', name:'Asistencia y Multas',   desc:'Control de asistencia y sanciones económicas',     status:'active', url:'asistencia.html'       },
   { id:'16', name:'Estadísticas',          desc:'Datos y métricas del club, alimentado por el resto de módulos', status:'dev', url:null         },
@@ -454,10 +454,13 @@ async function loadCalendarWidgets(){
     if(nextMatch){
       const daysLeft = Math.round((nextMatch._d-today)/86400000);
       const dateStr = nextMatch._d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+      const timeStr = nextMatch.time || 'Pdte. confirmar';
+      const locStr  = nextMatch.location || 'Pdte. confirmar';
       rivalBody.innerHTML = `
         <div class="rival-name">${nextMatch.title}</div>
         <div class="rival-date">${TYPE_LABELS[nextMatch.type]} · ${dateStr}</div>
-        <div class="rival-countdown">${daysLeft===0?'Es hoy':daysLeft===1?'Mañana':`En ${daysLeft} días`}</div>`;
+        <div class="rival-countdown">${daysLeft===0?'Es hoy':daysLeft===1?'Mañana':`En ${daysLeft} días`}</div>
+        <div class="rival-countdown">⏰ ${timeStr} &nbsp;·&nbsp; 📍 ${locStr}</div>`;
     } else {
       rivalBody.innerHTML = '<div class="rival-empty-icon">⚽</div><div class="widget-empty">Sin próximo partido programado</div>';
     }
@@ -468,14 +471,18 @@ async function loadCalendarWidgets(){
   }
 }
 
-/* ══════════ WIDGET: PLANTILLA POR POSICIÓN — localStorage rl_players ══════════ */
-function loadSquadWidget(){
+/* ══════════ WIDGET: PLANTILLA POR POSICIÓN — Firestore 'players' en vivo ══════════
+   Antes leía localStorage('rl_players'), que dejó de actualizarse en cuanto
+   plantilla.html se migró a Firebase — por eso aparecían jugadores obsoletos. */
+async function loadSquadWidget(){
   const body = document.getElementById('w-squad-body');
   let players = [];
   try{
-    const s = localStorage.getItem('rl_players');
-    if(s) players = JSON.parse(s).filter(p=>p.active!==false);
-  }catch(e){}
+    const snap = await getDocs(collection(db,'players'));
+    players = snap.docs.map(d=>({id:d.id,...d.data()})).filter(p=>p.active!==false);
+  }catch(e){
+    console.error('[Dashboard] Error cargando plantilla:', e);
+  }
 
   if(!players.length){
     body.innerHTML = '<div class="widget-empty">Sin datos de plantilla<br/><span style="font-size:10px">Abre el módulo Plantilla primero</span></div>';
@@ -568,9 +575,9 @@ function loadStandingsWidget(){
 }
 
 /* ══════════ INIT WIDGETS ══════════ */
-function loadWidgets(){
+async function loadWidgets(){
   loadStandingsWidget();
-  const { players } = loadSquadWidget();
+  const { players } = await loadSquadWidget();
   loadSancionesWidget(players);
   loadCalendarWidgets();
 }
