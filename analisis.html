@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Análisis · Racing Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700;800;900&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --r:#e8192c;--r2:rgba(232,25,44,.09);--r3:rgba(232,25,44,.2);
+  --blk:#0b0b0b;--txt:#111;--mid:#6b6b6b;--faint:#b0b0b0;
+  --bdr:#e2e2e2;--bg:#f3f3f1;--wh:#fff;
+  --fit:#15803d;--fit-bg:#f0fdf4;
+  --warn:#c2410c;--warn-bg:#fff7ed;
+  --inj:#dc2626;--inj-bg:#fef2f2;
+  /* paleta informe (analisis-rival) */
+  --i-bg:#f4f4f2;--i-bg2:#ebebe8;--i-card:#ffffff;--i-card2:#f9f8f6;
+  --i-border:#e4e2de;--i-border2:#d0cec9;
+  --i-red:#d01020;--i-blue:#1452cc;--i-green:#0a8a55;--i-amber:#c47b00;
+  --i-text:#111118;--i-muted:#7a7872;--i-muted2:#4a4845;
+  --i-sidebar:230px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:0 4px 16px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.05);
+}
+html,body{min-height:100%;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--txt);}
+button{font-family:inherit;cursor:pointer;border:none;outline:none;}
+input,select,textarea{font-family:inherit;outline:none;}
+img,svg,video{max-width:100%;}
+::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ══ SHELL ══ */
+.topbar{position:sticky;top:0;z-index:50;background:var(--wh);border-bottom:1px solid var(--bdr);padding:0 22px;height:58px;display:flex;align-items:center;gap:16px;}
+.topbar .back{display:flex;align-items:center;gap:7px;color:var(--mid);text-decoration:none;font-size:12.5px;font-weight:500;}
+.topbar .back:hover{color:var(--txt);}
+.topbar h1{font-family:'Bebas Neue',cursive;font-size:24px;letter-spacing:1.5px;font-weight:400;}
+.topbar h1 span{color:var(--r);}
+.topbar .spacer{flex:1;}
+.mode-chip{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;padding:6px 13px;border-radius:20px;border:1px solid var(--bdr);background:var(--bg);color:var(--mid);}
+.mode-chip.on{background:var(--fit-bg);border-color:#bbe7c9;color:var(--fit);}
+.mode-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--faint);}
+.mode-chip.on .dot{background:var(--fit);animation:fadeIn .3s;}
+.btn{border-radius:7px;font-weight:600;font-size:12.5px;padding:8px 16px;transition:.15s;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary{background:var(--r);color:#fff;}
+.btn-primary:hover{background:#c8101f;}
+.btn-ghost{background:transparent;color:var(--mid);border:1px solid var(--bdr);}
+.btn-ghost:hover{color:var(--txt);border-color:var(--faint);}
+.btn-sm{padding:5px 11px;font-size:11.5px;}
+.btn-danger{background:var(--inj-bg);color:var(--inj);border:1px solid #fecaca;}
+.btn-danger:hover{background:#fee2e2;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+
+.wrap{max-width:1180px;margin:0 auto;padding:26px 22px 80px;}
+.banner{display:flex;align-items:center;gap:10px;background:var(--warn-bg);border:1px solid #fed7aa;color:var(--warn);font-size:12px;font-weight:500;padding:10px 15px;border-radius:8px;margin-bottom:20px;}
+.pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
+.pagehead .pt{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;letter-spacing:.3px;}
+.pagehead .ps{font-size:12px;color:var(--mid);margin-top:2px;}
+
+/* ══ CALENDARIO ══ */
+.jgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px;}
+.jcard{background:var(--wh);border:1px solid var(--bdr);border-radius:10px;padding:14px 16px;animation:fadeUp .35s both;display:flex;flex-direction:column;gap:10px;transition:.15s;}
+.jcard:hover{border-color:var(--faint);box-shadow:var(--shadow-sm);}
+.jcard.pasada{opacity:.62;}
+.jc-top{display:flex;align-items:center;gap:10px;}
+.jc-num{font-family:'Bebas Neue',cursive;font-size:21px;color:var(--r);min-width:34px;line-height:1;}
+.jc-date{font-size:11px;color:var(--mid);font-family:'JetBrains Mono',monospace;}
+.jc-cond{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:4px;}
+.jc-cond.casa{background:var(--r2);color:var(--r);}
+.jc-cond.fuera{background:#eef2ff;color:#4338ca;}
+.jc-rival{display:flex;align-items:center;gap:10px;}
+.jc-shield{width:34px;height:34px;border-radius:50%;object-fit:contain;background:var(--bg);border:1px solid var(--bdr);padding:2px;flex-shrink:0;}
+.jc-shield-ph{width:34px;height:34px;border-radius:50%;background:var(--bg);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:12px;color:var(--faint);flex-shrink:0;}
+.jc-name{font-weight:600;font-size:13.5px;line-height:1.2;}
+.jc-city{font-size:10.5px;color:var(--mid);}
+.jc-foot{display:flex;align-items:center;gap:8px;border-top:1px solid var(--bg);padding-top:10px;margin-top:auto;}
+.jc-estado{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 9px;border-radius:4px;}
+.jc-estado.none{background:var(--bg);color:var(--faint);}
+.jc-estado.borrador{background:var(--warn-bg);color:var(--warn);}
+.jc-estado.publicado{background:var(--fit-bg);color:var(--fit);}
+.jc-actions{margin-left:auto;display:flex;gap:6px;}
+.jc-edit-row{display:flex;gap:8px;align-items:center;}
+.jc-edit-row select{flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--wh);}
+
+/* ══ EDITOR ══ */
+.ed-meta{background:var(--wh);border:1px solid var(--bdr);border-radius:10px;padding:18px 20px;margin-bottom:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;}
+.ed-field label{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--mid);margin-bottom:5px;}
+.ed-field input,.ed-field select{width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--bdr);border-radius:7px;background:var(--wh);}
+.ed-field input:focus,.ed-field select:focus{border-color:var(--r3);}
+.ed-block{background:var(--wh);border:1px solid var(--bdr);border-radius:10px;padding:18px 20px;margin-bottom:14px;animation:fadeUp .3s both;}
+.ed-block-title{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.ed-block-title::before{content:'';display:block;width:3px;height:16px;background:var(--r);border-radius:2px;}
+.ed-hint{font-size:11px;color:var(--faint);margin-bottom:9px;}
+.ed-block textarea{width:100%;font-size:13px;line-height:1.6;padding:10px 12px;border:1px solid var(--bdr);border-radius:7px;resize:vertical;min-height:90px;background:var(--wh);}
+.ed-block textarea:focus{border-color:var(--r3);}
+.clip-list{display:flex;flex-direction:column;gap:6px;margin-top:12px;}
+.clip-row{display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--bdr);border-radius:7px;padding:7px 11px;font-size:12px;}
+.clip-row .cl-lab{font-weight:600;}
+.clip-row .cl-url{color:var(--mid);font-size:10.5px;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.clip-row .cl-del{color:var(--inj);background:none;font-size:14px;padding:2px 6px;}
+.clip-add{display:grid;grid-template-columns:1fr 1.6fr 1.6fr auto;gap:7px;margin-top:9px;}
+.clip-add input{font-size:12px;padding:7px 9px;border:1px solid var(--bdr);border-radius:6px;}
+.plan-ed-row{display:grid;grid-template-columns:150px 110px 1fr auto;gap:8px;margin-bottom:7px;}
+.plan-ed-row input,.plan-ed-row select{font-size:12px;padding:7px 9px;border:1px solid var(--bdr);border-radius:6px;background:var(--wh);}
+.ed-savebar{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:18px 0 8px;display:flex;gap:10px;justify-content:flex-end;}
+
+/* ══ INFORME (estilo analisis-rival) ══ */
+#view-informe{display:none;position:fixed;inset:0;z-index:200;background:var(--i-bg);overflow:hidden;font-family:'Outfit',sans-serif;color:var(--i-text);font-size:13.5px;line-height:1.55;}
+.inf-layout{display:flex;height:100%;}
+.inf-sidebar{width:var(--i-sidebar);flex-shrink:0;background:#101014;display:flex;flex-direction:column;padding:22px 0 14px;overflow-y:auto;}
+.inf-sb-header{padding:0 20px 18px;border-bottom:1px solid rgba(255,255,255,.08);}
+.inf-sb-badge{display:inline-flex;align-items:center;gap:7px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#f3b3ba;background:rgba(232,25,44,.16);padding:4px 10px;border-radius:20px;margin-bottom:10px;}
+.inf-sb-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--r);}
+.inf-sb-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#fff;line-height:1.15;}
+.inf-sb-sub{font-size:11px;color:rgba(255,255,255,.45);margin-top:4px;}
+.inf-sb-nav{display:flex;flex-direction:column;padding-top:12px;flex:1;}
+.inf-sb-nav a{display:flex;align-items:center;gap:10px;padding:10px 20px;text-decoration:none;color:rgba(255,255,255,.5);font-size:12.5px;font-weight:500;border-left:2px solid transparent;transition:.18s;}
+.inf-sb-nav a:hover{color:#fff;background:rgba(255,255,255,.04);}
+.inf-sb-nav a.active{color:#fff;border-left-color:var(--r);background:rgba(232,25,44,.08);}
+.inf-sb-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,.3);}
+.inf-sb-footer{padding:14px 20px 0;border-top:1px solid rgba(255,255,255,.08);font-size:10.5px;color:rgba(255,255,255,.35);line-height:1.5;}
+.inf-sb-footer strong{display:block;color:rgba(255,255,255,.6);}
+.inf-main{flex:1;overflow-y:auto;scroll-behavior:smooth;}
+.inf-section{padding:44px 48px;max-width:1050px;}
+.sec-label{font-family:'Barlow Condensed',sans-serif;font-size:13.5px;font-weight:800;letter-spacing:3.5px;text-transform:uppercase;color:var(--i-red);margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.sec-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--i-border2) 0%,transparent 100%);max-width:200px;}
+.sec-title{font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:900;margin-bottom:22px;letter-spacing:.3px;line-height:1.1;}
+.subsection-title{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;margin-bottom:14px;margin-top:6px;display:flex;align-items:center;gap:8px;letter-spacing:.3px;}
+.subsection-title::before{content:'';display:block;width:3px;height:18px;background:var(--i-red);border-radius:2px;flex-shrink:0;}
+.icard{background:var(--i-card);border:1px solid var(--i-border);border-radius:12px;padding:18px 20px;min-width:0;overflow:hidden;box-shadow:var(--shadow-sm);}
+.icard ul{font-size:12.5px;color:var(--i-muted2);padding-left:16px;line-height:1.65;}
+.icard ul li{margin-bottom:4px;}
+.ig2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+.inf-cover{min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:60px 48px;position:relative;background:radial-gradient(1000px 500px at 80% 10%,rgba(232,25,44,.06),transparent 60%),var(--i-bg);}
+.inf-cover .cv-shield{width:110px;height:110px;object-fit:contain;margin-bottom:24px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.15));}
+.inf-cover .cv-kicker{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:var(--i-red);margin-bottom:10px;}
+.inf-cover h1{font-family:'Barlow Condensed',sans-serif;font-size:58px;font-weight:900;line-height:1.02;letter-spacing:.5px;margin-bottom:14px;}
+.inf-cover .cv-meta{display:flex;gap:12px;flex-wrap:wrap;}
+.inf-cover .cv-chip{font-size:11.5px;font-weight:600;padding:6px 14px;border-radius:20px;background:var(--i-card);border:1px solid var(--i-border);color:var(--i-muted2);box-shadow:var(--shadow-sm);}
+.video-section{margin-top:14px;}
+.video-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--i-muted);margin-bottom:8px;}
+.video-grid{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;}
+.video-grid.v1{grid-template-columns:minmax(0,1fr);}
+.video-placeholder{position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;cursor:pointer;border:1px solid var(--i-border2);background:#0a0d13 center/cover no-repeat;transition:opacity .2s;display:block;max-width:100%;min-width:0;}
+.vp-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.1) 0%,rgba(0,0,0,.55) 100%);opacity:.7;transition:.2s;}
+.video-placeholder:hover .vp-overlay{opacity:.45;}
+.video-placeholder:hover .vp-play{transform:translate(-50%,-50%) scale(1.08);}
+.vp-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:rgba(232,25,44,.9);display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(232,25,44,.5);transition:.2s;z-index:2;flex-shrink:0;}
+.vp-play svg{width:16px;height:16px;fill:#fff;margin-left:3px;}
+.vp-label{position:absolute;bottom:8px;left:10px;right:10px;font-size:10px;font-weight:600;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8);z-index:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.vp-tag{position:absolute;top:8px;left:8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:3px;background:rgba(232,25,44,.8);color:#fff;z-index:2;}
+.plan-item{padding:13px 15px;border-radius:10px;border:1px solid var(--i-border);background:var(--i-card);box-shadow:var(--shadow-sm);}
+.plan-item.danger{background:rgba(208,16,32,.04);border-color:rgba(208,16,32,.2);}
+.plan-item.chance{background:rgba(10,138,85,.04);border-color:rgba(10,138,85,.2);}
+.plan-time{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;margin-bottom:4px;color:var(--i-muted2);}
+.plan-item.danger .plan-time{color:var(--i-red);}
+.plan-item.chance .plan-time{color:var(--i-green);}
+.plan-text{font-size:11.5px;color:var(--i-muted2);line-height:1.4;}
+.inf-close{position:fixed;top:14px;right:16px;z-index:220;background:rgba(0,0,0,.55);color:#fff;border-radius:8px;padding:8px 15px;font-size:12px;font-weight:600;backdrop-filter:blur(4px);}
+.pipe-note{display:flex;gap:10px;align-items:flex-start;background:var(--i-card2);border:1px dashed var(--i-border2);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--i-muted);}
+
+/* ══ MODALES / TOAST ══ */
+.modal-bg{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--wh);border-radius:12px;padding:24px;width:min(400px,94vw);animation:fadeUp .2s;}
+.modal h3{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:800;margin-bottom:6px;}
+.modal p{font-size:12.5px;color:var(--mid);margin-bottom:14px;line-height:1.5;}
+.modal input{width:100%;font-size:14px;padding:10px 12px;border:1px solid var(--bdr);border-radius:8px;margin-bottom:14px;}
+.modal .m-actions{display:flex;gap:9px;justify-content:flex-end;}
+.modal .m-err{color:var(--inj);font-size:11.5px;margin:-8px 0 10px;display:none;}
+#videoModal{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.88);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px;}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--blk);color:#fff;font-size:12.5px;font-weight:500;padding:10px 20px;border-radius:8px;z-index:500;display:none;animation:toastIn .25s;}
+@media(max-width:820px){
+  .inf-sidebar{display:none;}
+  .inf-section{padding:28px 18px;}
+  .ig2{grid-template-columns:minmax(0,1fr);}
+  .inf-cover h1{font-size:38px;}
+  .inf-cover{padding:40px 20px;}
+  .clip-add{grid-template-columns:1fr;}
+  .plan-ed-row{grid-template-columns:1fr;}
+  .video-grid{grid-template-columns:minmax(0,1fr);}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ TOPBAR ══ -->
+<header class="topbar">
+  <a href="index.html" class="back">← Racing Lab</a>
+  <h1>ANÁLISIS <span>RIVAL</span></h1>
+  <div class="spacer"></div>
+  <div class="mode-chip" id="modeChip" onclick="toggleAnalista()" style="cursor:pointer" title="Modo analista: generar, editar y eliminar informes">
+    <div class="dot"></div><span id="modeChipTxt">Modo lectura</span>
+  </div>
+</header>
+
+<!-- ══ VISTA CALENDARIO ══ -->
+<div class="wrap" id="view-calendario">
+  <div class="banner" id="calBanner" style="display:none">
+    ⚠️ Calendario provisional — rivales asignados por orden de grupo hasta que la RFAF publique el calendario oficial. Actívalo en modo analista para corregirlo (J1–J17 sincroniza automáticamente su espejo J18–J34).
+  </div>
+  <div class="pagehead">
+    <div>
+      <div class="pt">Temporada 2026/27 · Grupo X</div>
+      <div class="ps">34 jornadas · Inicio 6 de septiembre · Descanso 27 dic y 3 ene</div>
+    </div>
+    <div style="display:flex;gap:9px;">
+      <button class="btn btn-ghost btn-sm" id="btnEditCal" onclick="toggleCalEdit()" style="display:none">✏️ Editar calendario</button>
+    </div>
+  </div>
+  <div class="jgrid" id="jgrid"></div>
+</div>
+
+<!-- ══ VISTA EDITOR ══ -->
+<div class="wrap" id="view-editor" style="display:none">
+  <div class="pagehead">
+    <div>
+      <div class="pt" id="edTitle">Editor</div>
+      <div class="ps" id="edSub"></div>
+    </div>
+    <div style="display:flex;gap:9px;">
+      <button class="btn btn-ghost btn-sm" onclick="showCalendario()">← Calendario</button>
+      <button class="btn btn-ghost btn-sm" onclick="openInforme(currentInformeId)">👁 Ver informe</button>
+    </div>
+  </div>
+  <div id="edBody"></div>
+  <div class="ed-savebar">
+    <button class="btn btn-danger" onclick="askDeleteInforme()">🗑 Eliminar informe</button>
+    <button class="btn btn-primary" onclick="saveInforme()">💾 Guardar cambios</button>
+  </div>
+</div>
+
+<!-- ══ VISTA INFORME ══ -->
+<div id="view-informe">
+  <button class="inf-close" onclick="closeInforme()">✕ Cerrar</button>
+  <div class="inf-layout">
+    <aside class="inf-sidebar" id="infSidebar"></aside>
+    <main class="inf-main" id="infMain"></main>
+  </div>
+</div>
+
+<!-- ══ MODAL CONTRASEÑA ══ -->
+<div class="modal-bg" id="passModal">
+  <div class="modal">
+    <h3>Modo analista</h3>
+    <p>Introduce la contraseña para generar, editar o eliminar informes. El resto del staff puede leer los informes publicados sin contraseña.</p>
+    <input type="password" id="passInput" placeholder="Contraseña" onkeydown="if(event.key==='Enter')checkPass()"/>
+    <div class="m-err" id="passErr">Contraseña incorrecta.</div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closePassModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="checkPass()">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL CONFIRMAR BORRADO ══ -->
+<div class="modal-bg" id="delModal">
+  <div class="modal">
+    <h3>Eliminar informe</h3>
+    <p id="delTxt">Se eliminará el informe por completo (texto y clips referenciados). Los vídeos en Dropbox no se tocan. Esta acción no se puede deshacer.</p>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeModal('delModal')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmDeleteInforme()">Eliminar definitivamente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL VÍDEO ══ -->
+<div id="videoModal">
+  <div style="position:relative;width:min(900px,92vw);">
+    <button onclick="closeVideo()" style="position:absolute;top:-44px;right:0;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:22px;cursor:pointer;line-height:1;padding:6px 14px;border-radius:8px;">✕</button>
+    <video id="modalVideo" controls playsinline webkit-playsinline style="width:100%;border-radius:10px;background:#000;display:block;max-height:80vh;object-fit:contain;">
+      <source id="modalVideoSrc" src="" type="video/mp4">
+    </video>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, getDocs, setDoc, deleteDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
+  authDomain: "racing-portuense-scouting.firebaseapp.com",
+  projectId: "racing-portuense-scouting",
+  storageBucket: "racing-portuense-scouting.firebasestorage.app",
+  messagingSenderId: "1073919975511",
+  appId: "1:1073919975511:web:7c7f59495d1f67f6f44312"
+});
+const db = getFirestore(app);
+
+/* ══════════ CONFIG ══════════ */
+const TEMPORADA = '2026-27';
+/* SHA-256 de la contraseña del analista. Por defecto: RCP2026 — CAMBIAR.
+   Para generar un hash nuevo, en la consola del navegador:
+   crypto.subtle.digest('SHA-256', new TextEncoder().encode('TuNuevaClave')).then(b=>console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''))) */
+const PASS_HASH = '401fde9cce4cbc36ab385715ead5a7cd8be898ab07368c4303d7cc5ff8543b1e';
+const ANALISTA = 'Carlos Rueda';
+
+/* Rivales Grupo X (mismos ids que tercera.html / colección rivals) */
+const CLUBS = [
+  { id:'san-roque',    lpId:'181',   name:'San Roque de Lepe',    short:'SRL', city:'Lepe',                      stadium:'Ciudad de Lepe' },
+  { id:'xerez-dfc',    lpId:'12717', name:'Xerez DFC',            short:'XDF', city:'Jerez de la Frontera',      stadium:'Chapín' },
+  { id:'onubense',     lpId:'362',   name:'Atlético Onubense',    short:'AON', city:'Huelva',                    stadium:'Ciudad Deportiva Decano' },
+  { id:'cadiz-b',      lpId:'163',   name:'Cádiz CF Mirandilla',  short:'CDZ', city:'Cádiz',                     stadium:'El Rosal' },
+  { id:'pozoblanco',   lpId:'21',    name:'CD Pozoblanco',        short:'POZ', city:'Pozoblanco',                stadium:'Municipal Pozoblanco' },
+  { id:'ceuta-b',      lpId:'13159', name:'AD Ceuta FC B',        short:'CEU', city:'Ceuta',                     stadium:'José Martínez Pirri' },
+  { id:'bollullos',    lpId:'582',   name:'Bollullos CF',         short:'BCF', city:'Bollullos Par del Condado', stadium:'Eloy Ávila Cano' },
+  { id:'puente-genil', lpId:'2224',  name:'Salerm Puente Genil',  short:'SPG', city:'Puente Genil',              stadium:'Manuel Polinario' },
+  { id:'dos-hermanas', lpId:'34672', name:'Dos Hermanas CF 1971', short:'DH71',city:'Dos Hermanas',              stadium:'Miguel Román' },
+  { id:'egabrense',    lpId:'23',    name:'Egabrense',            short:'EGA', city:'Cabra',                     stadium:'Antonio Povedano' },
+  { id:'linense',      lpId:'580',   name:'RB Linense',           short:'RBL', city:'La Línea de la Concepción', stadium:'Ciudad de La Línea' },
+  { id:'tomares',      lpId:'199',   name:'UD Tomares',           short:'TOM', city:'Tomares',                   stadium:'San Sebastián' },
+  { id:'utrera',       lpId:'201',   name:'CD Utrera',            short:'UTR', city:'Utrera',                    stadium:'San Juan Bosco' },
+  { id:'chiclana',     lpId:'170',   name:'Chiclana CF',          short:'CHI', city:'Chiclana de la Frontera',   stadium:'Municipal de Chiclana' },
+  { id:'conil',        lpId:'313',   name:'Conil CF',             short:'CNL', city:'Conil de la Frontera',      stadium:'José Antonio Pérez Ureba' },
+  { id:'cordoba-b',    lpId:'472',   name:'Córdoba CF B',         short:'COR', city:'Córdoba',                   stadium:'Ciudad Deportiva CCF' },
+  { id:'betis-c',      lpId:'517',   name:'Real Betis C',         short:'RBC', city:'Sevilla',                   stadium:'Luis del Sol' },
+];
+const clubById = id => CLUBS.find(c=>c.id===id) || null;
+
+/* Fechas fijas: domingos desde 06/09/2026, sin 27/12 ni 03/01 */
+const JORNADA_DATES = [
+  '2026-09-06','2026-09-13','2026-09-20','2026-09-27','2026-10-04','2026-10-11','2026-10-18','2026-10-25',
+  '2026-11-01','2026-11-08','2026-11-15','2026-11-22','2026-11-29','2026-12-06','2026-12-13','2026-12-20',
+  '2027-01-10','2027-01-17','2027-01-24','2027-01-31','2027-02-07','2027-02-14','2027-02-21','2027-02-28',
+  '2027-03-07','2027-03-14','2027-03-21','2027-03-28','2027-04-04','2027-04-11','2027-04-18','2027-04-25',
+  '2027-05-02','2027-05-09'
+];
+const fmtDate = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.slice(2)}`; };
+const todayIso = () => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; };
+
+/* Bloques del informe */
+const MOMENTOS = [
+  { key:'salidaBalon',        title:'Salida de balón' },
+  { key:'presionRival',       title:'Presión rival' },
+  { key:'faseOfensiva',       title:'Fase ofensiva' },
+  { key:'faseDefensiva',      title:'Fase defensiva' },
+  { key:'transicionOfensiva', title:'Transición ofensiva' },
+  { key:'transicionDefensiva',title:'Transición defensiva' },
+];
+const ABP = [
+  { key:'abpOfensiva',  title:'ABP Ofensiva',  hint:'Córners, faltas laterales/frontales, saques de banda, penaltis — a favor' },
+  { key:'abpDefensiva', title:'ABP Defensiva', hint:'Cómo defienden córners, faltas y saques de banda — a explotar' },
+];
+
+/* ══════════ ESTADO ══════════ */
+let SHIELDS = {};          // lpId → shieldUrl
+let calendario = null;     // { jornadas:[{n,clubId,condicion}], provisional }
+let informesIdx = {};      // informeId → {estado}
+let currentInformeId = null;
+let currentInforme = null; // doc en edición
+let calEditMode = false;
+let unsubInformes = null;
+
+/* ══════════ AUTH ANALISTA ══════════ */
+async function sha256(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+const isAnalista = () => sessionStorage.getItem('rl_analista') === '1';
+function refreshMode(){
+  const chip = document.getElementById('modeChip');
+  const txt  = document.getElementById('modeChipTxt');
+  const on = isAnalista();
+  chip.classList.toggle('on', on);
+  txt.textContent = on ? `Analista · ${ANALISTA}` : 'Modo lectura';
+  document.getElementById('btnEditCal').style.display = on ? '' : 'none';
+  document.getElementById('calBanner').style.display = (on && calendario?.provisional) ? 'flex' : 'none';
+  renderCalendario();
+}
+window.toggleAnalista = function(){
+  if(isAnalista()){
+    sessionStorage.removeItem('rl_analista');
+    calEditMode = false;
+    if(document.getElementById('view-editor').style.display !== 'none') showCalendario();
+    refreshMode(); toast('Modo lectura activado');
+  } else {
+    document.getElementById('passErr').style.display='none';
+    document.getElementById('passInput').value='';
+    document.getElementById('passModal').classList.add('open');
+    setTimeout(()=>document.getElementById('passInput').focus(), 60);
+  }
+};
+window.checkPass = async function(){
+  const v = document.getElementById('passInput').value;
+  if(await sha256(v) === PASS_HASH){
+    sessionStorage.setItem('rl_analista','1');
+    closePassModal(); refreshMode(); toast('Modo analista activado');
+  } else {
+    document.getElementById('passErr').style.display='block';
+  }
+};
+window.closePassModal = () => document.getElementById('passModal').classList.remove('open');
+window.closeModal = id => document.getElementById(id).classList.remove('open');
+function requireAnalista(){
+  if(isAnalista()) return true;
+  window.toggleAnalista();
+  return false;
+}
+
+/* ══════════ TOAST ══════════ */
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display='block';
+  clearTimeout(t._h); t._h = setTimeout(()=>t.style.display='none', 2600);
+}
+
+/* ══════════ DROPBOX URL ══════════ */
+/* Normaliza enlaces compartidos de Dropbox a reproducibles: dl=0 → raw=1.
+   Lección 25/26: mantener dominio www.dropbox.com; dl.dropboxusercontent rompe backgrounds. */
+function dbxRaw(url){
+  if(!url) return '';
+  url = url.trim();
+  if(url.includes('dropbox.com')){
+    url = url.replace(/([?&])dl=\d/,'$1raw=1');
+    if(!/[?&]raw=1/.test(url)) url += (url.includes('?')?'&':'?') + 'raw=1';
+  }
+  return url;
+}
+
+/* ══════════ CALENDARIO ══════════ */
+function defaultCalendario(){
+  const jornadas = [];
+  for(let n=1;n<=17;n++){
+    const club = CLUBS[n-1];
+    const cond = n%2===1 ? 'casa' : 'fuera';
+    jornadas.push({ n, clubId:club.id, condicion:cond });
+  }
+  for(let n=18;n<=34;n++){
+    const ida = jornadas[n-18];
+    jornadas.push({ n, clubId:ida.clubId, condicion: ida.condicion==='casa'?'fuera':'casa' });
+  }
+  return { jornadas, provisional:true };
+}
+async function loadCalendario(){
+  try{
+    const snap = await getDoc(doc(db,'analisisCalendario',TEMPORADA));
+    if(snap.exists()){ calendario = snap.data(); }
+    else {
+      calendario = defaultCalendario();
+      await setDoc(doc(db,'analisisCalendario',TEMPORADA), calendario);
+    }
+  }catch(e){ console.error('[Calendario]', e); calendario = defaultCalendario(); }
+}
+async function saveCalendario(){
+  try{ await setDoc(doc(db,'analisisCalendario',TEMPORADA), calendario); }
+  catch(e){ console.error('[Calendario save]', e); toast('Error guardando calendario'); }
+}
+window.toggleCalEdit = function(){
+  if(!requireAnalista()) return;
+  calEditMode = !calEditMode;
+  document.getElementById('btnEditCal').textContent = calEditMode ? '✓ Terminar edición' : '✏️ Editar calendario';
+  renderCalendario();
+};
+window.calSetRival = async function(n, clubId){
+  const j = calendario.jornadas.find(x=>x.n===n); if(!j) return;
+  j.clubId = clubId;
+  const mirror = calendario.jornadas.find(x=>x.n === (n<=17 ? n+17 : n-17));
+  if(mirror) mirror.clubId = clubId;
+  await saveCalendario(); renderCalendario();
+};
+window.calSetCond = async function(n, cond){
+  const j = calendario.jornadas.find(x=>x.n===n); if(!j) return;
+  j.condicion = cond;
+  const mirror = calendario.jornadas.find(x=>x.n === (n<=17 ? n+17 : n-17));
+  if(mirror) mirror.condicion = cond==='casa'?'fuera':'casa';
+  await saveCalendario(); renderCalendario();
+};
+window.calConfirmOficial = async function(){
+  calendario.provisional = false;
+  await saveCalendario(); refreshMode(); toast('Calendario marcado como oficial');
+};
+
+const informeId = n => `${TEMPORADA}_J${String(n).padStart(2,'0')}`;
+
+function renderCalendario(){
+  const grid = document.getElementById('jgrid');
+  if(!calendario){ grid.innerHTML=''; return; }
+  const hoy = todayIso();
+  const admin = isAnalista();
+  grid.innerHTML = calendario.jornadas.map((j,i)=>{
+    const club = clubById(j.clubId);
+    const fecha = JORNADA_DATES[j.n-1];
+    const iid = informeId(j.n);
+    const est = informesIdx[iid]?.estado || null;
+    const shield = club && SHIELDS[club.lpId]
+      ? `<img class="jc-shield" src="${SHIELDS[club.lpId]}" alt=""/>`
+      : `<div class="jc-shield-ph">${club?club.short:'—'}</div>`;
+    const estadoBadge = est
+      ? `<span class="jc-estado ${est}">${est==='publicado'?'Publicado':'Borrador'}</span>`
+      : `<span class="jc-estado none">Sin informe</span>`;
+    let actions = '';
+    if(est){
+      actions += `<button class="btn btn-ghost btn-sm" onclick="openInforme('${iid}')">Ver</button>`;
+      if(admin) actions += `<button class="btn btn-ghost btn-sm" onclick="openEditor('${iid}')">Editar</button>`;
+    } else if(admin){
+      actions += `<button class="btn btn-primary btn-sm" onclick="generarInforme(${j.n})">⚡ Generar informe</button>`;
+    }
+    const editRow = (admin && calEditMode) ? `
+      <div class="jc-edit-row">
+        <select onchange="calSetRival(${j.n}, this.value)">
+          ${CLUBS.map(c=>`<option value="${c.id}" ${c.id===j.clubId?'selected':''}>${c.name}</option>`).join('')}
+        </select>
+        <select onchange="calSetCond(${j.n}, this.value)">
+          <option value="casa" ${j.condicion==='casa'?'selected':''}>Casa</option>
+          <option value="fuera" ${j.condicion==='fuera'?'selected':''}>Fuera</option>
+        </select>
+      </div>` : '';
+    return `<div class="jcard ${fecha<hoy?'pasada':''}" style="animation-delay:${Math.min(i*18,400)}ms">
+      <div class="jc-top">
+        <div class="jc-num">J${j.n}</div>
+        <div class="jc-date">${fmtDate(fecha)}</div>
+        <div class="jc-cond ${j.condicion}">${j.condicion}</div>
+      </div>
+      <div class="jc-rival">
+        ${shield}
+        <div><div class="jc-name">${club?club.name:'—'}</div><div class="jc-city">${club?club.city:''}</div></div>
+      </div>
+      ${editRow}
+      <div class="jc-foot">${estadoBadge}<div class="jc-actions">${actions}</div></div>
+    </div>`;
+  }).join('') + (admin && calEditMode && calendario.provisional
+      ? `<div style="grid-column:1/-1;text-align:center;padding:8px;"><button class="btn btn-ghost" onclick="calConfirmOficial()">✓ Marcar calendario como oficial (quita el aviso provisional)</button></div>`
+      : '');
+}
+
+/* ══════════ INFORMES · plantilla y CRUD ══════════ */
+function emptyBloque(){ return { items:[], clips:[] }; }
+function plantillaInforme(j){
+  const club = clubById(j.clubId);
+  const bloques = {};
+  [...MOMENTOS, ...ABP].forEach(b => bloques[b.key] = emptyBloque());
+  return {
+    temporada: TEMPORADA, jornada: j.n, clubId: j.clubId,
+    condicion: j.condicion, fecha: JORNADA_DATES[j.n-1],
+    rivalName: club ? club.name : '', estado: 'borrador',
+    sistema: '', dropboxFolder: '',
+    visionado: [], contexto: [],
+    bloques,
+    datos: [],
+    arbitro: { nombre:'', delegacion:'', notas:[] },
+    fortalezas: [], debilidades: [],
+    planTramos: [
+      { tramo:"0–15'",  tipo:'neutral', texto:'' },
+      { tramo:"16–30'", tipo:'neutral', texto:'' },
+      { tramo:"31–45'", tipo:'neutral', texto:'' },
+      { tramo:"46–60'", tipo:'neutral', texto:'' },
+      { tramo:"61–75'", tipo:'neutral', texto:'' },
+      { tramo:"76–90'", tipo:'neutral', texto:'' },
+    ],
+    createdAt: new Date().toISOString(),
+  };
+}
+window.generarInforme = async function(n){
+  if(!requireAnalista()) return;
+  const j = calendario.jornadas.find(x=>x.n===n); if(!j) return;
+  const iid = informeId(n);
+  try{
+    const snap = await getDoc(doc(db,'analisisInformes',iid));
+    if(snap.exists()){ openEditor(iid); return; }   // idempotente: nunca machaca
+    const data = plantillaInforme(j);
+    data.updatedAt = new Date().toISOString(); data.updatedBy = ANALISTA;
+    await setDoc(doc(db,'analisisInformes',iid), data);
+    toast(`Informe J${n} generado`);
+    openEditor(iid);
+  }catch(e){ console.error('[Generar]', e); toast('Error generando el informe'); }
+};
+window.askDeleteInforme = function(){
+  if(!requireAnalista() || !currentInforme) return;
+  document.getElementById('delTxt').textContent =
+    `Se eliminará por completo el informe J${currentInforme.jornada} · ${currentInforme.rivalName}. Los vídeos en Dropbox no se tocan. Podrás volver a generarlo vacío. Esta acción no se puede deshacer.`;
+  document.getElementById('delModal').classList.add('open');
+};
+window.confirmDeleteInforme = async function(){
+  if(!requireAnalista() || !currentInformeId) return;
+  try{
+    await deleteDoc(doc(db,'analisisInformes',currentInformeId));
+    closeModal('delModal'); toast('Informe eliminado'); showCalendario();
+  }catch(e){ console.error('[Delete]', e); toast('Error eliminando'); }
+};
+
+/* ══════════ EDITOR ══════════ */
+const linesToArr = txt => txt.split('\n').map(s=>s.trim()).filter(Boolean);
+const arrToLines = arr => (arr||[]).join('\n');
+const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+window.showCalendario = function(){
+  document.getElementById('view-editor').style.display='none';
+  document.getElementById('view-calendario').style.display='block';
+  currentInforme = null; currentInformeId = null;
+};
+window.openEditor = async function(iid){
+  if(!requireAnalista()) return;
+  try{
+    const snap = await getDoc(doc(db,'analisisInformes',iid));
+    if(!snap.exists()){ toast('El informe no existe'); return; }
+    currentInforme = snap.data(); currentInformeId = iid;
+    document.getElementById('view-calendario').style.display='none';
+    document.getElementById('view-editor').style.display='block';
+    document.getElementById('edTitle').textContent = `J${currentInforme.jornada} · ${currentInforme.rivalName}`;
+    document.getElementById('edSub').textContent = `${fmtDate(currentInforme.fecha)} · ${currentInforme.condicion.toUpperCase()} · ${currentInforme.estado==='publicado'?'Publicado':'Borrador'}`;
+    renderEditor();
+    window.scrollTo(0,0);
+  }catch(e){ console.error('[Editor]', e); toast('Error abriendo el editor'); }
+};
+
+function clipListHtml(bkey){
+  const clips = getBloqueRef(bkey).clips || [];
+  return clips.map((c,idx)=>`
+    <div class="clip-row">
+      <span class="cl-lab">🎬 ${esc(c.label)||'Clip'}</span>
+      <span class="cl-url">${esc(c.video)}</span>
+      <button class="cl-del" onclick="delClip('${bkey}',${idx})">✕</button>
+    </div>`).join('');
+}
+function getBloqueRef(key){
+  if(currentInforme.bloques[key]) return currentInforme.bloques[key];
+  currentInforme.bloques[key] = emptyBloque();
+  return currentInforme.bloques[key];
+}
+window.addClip = function(bkey){
+  const lab = document.getElementById(`cl-lab-${bkey}`).value.trim();
+  const vid = document.getElementById(`cl-vid-${bkey}`).value.trim();
+  const thu = document.getElementById(`cl-thu-${bkey}`).value.trim();
+  if(!vid){ toast('Falta el enlace del vídeo'); return; }
+  getBloqueRef(bkey).clips.push({ label: lab, video: dbxRaw(vid), thumb: dbxRaw(thu) });
+  document.getElementById(`clips-${bkey}`).innerHTML = clipListHtml(bkey);
+  ['cl-lab','cl-vid','cl-thu'].forEach(p=>document.getElementById(`${p}-${bkey}`).value='');
+};
+window.delClip = function(bkey, idx){
+  getBloqueRef(bkey).clips.splice(idx,1);
+  document.getElementById(`clips-${bkey}`).innerHTML = clipListHtml(bkey);
+};
+window.planAdd = function(){
+  currentInforme.planTramos.push({tramo:'',tipo:'neutral',texto:''});
+  renderPlanEd();
+};
+window.planDel = function(i){ currentInforme.planTramos.splice(i,1); renderPlanEd(); };
+window.planSet = function(i, field, val){ currentInforme.planTramos[i][field] = val; };
+function renderPlanEd(){
+  document.getElementById('planEd').innerHTML = currentInforme.planTramos.map((p,i)=>`
+    <div class="plan-ed-row">
+      <input value="${esc(p.tramo)}" placeholder="Tramo (0–15')" oninput="planSet(${i},'tramo',this.value)"/>
+      <select onchange="planSet(${i},'tipo',this.value)">
+        <option value="neutral" ${p.tipo==='neutral'?'selected':''}>Neutral</option>
+        <option value="chance"  ${p.tipo==='chance'?'selected':''}>Oportunidad</option>
+        <option value="danger"  ${p.tipo==='danger'?'selected':''}>Peligro</option>
+      </select>
+      <input value="${esc(p.texto)}" placeholder="Consigna del tramo" oninput="planSet(${i},'texto',this.value)"/>
+      <button class="btn btn-ghost btn-sm" onclick="planDel(${i})">✕</button>
+    </div>`).join('') +
+    `<button class="btn btn-ghost btn-sm" onclick="planAdd()" style="margin-top:4px">+ Añadir tramo</button>`;
+}
+function bloqueEditorHtml(b, hint){
+  return `<div class="ed-block">
+    <div class="ed-block-title">${b.title}</div>
+    <div class="ed-hint">${hint || 'Una observación por línea — se convierten en viñetas del informe.'}</div>
+    <textarea id="ta-${b.key}">${esc(arrToLines(getBloqueRef(b.key).items))}</textarea>
+    <div class="clip-list" id="clips-${b.key}">${clipListHtml(b.key)}</div>
+    <div class="clip-add">
+      <input id="cl-lab-${b.key}" placeholder="Etiqueta del clip"/>
+      <input id="cl-vid-${b.key}" placeholder="Enlace Dropbox del vídeo (.mp4)"/>
+      <input id="cl-thu-${b.key}" placeholder="Enlace Dropbox de la miniatura (.png) — opcional"/>
+      <button class="btn btn-ghost btn-sm" onclick="addClip('${b.key}')">+ Clip</button>
+    </div>
+  </div>`;
+}
+function renderEditor(){
+  const inf = currentInforme;
+  let html = `<div class="ed-meta">
+    <div class="ed-field"><label>Estado</label>
+      <select id="ed-estado">
+        <option value="borrador" ${inf.estado==='borrador'?'selected':''}>Borrador (solo analista)</option>
+        <option value="publicado" ${inf.estado==='publicado'?'selected':''}>Publicado (visible al staff)</option>
+      </select></div>
+    <div class="ed-field"><label>Sistema habitual</label><input id="ed-sistema" value="${esc(inf.sistema)}" placeholder="1-4-2-3-1"/></div>
+    <div class="ed-field"><label>Árbitro</label><input id="ed-arb-nombre" value="${esc(inf.arbitro?.nombre)}" placeholder="Nombre"/></div>
+    <div class="ed-field"><label>Delegación arbitral</label><input id="ed-arb-del" value="${esc(inf.arbitro?.delegacion)}" placeholder="Delegación de..."/></div>
+    <div class="ed-field" style="grid-column:1/-1"><label>Carpeta Dropbox del rival</label><input id="ed-dbx" value="${esc(inf.dropboxFolder)}" placeholder="https://www.dropbox.com/scl/fo/..."/></div>
+  </div>`;
+
+  html += `<div class="ed-block">
+    <div class="ed-block-title">Visionado</div>
+    <div class="ed-hint">Partidos vistos para este informe. Uno por línea (ej. "J28 · Egabrense 2-1 Utrera · vídeo completo").</div>
+    <textarea id="ta-visionado">${esc(arrToLines(inf.visionado))}</textarea>
+  </div>`;
+  html += `<div class="ed-block">
+    <div class="ed-block-title">Contexto / Previa</div>
+    <div class="ed-hint">Situación del rival: clasificación, dinámica, necesidad, bajas. Una idea por línea.</div>
+    <textarea id="ta-contexto">${esc(arrToLines(inf.contexto))}</textarea>
+  </div>`;
+
+  MOMENTOS.forEach(b => html += bloqueEditorHtml(b));
+  ABP.forEach(b => html += bloqueEditorHtml(b, b.hint));
+
+  html += `<div class="ed-block">
+    <div class="ed-block-title">Datos</div>
+    <div class="ed-hint">Manual hasta que el pipeline de actas (módulo 07) lo rellene solo: goles por tramos, rankings, patrones. Una línea por dato.</div>
+    <textarea id="ta-datos">${esc(arrToLines(inf.datos))}</textarea>
+  </div>`;
+  html += `<div class="ed-block">
+    <div class="ed-block-title">Árbitro · Notas</div>
+    <div class="ed-hint">Perfil del colegiado: tendencias, tarjetas, gestión. Una por línea.</div>
+    <textarea id="ta-arbnotas">${esc(arrToLines(inf.arbitro?.notas))}</textarea>
+  </div>`;
+  html += `<div class="ed-block">
+    <div class="ed-block-title">Fortalezas del rival</div>
+    <textarea id="ta-fortalezas">${esc(arrToLines(inf.fortalezas))}</textarea>
+  </div>`;
+  html += `<div class="ed-block">
+    <div class="ed-block-title">Debilidades / A explotar</div>
+    <textarea id="ta-debilidades">${esc(arrToLines(inf.debilidades))}</textarea>
+  </div>`;
+  html += `<div class="ed-block">
+    <div class="ed-block-title">Plan por tramos</div>
+    <div class="ed-hint">Consigna por franja de partido. "Oportunidad" en verde, "Peligro" en rojo.</div>
+    <div id="planEd"></div>
+  </div>`;
+
+  document.getElementById('edBody').innerHTML = html;
+  renderPlanEd();
+}
+window.saveInforme = async function(){
+  if(!requireAnalista() || !currentInforme) return;
+  const inf = currentInforme;
+  inf.estado    = document.getElementById('ed-estado').value;
+  inf.sistema   = document.getElementById('ed-sistema').value.trim();
+  inf.dropboxFolder = document.getElementById('ed-dbx').value.trim();
+  inf.visionado = linesToArr(document.getElementById('ta-visionado').value);
+  inf.contexto  = linesToArr(document.getElementById('ta-contexto').value);
+  inf.datos     = linesToArr(document.getElementById('ta-datos').value);
+  inf.arbitro   = {
+    nombre: document.getElementById('ed-arb-nombre').value.trim(),
+    delegacion: document.getElementById('ed-arb-del').value.trim(),
+    notas: linesToArr(document.getElementById('ta-arbnotas').value),
+  };
+  inf.fortalezas  = linesToArr(document.getElementById('ta-fortalezas').value);
+  inf.debilidades = linesToArr(document.getElementById('ta-debilidades').value);
+  inf.planTramos  = inf.planTramos.filter(p=>p.tramo||p.texto);
+  [...MOMENTOS, ...ABP].forEach(b => {
+    getBloqueRef(b.key).items = linesToArr(document.getElementById(`ta-${b.key}`).value);
+  });
+  inf.updatedAt = new Date().toISOString(); inf.updatedBy = ANALISTA;
+  try{
+    await setDoc(doc(db,'analisisInformes',currentInformeId), inf);
+    toast('Informe guardado');
+    document.getElementById('edSub').textContent = `${fmtDate(inf.fecha)} · ${inf.condicion.toUpperCase()} · ${inf.estado==='publicado'?'Publicado':'Borrador'}`;
+    if(inf.planTramos.length===0){ inf.planTramos=[{tramo:'',tipo:'neutral',texto:''}]; }
+    renderPlanEd();
+  }catch(e){ console.error('[Save]', e); toast('Error guardando'); }
+};
+
+/* ══════════ VISTA INFORME ══════════ */
+function bulletsHtml(arr){
+  if(!arr || !arr.length) return `<div style="font-size:12px;color:var(--i-muted);font-style:italic;">Sin contenido aún.</div>`;
+  return `<ul>${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
+}
+function clipsHtml(clips, tag){
+  if(!clips || !clips.length) return '';
+  const cls = clips.length===1 ? 'video-grid v1' : 'video-grid';
+  return `<div class="video-section"><div class="video-label">Referencias en vídeo</div><div class="${cls}">` +
+    clips.map(c=>`
+      <div class="video-placeholder" onclick="openVideo('${esc(c.video)}')" ${c.thumb?`style="background-image:url('${esc(c.thumb)}')"`:''}>
+        <div class="vp-overlay"></div>
+        <div class="vp-play"><svg viewBox="0 0 10 10"><path d="M3 2l5 3-5 3z" fill="#fff"/></svg></div>
+        <div class="vp-tag">${esc(tag)}</div>
+        <div class="vp-label">${esc(c.label)||'Ver clip'}</div>
+      </div>`).join('') + `</div></div>`;
+}
+function bloqueInformeHtml(b, inf){
+  const data = inf.bloques?.[b.key] || {items:[],clips:[]};
+  return `<div class="icard" style="margin-bottom:14px;">
+    <div class="subsection-title">${b.title}</div>
+    ${bulletsHtml(data.items)}
+    ${clipsHtml(data.clips, b.title)}
+  </div>`;
+}
+window.openInforme = async function(iid){
+  if(!iid) return;
+  let inf;
+  try{
+    const snap = await getDoc(doc(db,'analisisInformes',iid));
+    if(!snap.exists()){ toast('El informe no existe'); return; }
+    inf = snap.data();
+  }catch(e){ console.error('[Informe]', e); toast('Error cargando el informe'); return; }
+  if(inf.estado!=='publicado' && !isAnalista()){ toast('Informe en borrador — solo visible para el analista'); return; }
+
+  const club = clubById(inf.clubId);
+  const shield = club && SHIELDS[club.lpId] ? SHIELDS[club.lpId] : '';
+  const secciones = [
+    {id:'portada', num:'00', nom:'Portada'},
+    {id:'previa',  num:'01', nom:'Previa'},
+    {id:'momentos',num:'02', nom:'Momentos del juego'},
+    {id:'abp',     num:'03', nom:'ABP'},
+    {id:'datos',   num:'04', nom:'Datos'},
+    {id:'arbitro', num:'05', nom:'Árbitro'},
+    {id:'plan',    num:'06', nom:'Plan de partido'},
+  ];
+  document.getElementById('infSidebar').innerHTML = `
+    <div class="inf-sb-header">
+      <div class="inf-sb-badge"><div class="inf-sb-badge-dot"></div><span>Jornada ${inf.jornada}</span></div>
+      <div class="inf-sb-title">${esc(inf.rivalName)}</div>
+      <div class="inf-sb-sub">Análisis previo · ${fmtDate(inf.fecha)} · ${inf.condicion==='casa'?'En casa':'A domicilio'}</div>
+    </div>
+    <nav class="inf-sb-nav" id="infNav">
+      ${secciones.map((s,i)=>`<a href="#s-${s.id}" class="${i===0?'active':''}" onclick="infScroll(event,'s-${s.id}')"><span class="inf-sb-num">${s.num}</span>${s.nom}</a>`).join('')}
+      <div style="margin-top:auto;padding:12px 0;border-top:1px solid rgba(255,255,255,.08);">
+        ${inf.dropboxFolder?`<a href="${esc(inf.dropboxFolder)}" target="_blank" style="border-left:2px solid transparent;">📂&nbsp;&nbsp;Carpeta Dropbox</a>`:''}
+      </div>
+    </nav>
+    <div class="inf-sb-footer"><strong>Racing Club Portuense</strong>Temporada 2026/2027</div>`;
+
+  let main = `
+  <section class="inf-cover" id="s-portada">
+    ${shield?`<img class="cv-shield" src="${shield}" alt=""/>`:''}
+    <div class="cv-kicker">Análisis rival · Jornada ${inf.jornada}</div>
+    <h1>${esc(inf.rivalName)}</h1>
+    <div class="cv-meta">
+      <span class="cv-chip">📅 ${fmtDate(inf.fecha)}</span>
+      <span class="cv-chip">${inf.condicion==='casa'?'🏟 En casa':'✈️ A domicilio'}</span>
+      ${inf.sistema?`<span class="cv-chip">📋 Sistema ${esc(inf.sistema)}</span>`:''}
+      ${club?`<span class="cv-chip">📍 ${esc(inf.condicion==='casa'?'El Puerto de Santa María':club.stadium+' · '+club.city)}</span>`:''}
+      <span class="cv-chip" style="${inf.estado==='borrador'?'color:var(--i-amber);border-color:rgba(196,123,0,.35)':''}">${inf.estado==='publicado'?'✓ Publicado':'✎ Borrador'}</span>
+    </div>
+  </section>
+
+  <section class="inf-section" id="s-previa">
+    <div class="sec-label">01 · Previa</div>
+    <div class="sec-title">Contexto</div>
+    <div class="ig2">
+      <div class="icard"><div class="subsection-title">Visionado</div>${bulletsHtml(inf.visionado)}</div>
+      <div class="icard"><div class="subsection-title">Situación del rival</div>${bulletsHtml(inf.contexto)}</div>
+    </div>
+  </section>
+
+  <section class="inf-section" id="s-momentos">
+    <div class="sec-label">02 · Análisis táctico</div>
+    <div class="sec-title">Momentos del juego</div>
+    ${MOMENTOS.map(b=>bloqueInformeHtml(b,inf)).join('')}
+  </section>
+
+  <section class="inf-section" id="s-abp">
+    <div class="sec-label">03 · Estrategia</div>
+    <div class="sec-title">Acciones a balón parado</div>
+    ${ABP.map(b=>bloqueInformeHtml(b,inf)).join('')}
+  </section>
+
+  <section class="inf-section" id="s-datos">
+    <div class="sec-label">04 · Datos</div>
+    <div class="sec-title">Goles por tramos y patrones</div>
+    ${inf.datos && inf.datos.length ? `<div class="icard">${bulletsHtml(inf.datos)}</div>` : ''}
+    <div class="pipe-note" style="margin-top:14px;">⚙️ <span>Sección conectada en el futuro al módulo <strong>Actas (07)</strong>: goles por tramos, rankings de liga, disciplina y patrones situacionales se rellenarán automáticamente desde las actas RFAF.</span></div>
+  </section>
+
+  <section class="inf-section" id="s-arbitro">
+    <div class="sec-label">05 · Colegiado</div>
+    <div class="sec-title">Árbitro designado</div>
+    <div class="icard">
+      <div class="subsection-title">${esc(inf.arbitro?.nombre)||'Pendiente de designación'}${inf.arbitro?.delegacion?` · <span style="font-weight:500;color:var(--i-muted);font-size:13px;">${esc(inf.arbitro.delegacion)}</span>`:''}</div>
+      ${bulletsHtml(inf.arbitro?.notas)}
+    </div>
+  </section>
+
+  <section class="inf-section" id="s-plan" style="padding-bottom:90px;">
+    <div class="sec-label">06 · Plan de partido</div>
+    <div class="sec-title">Fortalezas, debilidades y plan por tramos</div>
+    <div class="ig2" style="margin-bottom:24px;">
+      <div class="icard" style="border-left:3px solid var(--i-green);">
+        <div class="subsection-title" style="color:var(--i-green)">Fortalezas</div>${bulletsHtml(inf.fortalezas)}
+      </div>
+      <div class="icard" style="border-left:3px solid var(--i-red);">
+        <div class="subsection-title" style="color:var(--i-red)">Debilidades</div>${bulletsHtml(inf.debilidades)}
+      </div>
+    </div>
+    ${inf.planTramos && inf.planTramos.filter(p=>p.texto).length ? `
+    <div class="subsection-title" style="margin-top:24px;">Plan por tramos</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      ${inf.planTramos.filter(p=>p.texto).map(p=>`
+        <div class="plan-item ${p.tipo!=='neutral'?p.tipo:''}">
+          <div class="plan-time">${esc(p.tramo)}</div>
+          <div class="plan-text">${esc(p.texto)}</div>
+        </div>`).join('')}
+    </div>`:''}
+  </section>`;
+
+  const mainEl = document.getElementById('infMain');
+  mainEl.innerHTML = main;
+  mainEl.scrollTop = 0;
+  document.getElementById('view-informe').style.display='block';
+  document.body.style.overflow='hidden';
+
+  /* scroll-spy */
+  mainEl.onscroll = () => {
+    const links = document.querySelectorAll('#infNav a[href^="#s-"]');
+    let active = 's-portada';
+    secciones.forEach(s=>{
+      const el = document.getElementById('s-'+s.id);
+      if(el && el.offsetTop - 120 <= mainEl.scrollTop) active = 's-'+s.id;
+    });
+    links.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+active));
+  };
+};
+window.infScroll = function(ev, id){
+  ev.preventDefault();
+  const el = document.getElementById(id);
+  if(el) document.getElementById('infMain').scrollTo({top: el.offsetTop, behavior:'smooth'});
+};
+window.closeInforme = function(){
+  document.getElementById('view-informe').style.display='none';
+  document.body.style.overflow='';
+  const v = document.getElementById('modalVideo'); v.pause();
+};
+
+/* ══════════ VÍDEO MODAL ══════════ */
+window.openVideo = function(url){
+  const modal = document.getElementById('videoModal');
+  const src = document.getElementById('modalVideoSrc');
+  const video = document.getElementById('modalVideo');
+  src.src = url; video.load();
+  modal.style.display='flex';
+  /* iOS Safari: esperar canplay antes de play() */
+  const onCan = () => { video.play().catch(()=>{}); video.removeEventListener('canplay', onCan); };
+  video.addEventListener('canplay', onCan);
+};
+window.closeVideo = function(){
+  const modal = document.getElementById('videoModal');
+  const video = document.getElementById('modalVideo');
+  video.pause(); document.getElementById('modalVideoSrc').src=''; video.load();
+  modal.style.display='none';
+};
+document.getElementById('videoModal').addEventListener('click', function(e){
+  if(e.target === this) closeVideo();
+});
+document.addEventListener('keydown', e => {
+  if(e.key==='Escape'){
+    if(document.getElementById('videoModal').style.display==='flex') closeVideo();
+    else if(document.getElementById('view-informe').style.display==='block') closeInforme();
+  }
+});
+
+/* ══════════ INIT ══════════ */
+async function loadShields(){
+  try{
+    const snap = await getDocs(collection(db,'clubShields'));
+    SHIELDS = {};
+    snap.docs.forEach(d=>{ SHIELDS[d.id] = d.data().shieldUrl; });
+  }catch(e){ console.error('[Shields]', e); }
+}
+function watchInformes(){
+  unsubInformes = onSnapshot(collection(db,'analisisInformes'),
+    snap => {
+      informesIdx = {};
+      snap.docs.forEach(d=>{
+        const x = d.data();
+        if(x.temporada===TEMPORADA) informesIdx[d.id] = { estado:x.estado };
+      });
+      renderCalendario();
+    },
+    err => console.error('[Informes watch]', err)
+  );
+}
+(async function init(){
+  await Promise.all([loadCalendario(), loadShields()]);
+  refreshMode();
+  renderCalendario();
+  watchInformes();
+})();
+</script>
+</body>
+</html>
