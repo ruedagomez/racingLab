@@ -312,6 +312,7 @@ img,svg,video{max-width:100%;}
   </div>
   <div id="edBody"></div>
   <div class="ed-savebar">
+    <button class="btn btn-ghost" onclick="recargarActas()">↻ Recargar datos de actas</button>
     <button class="btn btn-danger" onclick="askDeleteInforme()">🗑 Eliminar informe</button>
     <button class="btn btn-primary" onclick="saveInforme()">💾 Guardar cambios</button>
   </div>
@@ -348,6 +349,18 @@ img,svg,video{max-width:100%;}
     <div class="m-actions">
       <button class="btn btn-ghost" onclick="closeModal('delModal')">Cancelar</button>
       <button class="btn btn-danger" onclick="confirmDeleteInforme()">Eliminar definitivamente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL RECARGAR ══ -->
+<div class="modal-bg" id="recModal">
+  <div class="modal">
+    <h3>Recargar datos de actas</h3>
+    <p id="recTxt"></p>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeModal('recModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmRecargar()">Recargar</button>
     </div>
   </div>
 </div>
@@ -632,12 +645,87 @@ function emptyDatos(){
     tarjetasStaff: [],      // [{nombre, cargo, amarillas, rojas}]  · R2: staff separado
     rankings: [],           // [{metrica, rival, racing}]
     patrones: [],           // [string]
+    plantillaMinutos: [],   // [{nombre,dorsalHabitual,convocatorias,titularidades,minutos,goles,amarillas,rojas}]
   };
 }
 function emptyArbitro(){
   return { nombre:'', delegacion:'', asistente1:'', asistente2:'',
            stats:{ partidos:'', amarillas:'', dobles:'', rojas:'', goles:'' }, notas:[] };
 }
+/* ══════════ CARGA AUTOMÁTICA DESDE ACTAS ══════════
+   El navegador NO calcula nada. Lee `rivalStats/{clubId}`, que escribe
+   stats_engine.py (Marcelo) tras cada ingesta de actas, y lo congela dentro
+   del informe. Carlos puede sobrescribir cualquier campo: lo que edite queda
+   registrado en datosMeta.camposEditados y "Recargar de actas" lo respeta. */
+async function fetchRivalStats(clubId){
+  try{
+    const snap = await getDoc(doc(db,'rivalStats',clubId));
+    return snap.exists() ? snap.data() : null;
+  }catch(e){ console.error('[rivalStats]', e); return null; }
+}
+async function fetchArbitroStats(nombre){
+  if(!nombre) return null;
+  try{
+    const snap = await getDoc(doc(db,'arbitroStats', normNombre(nombre)));
+    return snap.exists() ? snap.data() : null;
+  }catch(e){ console.error('[arbitroStats]', e); return null; }
+}
+/* Misma normalización que norm() en stats_engine.py: sin tildes, minúsculas */
+const normNombre = s => (s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+  .toLowerCase().split(/\s+/).filter(Boolean).join(' ');
+
+/* Mapea rivalStats → la forma que consume el informe. Un único punto de
+   traducción: si el motor cambia un nombre de campo, solo se toca aquí. */
+function snapshotStats(st, condicionPartido){
+  if(!st) return { datos: emptyDatos(), convocatorias: [], meta:{fuente:'vacio'} };
+  /* El rival juega en la condición contraria a la nuestra */
+  const condRival = condicionPartido === 'casa' ? 'fuera' : 'casa';
+  const tabla = st.clasificacion?.tabla || [];
+  const pos = tabla.findIndex(r => r.equipo === st.clubId);
+  const ventana = pos >= 0 ? tabla.slice(Math.max(0,pos-3), pos+4) : tabla.slice(0,7);
+  return {
+    datos: {
+      fuente: 'actas',
+      clasificacion: ventana.map(r=>({pos:String(r.pos), equipo:r.equipo, pj:String(r.pj), pts:String(r.pts)})),
+      racha: (st.racha||[]).map(r=>({jornada:r.jornada, cond:r.cond, res:r.res, marcador:r.marcador, rival:r.rival})),
+      golesTramos: {
+        total: st.golesTramos?.total || {gf:zeros6(),gc:zeros6()},
+        cond:  st.golesTramos?.[condRival] || {gf:zeros6(),gc:zeros6()},
+      },
+      goleadores: (st.goleadores||[]).slice(0,10).map(g=>({nombre:g.nombre, goles:String(g.goles)})),
+      tarjetasJugadores: (st.disciplina?.jugadores||[]).slice(0,12)
+        .map(t=>({nombre:t.nombre, amarillas:String(t.amarillas), rojas:String(t.rojas)})),
+      tarjetasStaff: (st.disciplina?.staff||[])
+        .map(t=>({nombre:t.nombre, cargo:t.cargo||'', amarillas:String(t.amarillas), rojas:String(t.rojas)})),
+      rankings: (st.rankings||[]).map(r=>({
+        metrica: r.metrica + (r.rivalPos?` (${r.rivalPos}º/${r.racingPos}º)`:''),
+        rival: String(r.rival), racing: String(r.racing) })),
+      patrones: patronesToLines(st.patrones),
+      plantillaMinutos: st.plantillaMinutos || [],
+    },
+    convocatorias: (st.convocatorias||[]).map(c=>({
+      jornada:c.jornada, cond:c.cond, res:c.res, marcador:c.marcador, rival:c.rival,
+      sistema: c.sistema || '',   /* el acta NO trae el sistema: lo pone Carlos */
+      titulares:(c.titulares||[]).map(p=>({dorsal:p.dorsal, nombre:p.nombre, cambio:p.salioMin?'>':'', min:p.salioMin||''})),
+      suplentes:(c.suplentes||[]).map(p=>({dorsal:p.dorsal, nombre:p.nombre, cambio:p.entroMin?'<':'', min:p.entroMin||''})),
+    })),
+    meta: { fuente:'actas', hastaJornada: st.hastaJornada, snapshotEn: new Date().toISOString(),
+            verificarClasificacion: !!st.clasificacion?.verificarOficial, camposEditados: [] },
+  };
+}
+function patronesToLines(p){
+  if(!p) return [];
+  const ved = o => o ? `${o.v}V ${o.e}E ${o.d}D` : '—';
+  const out = [];
+  if(p.conVentajaDescanso)   out.push(`Con ventaja al descanso: ${ved(p.conVentajaDescanso)}`);
+  if(p.empateDescanso)       out.push(`Empatando al descanso: ${ved(p.empateDescanso)}`);
+  if(p.enDesventajaDescanso) out.push(`En desventaja al descanso: ${ved(p.enDesventajaDescanso)}`);
+  if(p.trasMarcarPrimero)    out.push(`Cuando marcan primero: ${ved(p.trasMarcarPrimero)}`);
+  if(p.porteriaCero!=null)   out.push(`Porterías a cero: ${p.porteriaCero} de ${p.partidos} partidos`);
+  if(p.encajando2mas!=null)  out.push(`Partidos encajando 2 o más: ${p.encajando2mas}`);
+  return out;
+}
+
 function plantillaInforme(j){
   const club = clubById(j.clubId);
   const bloques = {};
@@ -678,6 +766,7 @@ function hydrate(inf){
   out.arbitro = { ...emptyArbitro(), ...(inf.arbitro||{}) };
   out.arbitro.stats = { ...emptyArbitro().stats, ...(inf.arbitro?.stats||{}) };
   out.convocatorias = inf.convocatorias || [];
+  out.datosMeta = inf.datosMeta || { fuente:'manual', camposEditados:[] };
   return out;
 }
 window.generarInforme = async function(n){
@@ -687,10 +776,17 @@ window.generarInforme = async function(n){
   try{
     const snap = await getDoc(doc(db,'analisisInformes',iid));
     if(snap.exists()){ openEditor(iid); return; }   // idempotente: nunca machaca
+    toast('Generando informe · cargando datos de actas…');
     const data = plantillaInforme(j);
+    const st = await fetchRivalStats(j.clubId);
+    const snap2 = snapshotStats(st, j.condicion);
+    data.datos = snap2.datos;
+    data.convocatorias = snap2.convocatorias;
+    data.datosMeta = snap2.meta;
     data.updatedAt = new Date().toISOString(); data.updatedBy = ANALISTA;
     await setDoc(doc(db,'analisisInformes',iid), data);
-    toast(`Informe J${n} generado`);
+    toast(st ? `Informe J${n} generado con datos hasta J${st.hastaJornada}`
+             : `Informe J${n} generado · sin datos de actas todavía`);
     openEditor(iid);
   }catch(e){ console.error('[Generar]', e); toast('Error generando el informe'); }
 };
@@ -861,6 +957,11 @@ function bloqueEditorHtml(b, hint){
 function renderEditor(){
   const inf = currentInforme;
   const d = inf.datos;
+  /* Referencia para detectar ediciones manuales al guardar */
+  inf._snapAuto = {};
+  Object.keys(CAMPOS_AUTO).forEach(k=>{
+    inf._snapAuto[k] = JSON.parse(JSON.stringify(k==='convocatorias'?inf.convocatorias:d[k]??null));
+  });
   const condLabel = inf.condicion==='casa' ? 'fuera de casa (visitan El Puerto)' : 'en casa (les visitamos)';
   let html = `<div class="ed-meta">
     <div class="ed-field"><label>Estado</label>
@@ -870,23 +971,28 @@ function renderEditor(){
       </select></div>
     <div class="ed-field"><label>Sistema habitual</label><input id="ed-sistema" value="${esc(inf.sistema)}" placeholder="1-4-2-3-1"/></div>
     <div class="ed-field" style="grid-column:span 2"><label>Carpeta Dropbox del rival</label><input id="ed-dbx" value="${esc(inf.dropboxFolder)}" placeholder="https://www.dropbox.com/scl/fo/..."/></div>
-    <div class="ed-field" style="grid-column:1/-1;display:flex;align-items:center;gap:10px;">
-      <span class="ed-fuente ${d.fuente}">${d.fuente==='actas'?'⚙ Datos del pipeline de actas':'✎ Datos introducidos a mano'}</span>
-      <span style="font-size:11px;color:var(--faint)">Cuando el módulo Actas (07) esté operativo, escribirá estos mismos campos y esta etiqueta cambiará sola.</span>
+    <div class="ed-field" style="grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span class="ed-fuente ${d.fuente==='actas'?'actas':'manual'}">${d.fuente==='actas'
+        ? `⚙ Cargado de actas · hasta J${inf.datosMeta?.hastaJornada??'—'}`
+        : '✎ Sin datos de actas todavía'}</span>
+      ${(inf.datosMeta?.camposEditados||[]).length
+        ? `<span class="ed-fuente manual">✎ Editado a mano: ${(inf.datosMeta.camposEditados).map(k=>CAMPOS_AUTO[k]||k).join(', ')}</span>` : ''}
+      ${inf.datosMeta?.verificarClasificacion
+        ? '<span style="font-size:11px;color:var(--warn)">⚠ La clasificación sale de los resultados: si hay puntos restados por sanción administrativa, corrígela a mano (R7).</span>' : ''}
     </div>
   </div>`;
 
   html += `<div class="ed-sec">01 · Previa</div>`;
   html += taBlock('ta-visionado','Visionado','Partidos vistos para este informe. Uno por línea.',arrToLines(inf.visionado));
   html += taBlock('ta-contexto','Contexto / Situación del rival','Dinámica, necesidad, bajas, entorno. Una idea por línea.',arrToLines(inf.contexto));
-  html += taBlock('ta-clasificacion','Clasificación','Formato: <b>pos | equipo | pj | pts</b> — recomiendo 5-7 filas alrededor del rival, incluyendo al Racing. Se resaltan solos.',tableToLines(d.clasificacion,['pos','equipo','pj','pts']),true);
-  html += taBlock('ta-racha','Racha · últimos 5 partidos','Formato: <b>jornada | C/F | V/E/D | marcador | rival</b> — ej: J28 | C | V | 3-1 | Montilla',tableToLines(d.racha,['jornada','cond','res','marcador','rival']),true);
-  html += taBlock('ta-goleadores','Goleadores','Formato: <b>nombre | goles</b>',tableToLines(d.goleadores,['nombre','goles']),true);
-  html += taBlock('ta-tarjJug','Tarjetas · Jugadores','Formato: <b>nombre | amarillas | rojas</b> · Regla R1: doble amarilla cuenta como 1 amarilla + 1 roja. Con 4 amarillas se marca "al límite" solo.',tableToLines(d.tarjetasJugadores,['nombre','amarillas','rojas']),true);
-  html += taBlock('ta-tarjStaff','Tarjetas · Cuerpo técnico','Formato: <b>nombre | cargo | amarillas | rojas</b> · Regla R2: staff siempre separado de jugadores.',tableToLines(d.tarjetasStaff,['nombre','cargo','amarillas','rojas']),true);
+  html += taBlock('ta-clasificacion','Clasificación','⚙ Se rellena solo desde las actas. Edítalo únicamente para corregir (R7: sanciones administrativas). Formato: <b>pos | equipo | pj | pts</b>',tableToLines(d.clasificacion,['pos','equipo','pj','pts']),true);
+  html += taBlock('ta-racha','Racha · últimos 5 partidos','⚙ Se rellena solo desde las actas. Formato: <b>jornada | C/F | V/E/D | marcador | rival</b>',tableToLines(d.racha,['jornada','cond','res','marcador','rival']),true);
+  html += taBlock('ta-goleadores','Goleadores','⚙ Se rellena solo desde las actas (propias puertas excluidas, R3). Formato: <b>nombre | goles</b>',tableToLines(d.goleadores,['nombre','goles']),true);
+  html += taBlock('ta-tarjJug','Tarjetas · Jugadores','⚙ Se rellena solo desde las actas aplicando R1 (doble amarilla = 1 amarilla + 1 roja). Con 4 amarillas se marca «al límite» automáticamente.',tableToLines(d.tarjetasJugadores,['nombre','amarillas','rojas']),true);
+  html += taBlock('ta-tarjStaff','Tarjetas · Cuerpo técnico','⚙ Se rellena solo desde las actas. R2: el staff nunca se mezcla con jugadores.',tableToLines(d.tarjetasStaff,['nombre','cargo','amarillas','rojas']),true);
 
   html += `<div class="ed-sec">02 · Formación</div>`;
-  html += taBlock('ta-convocatorias','Últimas 5 convocatorias','Un bloque por partido, separados por línea en blanco.<br/>Cabecera: <b>J28 | C | V | 3-1 | Montilla | 4-2-3-1</b> (sistema opcional → dibuja el campograma).<br/>Jugadores: <b>13 Ortiz Muñoz</b> · sale al 76: <b>8 Caballero &gt;76</b> · entra al 62: <b>22 Ariza &lt;62</b> · <b>--</b> separa titulares de suplentes.<br/>El orden de titulares coloca el campograma: portero primero, luego líneas de atrás hacia delante.',convocatoriasToText(inf.convocatorias),true);
+  html += taBlock('ta-convocatorias','Últimas 5 convocatorias','⚙ Las últimas 5 se rellenan solas desde las actas, con los 18 convocados y los minutos de cambio. <b>El sistema NO viene en el acta</b>: añádelo tú al final de la cabecera para que se dibuje el campograma.<br/>Cabecera: <b>J28 | C | V | 3-1 | Montilla | 4-2-3-1</b> (sistema opcional → dibuja el campograma).<br/>Jugadores: <b>13 Ortiz Muñoz</b> · sale al 76: <b>8 Caballero &gt;76</b> · entra al 62: <b>22 Ariza &lt;62</b> · <b>--</b> separa titulares de suplentes.<br/>El orden de titulares coloca el campograma: portero primero, luego líneas de atrás hacia delante.',convocatoriasToText(inf.convocatorias),true);
 
   html += `<div class="ed-sec">03 · Momentos del juego</div>`;
   MOMENTOS.forEach(b => html += bloqueEditorHtml(b));
@@ -894,15 +1000,15 @@ function renderEditor(){
   ABP.forEach(b => html += bloqueEditorHtml(b, b.hint));
 
   html += `<div class="ed-sec">05 · Datos</div>`;
-  html += taBlock('ta-tramosTotal','Goles por tramos · Temporada completa','6 líneas (0-15, 16-30, 31-45, 46-60, 61-75, 76-90+). Formato: <b>GF | GC</b>',tramosToLines(d.golesTramos.total),true);
-  html += taBlock('ta-tramosCond',`Goles por tramos · Rival ${condLabel}`,'Mismas 6 líneas, solo sus partidos en esa condición. Formato: <b>GF | GC</b>',tramosToLines(d.golesTramos.cond),true);
-  html += taBlock('ta-rankings','Rankings de liga · comparativa','Formato: <b>métrica | valor rival | valor Racing</b> — ej: GF Total | 62 | 71',tableToLines(d.rankings,['metrica','rival','racing']),true);
-  html += taBlock('ta-patrones','Patrones situacionales','Ej: "Con ventaja al descanso: 11V 2E 0D". Uno por línea.',arrToLines(d.patrones));
+  html += taBlock('ta-tramosTotal','Goles por tramos · Temporada completa','⚙ Se rellena solo desde las actas. 6 franjas. Formato: <b>GF | GC</b>',tramosToLines(d.golesTramos.total),true);
+  html += taBlock('ta-tramosCond',`Goles por tramos · Rival ${condLabel}`,'⚙ Se rellena solo desde las actas, filtrado por la condición en que jugarán. Formato: <b>GF | GC</b>',tramosToLines(d.golesTramos.cond),true);
+  html += taBlock('ta-rankings','Rankings de liga · comparativa','⚙ Se rellena solo desde las actas, con la posición de cada uno en la liga. Formato: <b>métrica | rival | Racing</b>',tableToLines(d.rankings,['metrica','rival','racing']),true);
+  html += taBlock('ta-patrones','Patrones situacionales','⚙ Se rellena solo desde las actas: descanso, primer gol, porterías a cero.',arrToLines(d.patrones));
 
   html += `<div class="ed-sec">06 · Árbitro</div>`;
   html += `<div class="ed-block">
     <div class="ed-block-title">Trío arbitral</div>
-    <div class="ed-hint">El <b>nombre exacto del principal</b> será la clave de cruce contra la base de árbitros cuando el pipeline de actas exista: lo escribes y las estadísticas se cargarán solas.</div>
+    <div class="ed-hint">Escribe el <b>nombre del principal</b> y pulsa el botón: sus estadísticas se cargan solas desde la base de árbitros. <button class="btn btn-ghost btn-sm" style="margin-left:6px" onclick="cargarArbitro()">⚙ Cargar perfil del árbitro</button></div>
     <div class="ed-meta" style="margin:0;padding:0;border:none;">
       <div class="ed-field"><label>Árbitro principal</label><input id="ed-arb-nombre" value="${esc(inf.arbitro.nombre)}"/></div>
       <div class="ed-field"><label>Delegación</label><input id="ed-arb-del" value="${esc(inf.arbitro.delegacion)}" placeholder="Delegación de..."/></div>
@@ -929,6 +1035,69 @@ function renderEditor(){
   document.getElementById('edBody').innerHTML = html;
   renderPlanEd();
 }
+/* Recarga desde rivalStats. Los bloques que Carlos haya tocado a mano se
+   respetan salvo que los desmarque: nunca se pisa trabajo manual en silencio. */
+const CAMPOS_AUTO = {
+  clasificacion:'Clasificación', racha:'Racha', goleadores:'Goleadores',
+  tarjetasJugadores:'Tarjetas jugadores', tarjetasStaff:'Tarjetas staff',
+  golesTramos:'Goles por tramos', rankings:'Rankings', patrones:'Patrones',
+  convocatorias:'Convocatorias',
+};
+window.recargarActas = async function(){
+  if(!requireAnalista() || !currentInforme) return;
+  const st = await fetchRivalStats(currentInforme.clubId);
+  if(!st){ toast('Todavía no hay datos de actas para este rival'); return; }
+  const editados = currentInforme.datosMeta?.camposEditados || [];
+  const nombres = editados.map(k=>CAMPOS_AUTO[k]||k);
+  document.getElementById('recTxt').innerHTML = editados.length
+    ? `Se traerán los datos de actas hasta la <b>jornada ${st.hastaJornada}</b>.<br/><br/>
+       Estos bloques los has editado a mano y <b>se conservarán</b>: ${nombres.join(', ')}.<br/><br/>
+       Para que uno se sobrescriba, vacía su cuadro antes de recargar.`
+    : `Se traerán los datos de actas hasta la <b>jornada ${st.hastaJornada}</b>, sobrescribiendo los bloques automáticos. Lo cualitativo (momentos, ABP, fortalezas, plan) no se toca nunca.`;
+  document.getElementById('recModal').classList.add('open');
+};
+window.confirmRecargar = async function(){
+  const st = await fetchRivalStats(currentInforme.clubId);
+  if(!st){ closeModal('recModal'); return; }
+  const snap2 = snapshotStats(st, currentInforme.condicion);
+  const editados = currentInforme.datosMeta?.camposEditados || [];
+  Object.keys(CAMPOS_AUTO).forEach(k=>{
+    if(editados.includes(k)) return;                  // respetar lo manual
+    if(k==='convocatorias') currentInforme.convocatorias = snap2.convocatorias;
+    else currentInforme.datos[k] = snap2.datos[k];
+  });
+  currentInforme.datos.fuente = 'actas';
+  currentInforme.datos.plantillaMinutos = snap2.datos.plantillaMinutos;
+  currentInforme.datosMeta = { ...snap2.meta, camposEditados: editados };
+  closeModal('recModal');
+  renderEditor();
+  toast(`Datos recargados hasta J${st.hastaJornada} — recuerda guardar`);
+};
+
+/* LUCHO · escribes el nombre del árbitro y sus estadísticas llegan solas
+   desde arbitroStats, cruzando por nombre normalizado igual que el motor. */
+window.cargarArbitro = async function(){
+  if(!requireAnalista() || !currentInforme) return;
+  const nombre = document.getElementById('ed-arb-nombre').value.trim();
+  if(!nombre){ toast('Escribe primero el nombre del árbitro'); return; }
+  const a = await fetchArbitroStats(nombre);
+  if(!a){ toast(`Sin datos de "${nombre}" en la base de árbitros`); return; }
+  const S = (id,v) => document.getElementById(id).value = v ?? '';
+  S('ed-arb-del', a.delegacion);
+  S('ed-arb-pj', a.partidos); S('ed-arb-am', a.amarillasJugadores);
+  S('ed-arb-da', a.dobles);   S('ed-arb-ro', a.rojas); S('ed-arb-gl', a.goles);
+  const notas = [];
+  if(a.mediaSanciones!=null) notas.push(`Media de sanciones por partido: ${a.mediaSanciones}`);
+  if(a.mediaGoles!=null)     notas.push(`Media de goles por partido: ${a.mediaGoles}`);
+  if(a.amarillasStaff)       notas.push(`Amarillas a cuerpos técnicos: ${a.amarillasStaff}`);
+  const tl=a.tarjetasLocal||0, tv=a.tarjetasVisitante||0, tt=tl+tv;
+  if(tt) notas.push(`Reparto de amarillas: ${tl} al local (${Math.round(tl/tt*100)}%) · ${tv} al visitante (${Math.round(tv/tt*100)}%)`);
+  if(a.partidos) notas.push(`Resultados: ${a.victoriasLocal}V local · ${a.empates}E · ${a.victoriasVisitante}V visitante`);
+  const ta = document.getElementById('ta-arbnotas');
+  ta.value = (ta.value.trim() ? ta.value.trim()+'\n' : '') + notas.join('\n');
+  toast(`Perfil de ${a.nombre} cargado · ${a.partidos} partidos`);
+};
+
 window.saveInforme = async function(){
   if(!requireAnalista() || !currentInforme) return;
   const inf = currentInforme;
@@ -961,6 +1130,16 @@ window.saveInforme = async function(){
   [...MOMENTOS, ...ABP].forEach(b => {
     getBloqueRef(b.key).items = linesToArr(V(`ta-${b.key}`));
   });
+  /* Marca como editados a mano los bloques que difieren del último snapshot
+     de actas, para que "Recargar" no los pise. */
+  const prevSnap = inf._snapAuto || {};
+  const editados = new Set(inf.datosMeta?.camposEditados || []);
+  Object.keys(CAMPOS_AUTO).forEach(k=>{
+    const actual = k==='convocatorias' ? inf.convocatorias : inf.datos[k];
+    if(prevSnap[k]!==undefined && JSON.stringify(actual)!==JSON.stringify(prevSnap[k])) editados.add(k);
+  });
+  inf.datosMeta = { ...(inf.datosMeta||{}), camposEditados:[...editados] };
+  delete inf._snapAuto;
   inf.updatedAt = new Date().toISOString(); inf.updatedBy = ANALISTA;
   try{
     await setDoc(doc(db,'analisisInformes',currentInformeId), inf);
@@ -1041,6 +1220,18 @@ async function loadRivalPlayers(clubId){
     const snap = await getDocs(collection(db, `rivals/${clubId}/players`));
     return snap.docs.map(x=>x.data());
   }catch(e){ console.error('[Rival players]', e); return []; }
+}
+function plantillaMinutosHtml(rows){
+  return `<table class="tbl"><thead><tr><th>#</th><th>Jugador</th><th class="num">Conv.</th><th class="num">Tit.</th><th class="num">Min.</th><th class="num">⚽</th><th class="num">🟨</th><th class="num">🟥</th></tr></thead><tbody>` +
+    rows.map(p=>`<tr>
+      <td><span class="pos-b">${esc(p.dorsalHabitual||'—')}</span>${p.dorsalVariable?'<span class="risk-b" style="margin-left:4px" title="Rota dorsal entre jornadas">↻</span>':''}</td>
+      <td style="font-weight:600;color:var(--i-text)">${esc(p.nombre)}</td>
+      <td class="num">${esc(p.convocatorias)}</td><td class="num">${esc(p.titularidades)}</td>
+      <td class="num" style="font-weight:700">${esc(p.minutos)}′</td>
+      <td class="num" style="color:var(--i-green);font-weight:700">${p.goles||''}</td>
+      <td class="num" style="color:var(--i-amber)">${p.amarillas||''}</td>
+      <td class="num" style="color:var(--i-red)">${p.rojas||''}</td></tr>`).join('') +
+    `</tbody></table>`;
 }
 function plantillaTableHtml(players){
   if(!players.length) return `<div class="pipe-note">📋 <span>Sin plantilla registrada para este rival. Se gestiona en <strong>Tercera RFEF</strong> (tercera.html) — importa desde lapreferente y aparecerá aquí sola.</span></div>`;
@@ -1158,8 +1349,10 @@ window.openInforme = async function(iid){
   <section class="inf-section" id="s-plantilla">
     <div class="sec-label">03 · Plantilla</div>
     <div class="sec-title">Plantilla del rival</div>
-    <div class="icard">${plantillaTableHtml(rivalPlayers)}</div>
-    ${rivalPlayers.length?`<div class="pipe-note" style="margin-top:10px;">🔗 <span>Cargada en vivo desde <strong>Tercera RFEF</strong> — se actualiza sola al reimportar desde lapreferente.</span></div>`:''}
+    <div class="icard">${d.plantillaMinutos?.length ? plantillaMinutosHtml(d.plantillaMinutos) : plantillaTableHtml(rivalPlayers)}</div>
+    <div class="pipe-note" style="margin-top:10px;">${d.plantillaMinutos?.length
+      ? '⚙ <span>Fichas calculadas desde las actas: convocatorias, titularidades, minutos, goles y tarjetas por jugador.</span>'
+      : rivalPlayers.length ? '🔗 <span>Cargada desde <strong>Tercera RFEF</strong>. Cuando haya actas de esta temporada, se sustituye por las fichas con minutos reales.</span>' : ''}</div>
   </section>
 
   <section class="inf-section" id="s-momentos">
