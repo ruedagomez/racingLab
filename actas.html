@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Actas · Racing Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --r:#e8192c;--r2:rgba(232,25,44,.09);--r3:rgba(232,25,44,.2);
+  --blk:#0b0b0b;--txt:#111;--mid:#6b6b6b;--faint:#b0b0b0;
+  --bdr:#e2e2e2;--bg:#f3f3f1;--wh:#fff;
+  --fit:#15803d;--fit-bg:#f0fdf4;
+  --warn:#c2410c;--warn-bg:#fff7ed;
+  --amar:#c47b00;--amar-bg:#fffbeb;
+}
+html,body{min-height:100%;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--txt);}
+button{font-family:inherit;cursor:pointer;border:none;outline:none;background:none;}
+select{font-family:inherit;}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.nav{height:62px;background:var(--wh);border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;padding:0 40px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(0,0,0,.05);}
+.nav-left{display:flex;align-items:center;gap:14px;}
+.back{display:flex;align-items:center;gap:6px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--mid);text-transform:uppercase;text-decoration:none;padding:6px 12px;border:1.5px solid var(--bdr);border-radius:4px;transition:all .2s;}
+.back:hover{border-color:var(--r);color:var(--r);}
+.nav-title{font-family:'Bebas Neue',cursive;font-size:23px;letter-spacing:1.5px;}
+.nav-title span{color:var(--r);}
+.nav-sub{font-size:11px;color:var(--faint);font-family:'JetBrains Mono',monospace;}
+
+.wrap{max-width:1180px;margin:0 auto;padding:28px 24px 70px;}
+
+/* ── DASHBOARD RESUMEN ── */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:26px;}
+.skpi{background:var(--wh);border:1px solid var(--bdr);border-radius:10px;padding:16px 18px;animation:fadeUp .3s both;}
+.skpi .sv{font-family:'Bebas Neue',cursive;font-size:32px;color:var(--r);line-height:1;}
+.skpi .sl{font-size:10.5px;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-top:4px;}
+
+/* ── SELECTOR JORNADA ── */
+.jsel{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.jsel button{width:34px;height:34px;border:1.5px solid var(--bdr);border-radius:8px;font-size:16px;color:var(--mid);transition:.15s;flex-shrink:0;}
+.jsel button:hover:not(:disabled){border-color:var(--r);color:var(--r);}
+.jsel button:disabled{opacity:.3;cursor:default;}
+.jsel .jtitle{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;flex:1;text-align:center;}
+.jsel .jtitle small{display:block;font-size:11px;font-weight:500;color:var(--mid);font-family:'Barlow',sans-serif;margin-top:1px;}
+.jsel select{border:1.5px solid var(--bdr);border-radius:8px;padding:7px 10px;font-size:12.5px;font-weight:600;background:var(--wh);}
+
+.jprogress{height:5px;background:var(--bdr);border-radius:3px;overflow:hidden;margin-bottom:22px;}
+.jprogress-fill{height:100%;background:var(--r);border-radius:3px;transition:width .4s;}
+
+/* ── GRID DE PARTIDOS ── */
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+.mcard{background:var(--wh);border:1px solid var(--bdr);border-radius:10px;padding:16px 18px;cursor:pointer;transition:.15s;animation:fadeUp .3s both;}
+.mcard:hover{border-color:var(--r3);box-shadow:0 2px 10px rgba(0,0,0,.06);transform:translateY(-1px);}
+.mrow{display:flex;align-items:center;gap:10px;}
+.mrow+.mrow{margin-top:8px;}
+.mshield{width:26px;height:26px;border-radius:50%;object-fit:contain;background:var(--bg);border:1px solid var(--bdr);flex-shrink:0;}
+.mshield-ph{width:26px;height:26px;border-radius:50%;background:var(--bg);flex-shrink:0;}
+.mname{flex:1;font-size:13px;font-weight:500;}
+.mname.win{font-weight:700;}
+.mscore{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;min-width:20px;text-align:center;}
+.mfoot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--bg);font-size:10.5px;color:var(--faint);}
+.mempty{grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--faint);}
+.mempty .mei{font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:.5px;color:var(--mid);}
+
+/* ── DETALLE DE PARTIDO ── */
+#detail-bg{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto;animation:fadeIn .15s;}
+#detail-bg.open{display:flex;}
+.detail{background:var(--wh);border-radius:14px;width:min(760px,100%);animation:fadeUp .2s;overflow:hidden;}
+.detail-head{background:var(--blk);color:#fff;padding:22px 26px;display:flex;align-items:center;justify-content:space-between;}
+.detail-head .dh-close{color:rgba(255,255,255,.6);font-size:20px;}
+.detail-head .dh-close:hover{color:#fff;}
+.detail-teams{display:flex;align-items:center;justify-content:center;gap:22px;padding:26px;border-bottom:1px solid var(--bdr);}
+.dt-team{flex:1;text-align:center;}
+.dt-team img{width:52px;height:52px;object-fit:contain;margin-bottom:8px;}
+.dt-team .dtn{font-size:13px;font-weight:600;}
+.dt-score{font-family:'Bebas Neue',cursive;font-size:40px;color:var(--r);display:flex;gap:10px;align-items:center;}
+.detail-body{padding:22px 26px;}
+.dsec{margin-bottom:22px;}
+.dsec:last-child{margin-bottom:0;}
+.dsec-t{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.dsec-t::after{content:'';flex:1;height:1px;background:var(--bdr);}
+.goal-row{display:flex;align-items:center;gap:9px;font-size:13px;padding:5px 0;}
+.goal-row .gmin{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);min-width:32px;}
+.goal-row .gtag{font-size:9.5px;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:3px;background:var(--r2);color:var(--r);}
+.ref-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;}
+.ref-row .rname{font-weight:600;}
+.ref-row .rrole{font-size:10.5px;color:var(--faint);text-transform:uppercase;}
+.lugrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.lu-col-t{font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;margin-bottom:8px;}
+.lu-p{display:flex;gap:8px;font-size:12.5px;padding:2.5px 0;color:var(--txt);}
+.lu-p.sup{color:var(--mid);}
+.lu-p .lud{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);min-width:16px;text-align:right;}
+.dpending{font-size:12px;color:var(--faint);font-style:italic;}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--blk);color:#fff;font-size:12.5px;font-weight:500;padding:10px 20px;border-radius:8px;z-index:500;display:none;}
+.spinner{width:22px;height:22px;border:2.5px solid var(--bdr);border-top-color:var(--r);border-radius:50%;animation:spin .7s linear infinite;margin:40px auto;}
+@media(max-width:600px){.lugrid{grid-template-columns:1fr;}.detail-teams{flex-direction:column;gap:14px;}.dt-score{order:-1;}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-left">
+    <a href="index.html" class="back">← Lab</a>
+    <div>
+      <div class="nav-title">ACTAS <span>· GRUPO X</span></div>
+      <div class="nav-sub" id="nav-sub">Temporada 2026/27</div>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="summary" id="summary"></div>
+
+  <div class="jsel">
+    <button onclick="cambiarJornada(-1)" id="jprev">‹</button>
+    <div class="jtitle">
+      Jornada <span id="jnum">1</span>
+      <small id="jdatosrc">— sin actas ingeridas todavía</small>
+    </div>
+    <button onclick="cambiarJornada(1)" id="jnext">›</button>
+    <select id="jjump" onchange="irAJornada(this.value)"></select>
+  </div>
+  <div class="jprogress"><div class="jprogress-fill" id="jprogress-fill" style="width:0%"></div></div>
+
+  <div class="mgrid" id="mgrid"></div>
+</div>
+
+<div id="detail-bg" onclick="if(event.target===this)cerrarDetalle()">
+  <div class="detail" id="detail"></div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
+  authDomain: "racing-portuense-scouting.firebaseapp.com",
+  projectId: "racing-portuense-scouting",
+  storageBucket: "racing-portuense-scouting.firebasestorage.app",
+  messagingSenderId: "1073919975511",
+  appId: "1:1073919975511:web:7c7f59495d1f67f6f44312"
+});
+const db = getFirestore(app);
+const TEMPORADA = '2026-27';
+const PARTIDOS_POR_JORNADA = 9; // 18 equipos del Grupo X = 9 partidos por jornada
+
+/* Nombres: hasta que exista equipos/{clubId} poblado, se afina con un
+   title-case simple sobre el clubId — mejor que el slug en minúsculas,
+   sin inventar todavía un nombre oficial que no hemos verificado. */
+function nombreProvisional(clubId){
+  if(!clubId) return '—';
+  return clubId.split('-').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+}
+
+let SHIELDS = {};
+let ACTAS = [];          // todas las actas de la temporada, en memoria
+let jornadaActual = 1;
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block';
+  clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none', 2600);
+}
+
+async function cargarShields(){
+  try{
+    const snap = await getDocs(collection(db,'clubShields'));
+    snap.docs.forEach(d=>{ SHIELDS[d.id]=d.data().shieldUrl; });
+  }catch(e){ console.error('[Shields]', e); }
+}
+
+async function cargarActas(){
+  try{
+    const q = query(collection(db,'actas'), where('temporada','==',TEMPORADA));
+    const snap = await getDocs(q);
+    ACTAS = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  }catch(e){ console.error('[Actas]', e); toast('Error cargando actas'); }
+}
+
+function renderSummary(){
+  const jornadasConDatos = new Set(ACTAS.map(a=>a.jornada)).size;
+  const totalGoles = ACTAS.reduce((s,a)=>s+(a.goles_local||0)+(a.goles_visitante||0),0);
+  document.getElementById('summary').innerHTML = `
+    <div class="skpi"><div class="sv">${ACTAS.length}</div><div class="sl">Actas ingeridas</div></div>
+    <div class="skpi"><div class="sv">${jornadasConDatos}</div><div class="sl">Jornadas con datos</div></div>
+    <div class="skpi"><div class="sv">${totalGoles}</div><div class="sl">Goles registrados</div></div>
+    <div class="skpi"><div class="sv">${34-jornadasConDatos}</div><div class="sl">Jornadas pendientes</div></div>
+  `;
+}
+
+function poblarJump(){
+  const sel=document.getElementById('jjump');
+  sel.innerHTML = Array.from({length:34},(_,i)=>i+1).map(n=>{
+    const c = ACTAS.filter(a=>a.jornada===n).length;
+    return `<option value="${n}" ${n===jornadaActual?'selected':''}>J${n}${c?` (${c})`:''}</option>`;
+  }).join('');
+}
+
+window.cambiarJornada = function(delta){
+  jornadaActual = Math.min(34, Math.max(1, jornadaActual+delta));
+  renderJornada();
+};
+window.irAJornada = function(n){
+  jornadaActual = parseInt(n);
+  renderJornada();
+};
+
+function renderJornada(){
+  document.getElementById('jnum').textContent = jornadaActual;
+  document.getElementById('jprev').disabled = jornadaActual<=1;
+  document.getElementById('jnext').disabled = jornadaActual>=34;
+  poblarJump();
+
+  const partidos = ACTAS.filter(a=>a.jornada===jornadaActual)
+    .sort((a,b)=>(a.nombre_local||'').localeCompare(b.nombre_local||''));
+  const pct = Math.round(partidos.length/PARTIDOS_POR_JORNADA*100);
+  document.getElementById('jprogress-fill').style.width = Math.min(pct,100)+'%';
+  document.getElementById('jdatosrc').textContent = partidos.length
+    ? `— ${partidos.length} de ${PARTIDOS_POR_JORNADA} partidos ingeridos`
+    : '— sin actas ingeridas todavía';
+
+  const grid = document.getElementById('mgrid');
+  if(!partidos.length){
+    grid.innerHTML = `<div class="mempty">
+      <div class="mei">SIN DATOS PARA ESTA JORNADA</div>
+      <div style="font-size:12px;margin-top:6px;">Se rellena sola en cuanto Pep ingesta las actas correspondientes.</div>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = partidos.map((a,i)=>{
+    const shieldL = shieldOrPh(a.equipo_local);
+    const shieldV = shieldOrPh(a.equipo_visitante);
+    const winL = a.goles_local>a.goles_visitante, winV = a.goles_visitante>a.goles_local;
+    return `<div class="mcard" style="animation-delay:${i*25}ms" onclick="abrirDetalle('${a.cod_acta}')">
+      <div class="mrow">${shieldL}<div class="mname ${winL?'win':''}">${a.nombre_local||nombreProvisional(a.equipo_local)}</div><div class="mscore">${a.goles_local}</div></div>
+      <div class="mrow">${shieldV}<div class="mname ${winV?'win':''}">${a.nombre_visitante||nombreProvisional(a.equipo_visitante)}</div><div class="mscore">${a.goles_visitante}</div></div>
+      <div class="mfoot"><span>${a.cod_acta}</span><span>Ver detalle →</span></div>
+    </div>`;
+  }).join('');
+}
+
+function shieldOrPh(clubId){
+  const url = SHIELDS[clubId];
+  return url ? `<img class="mshield" src="${url}" alt=""/>` : `<div class="mshield-ph"></div>`;
+}
+
+/* ── DETALLE DE PARTIDO (carga bajo demanda) ── */
+window.abrirDetalle = async function(codActa){
+  const a = ACTAS.find(x=>x.cod_acta===codActa);
+  if(!a) return;
+  const detail = document.getElementById('detail');
+  detail.innerHTML = `<div class="detail-head">
+      <div>J${a.jornada} · ${a.fecha||''}</div>
+      <button class="dh-close" onclick="cerrarDetalle()">✕</button>
+    </div>
+    <div class="detail-teams">
+      <div class="dt-team">${SHIELDS[a.equipo_local]?`<img src="${SHIELDS[a.equipo_local]}"/>`:''}<div class="dtn">${a.nombre_local||nombreProvisional(a.equipo_local)}</div></div>
+      <div class="dt-score">${a.goles_local} <span style="color:var(--faint);font-size:20px;">–</span> ${a.goles_visitante}</div>
+      <div class="dt-team">${SHIELDS[a.equipo_visitante]?`<img src="${SHIELDS[a.equipo_visitante]}"/>`:''}<div class="dtn">${a.nombre_visitante||nombreProvisional(a.equipo_visitante)}</div></div>
+    </div>
+    <div class="detail-body"><div class="spinner"></div></div>`;
+  document.getElementById('detail-bg').classList.add('open');
+
+  try{
+    const [golesSnap, arbSnap, alinSnap] = await Promise.all([
+      getDocs(query(collection(db,'goles'), where('cod_acta','==',codActa))),
+      getDocs(query(collection(db,'arbitrosActa'), where('cod_acta','==',codActa))),
+      getDocs(query(collection(db,'alineaciones'), where('cod_acta','==',codActa))),
+    ]);
+    const goles = golesSnap.docs.map(d=>d.data()).sort((x,y)=>(parseInt(x.minuto)||0)-(parseInt(y.minuto)||0));
+    const arbitros = arbSnap.docs.map(d=>d.data()).sort((x,y)=>x.rol_idx-y.rol_idx);
+    const alin = alinSnap.docs.map(d=>d.data());
+
+    const alinDe = (equipoId,cond) => alin.filter(x=>x.equipo_id===equipoId && x.condicion===cond)
+      .sort((x,y)=>(parseInt(x.dorsal)||99)-(parseInt(y.dorsal)||99));
+
+    const golesHtml = goles.length ? goles.map(g=>`
+      <div class="goal-row"><span class="gmin">${g.minuto}′</span>
+        <span class="gtag">${g.equipo_gol===a.equipo_local?(a.nombre_local||nombreProvisional(a.equipo_local)):(a.nombre_visitante||nombreProvisional(a.equipo_visitante))}</span>
+        <span>${g.jugador}</span>
+        ${g.tipo_gol!=='NORMAL'?`<span style="color:var(--faint);font-size:11px;">(${g.tipo_gol==='PENALTI'?'penalti':'propia puerta'})</span>`:''}
+      </div>`).join('') : '<div class="dpending">Sin goleadores detallados en el acta.</div>';
+
+    const arbHtml = arbitros.length ? arbitros.map(r=>`
+      <div class="ref-row"><span class="rname">${r.nombre}</span><span class="rrole">${r.rol_idx===1?'Principal':'Asistente'} · ${r.delegacion||''}</span></div>
+    `).join('') : '<div class="dpending">Sin árbitros registrados.</div>';
+
+    const luHtml = alin.length ? `<div class="lugrid">
+      <div>
+        <div class="lu-col-t">${a.nombre_local||nombreProvisional(a.equipo_local)}</div>
+        ${alinDe(a.equipo_local,'TITULAR').map(p=>`<div class="lu-p"><span class="lud">${p.dorsal}</span>${p.jugador}</div>`).join('')}
+        ${alinDe(a.equipo_local,'SUPLENTE').length?`<div style="font-size:10px;color:var(--faint);margin:6px 0 3px;text-transform:uppercase;">Suplentes</div>`:''}
+        ${alinDe(a.equipo_local,'SUPLENTE').map(p=>`<div class="lu-p sup"><span class="lud">${p.dorsal}</span>${p.jugador}</div>`).join('')}
+      </div>
+      <div>
+        <div class="lu-col-t">${a.nombre_visitante||nombreProvisional(a.equipo_visitante)}</div>
+        ${alinDe(a.equipo_visitante,'TITULAR').map(p=>`<div class="lu-p"><span class="lud">${p.dorsal}</span>${p.jugador}</div>`).join('')}
+        ${alinDe(a.equipo_visitante,'SUPLENTE').length?`<div style="font-size:10px;color:var(--faint);margin:6px 0 3px;text-transform:uppercase;">Suplentes</div>`:''}
+        ${alinDe(a.equipo_visitante,'SUPLENTE').map(p=>`<div class="lu-p sup"><span class="lud">${p.dorsal}</span>${p.jugador}</div>`).join('')}
+      </div>
+    </div>` : '<div class="dpending">Sin alineaciones registradas.</div>';
+
+    document.querySelector('#detail .detail-body').innerHTML = `
+      <div class="dsec"><div class="dsec-t">Goles</div>${golesHtml}</div>
+      <div class="dsec"><div class="dsec-t">Árbitros</div>${arbHtml}</div>
+      <div class="dsec"><div class="dsec-t">Alineaciones</div>${luHtml}</div>
+      <div class="dsec"><div class="dsec-t">Tarjetas y sustituciones</div><div class="dpending">Pendiente — próxima iteración del scraper (Pep).</div></div>
+    `;
+  }catch(e){
+    console.error('[Detalle]', e);
+    document.querySelector('#detail .detail-body').innerHTML = '<div class="dpending">Error cargando el detalle.</div>';
+  }
+};
+window.cerrarDetalle = function(){ document.getElementById('detail-bg').classList.remove('open'); };
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') cerrarDetalle(); });
+
+(async function init(){
+  await Promise.all([cargarShields(), cargarActas()]);
+  renderSummary();
+  renderJornada();
+})();
+</script>
+</body>
+</html>
