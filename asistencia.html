@@ -286,11 +286,11 @@ input,select,textarea{font-family:inherit;outline:none;}
     <div id="reg-results" style="display:none;">
       <div class="sh">
         <div>
-          <div class="st">Marcar asistencia</div>
+          <div class="st" id="reg-results-title">Marcar asistencia</div>
           <div class="sc" id="result-meta"></div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost" onclick="resetReg()">← Nueva foto</button>
+          <button class="btn btn-ghost" onclick="resetReg()">← Cancelar</button>
           <button class="btn btn-green" onclick="saveSession()">💾 Guardar sesión</button>
         </div>
       </div>
@@ -298,6 +298,7 @@ input,select,textarea{font-family:inherit;outline:none;}
         <div>
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);margin-bottom:8px;">Foto del papel</div>
           <div class="att-img-preview"><img id="result-img" src="" alt=""/></div>
+          <button class="btn btn-ghost" style="margin-top:8px;width:100%;font-size:12px;" onclick="document.getElementById('att-file').click()">🔄 Cambiar foto</button>
           <div style="margin-top:12px;padding:12px 14px;background:var(--bg);border:1px solid var(--bdr);border-radius:8px;">
             <label for="reg-session-date" style="display:block;font-family:'Barlow Condensed',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:6px;">¿A qué día pertenece esta sesión?</label>
             <input type="date" id="reg-session-date" style="width:100%;font-size:14px;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;background:var(--wh);"/>
@@ -571,6 +572,8 @@ let startX = 0, startY = 0;
 let currentPhotoFile = null;
 let currentPhotoB64  = null;
 let attendanceResults = [];
+let editingSessionId = null;          // id de la sesión en edición, null = sesión nueva
+let editingSessionExistingPhoto = null; // foto ya guardada, se conserva si no se sube otra
 let currentFineTab = 'all';
 
 /* ── SYNC INDICATOR ── */
@@ -719,9 +722,12 @@ window.handlePhoto = async function(input) {
     currentPhotoB64 = e.target.result;
     document.getElementById('reg-upload').style.display='none';
     document.getElementById('reg-processing').style.display='none';
-    attendanceResults = buildRosterFromSheet().map(r => ({
-      ...r, status:'presente', fine:false, fineTypeId:''
-    }));
+    // En edición: cambiar la foto no debe borrar las marcas ya hechas.
+    if(!editingSessionId){
+      attendanceResults = buildRosterFromSheet().map(r => ({
+        ...r, status:'presente', fine:false, fineTypeId:''
+      }));
+    }
     showResults();
   };
   reader.readAsDataURL(file);
@@ -729,13 +735,21 @@ window.handlePhoto = async function(input) {
 
 function showResults() {
   document.getElementById('reg-results').style.display='block';
+  document.getElementById('reg-results-title').textContent = 'Marcar asistencia';
   document.getElementById('result-img').src = currentPhotoB64;
   // Fecha local del día (evita el bug de toISOString/UTC ya documentado:
   // pasadas ciertas horas en España, toISOString() puede saltar al día siguiente).
-  const hoy = new Date();
-  const localIso = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
-  document.getElementById('reg-session-date').value = localIso;
+  // En edición se respeta la fecha ya puesta por editSession(), no se pisa.
+  if(!editingSessionId){
+    const hoy = new Date();
+    const localIso = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+    document.getElementById('reg-session-date').value = localIso;
+  }
   updateResultMeta();
+  renderResultRows();
+}
+
+function renderResultRows() {
   document.getElementById('att-result-list').innerHTML = attendanceResults.map((r,i) => `
     <div class="att-row2 st-${r.status}" id="row-${i}">
       <div class="att-row2-head">
@@ -813,28 +827,45 @@ window.saveSession = async function() {
     showToast('Selecciona a qué día pertenece la sesión antes de guardar','err');
     return;
   }
-  document.getElementById('proc-msg').textContent = 'Subiendo foto a Cloudinary…';
+  document.getElementById('proc-msg').textContent = editingSessionId ? 'Actualizando sesión…' : 'Subiendo foto a Cloudinary…';
   document.getElementById('reg-results').style.display='none';
   document.getElementById('reg-processing').style.display='block';
 
   // La foto SIEMPRE se sube y se guarda como prueba/histórico, marcación
   // manual o no — esto no depende de si hay detección automática.
-  let photoUrl = null;
-  try {
-    photoUrl = await uploadToCloudinary(currentPhotoFile);
-  } catch(e) {
-    showToast('No se pudo subir la foto — la sesión se guarda igualmente','err');
+  // En edición: si no se eligió una foto nueva, se conserva la existente.
+  let photoUrl = editingSessionId ? editingSessionExistingPhoto : null;
+  if(currentPhotoFile){
+    try {
+      photoUrl = await uploadToCloudinary(currentPhotoFile);
+    } catch(e) {
+      showToast('No se pudo subir la foto — la sesión se guarda igualmente','err');
+    }
   }
 
-  await addDoc(collection(db, 'attendance'), {
-    date,
-    results: attendanceResults.map(r=>({
-      playerId:r.playerId, playerName:r.playerName, sheetNum:r.sheetNum,
-      status:r.status, present: r.status==='presente' // compat con lecturas antiguas
-    })),
-    photoUrl,
-    createdAt: serverTimestamp()
-  });
+  const resultsPayload = attendanceResults.map(r=>({
+    playerId:r.playerId, playerName:r.playerName, sheetNum:r.sheetNum,
+    status:r.status, present: r.status==='presente' // compat con lecturas antiguas
+  }));
+
+  let sessionId;
+  if(editingSessionId){
+    sessionId = editingSessionId;
+    await updateDoc(doc(db, 'attendance', sessionId), {
+      date, results: resultsPayload, photoUrl, updatedAt: serverTimestamp()
+    });
+    // Reconciliar multas: se borran las que generó esta sesión y se
+    // recrean según el marcado actual, para no dejar duplicados ni huérfanas.
+    const antiguas = FINES.filter(f => f.sourceSessionId === sessionId);
+    for(const f of antiguas){
+      await deleteDoc(doc(db, 'fines', f.id));
+    }
+  } else {
+    const ref = await addDoc(collection(db, 'attendance'), {
+      date, results: resultsPayload, photoUrl, createdAt: serverTimestamp()
+    });
+    sessionId = ref.id;
+  }
 
   // Multas: solo las que el staff marcó explícitamente en cada fila
   let finesCreated = 0;
@@ -847,22 +878,73 @@ window.saveSession = async function() {
       amount: type?.amount||0,
       date, paid:false, recurrent:'no',
       notes: `Generada desde asistencia · ${STATUS_LABELS[r.status]}`,
-      auto:true, createdAt: serverTimestamp()
+      auto:true, sourceSessionId: sessionId, createdAt: serverTimestamp()
     });
     finesCreated++;
   }
 
   document.getElementById('reg-processing').style.display='none';
   resetReg();
-  showToast(`Sesión guardada · ${finesCreated} multa(s) generada(s)`,'ok');
+  showToast(editingSessionId ? `Sesión actualizada · ${finesCreated} multa(s) vigente(s)`
+                              : `Sesión guardada · ${finesCreated} multa(s) generada(s)`,'ok');
 };
 
 window.resetReg = function() {
   currentPhotoFile = null; currentPhotoB64 = null; attendanceResults = [];
+  editingSessionId = null; editingSessionExistingPhoto = null;
   document.getElementById('att-file').value = '';
   document.getElementById('reg-results').style.display='none';
   document.getElementById('reg-processing').style.display='none';
   document.getElementById('reg-upload').style.display='block';
+};
+
+/* ── EDITAR / ELIMINAR SESIÓN YA SUBIDA ── */
+window.editSession = function(id, ev) {
+  if(ev) ev.stopPropagation(); // no abrir/cerrar el acordeón del historial
+  const s = ATTENDANCE.find(x => x.id === id);
+  if(!s){ showToast('Sesión no encontrada','err'); return; }
+
+  editingSessionId = id;
+  editingSessionExistingPhoto = s.photoUrl || null;
+  currentPhotoFile = null;
+  currentPhotoB64 = s.photoUrl || '';
+
+  // Recupera el estado de multa de cada jugador cruzando por sourceSessionId,
+  // para que editar no borre "sin querer" las multas ya asociadas a la sesión.
+  attendanceResults = (s.results || []).map(r => {
+    const f = FINES.find(x => x.sourceSessionId === id && x.playerId === r.playerId);
+    return {
+      playerId: r.playerId, playerName: r.playerName, sheetNum: r.sheetNum,
+      status: r.status || (r.present ? 'presente' : 'ausencia'),
+      fine: !!f, fineTypeId: f ? (f.typeId || '') : '',
+    };
+  });
+
+  nav('p-register', document.querySelector('.nav-item[onclick*="p-register"]'));
+  document.getElementById('reg-upload').style.display = 'none';
+  document.getElementById('reg-processing').style.display = 'none';
+  document.getElementById('reg-results').style.display = 'block';
+  document.getElementById('reg-results-title').textContent = `Editando sesión del ${s.date ? new Date(s.date+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'long'}) : ''}`;
+  document.getElementById('result-img').src = currentPhotoB64;
+  document.getElementById('reg-session-date').value = s.date || '';
+  updateResultMeta();
+  renderResultRows();
+  showToast('Editando la sesión — cambia lo necesario y pulsa Guardar','ok');
+};
+
+window.deleteSession = async function(id, ev) {
+  if(ev) ev.stopPropagation();
+  const s = ATTENDANCE.find(x => x.id === id);
+  const fecha = s ? new Date(s.date+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'long'}) : '';
+  if(!confirm(`¿Eliminar la sesión de asistencia del ${fecha}? También se eliminarán las multas que generó automáticamente. Esta acción no se puede deshacer.`)) return;
+  try {
+    await deleteDoc(doc(db, 'attendance', id));
+    const relacionadas = FINES.filter(f => f.sourceSessionId === id);
+    for(const f of relacionadas){ await deleteDoc(doc(db, 'fines', f.id)); }
+    showToast('Sesión eliminada','ok');
+  } catch(e) {
+    showToast('Error al eliminar la sesión','err');
+  }
 };
 
 /* ── HISTORY ── */
@@ -879,6 +961,8 @@ function renderHistory() {
             <div class="hist-date">${new Date(s.date+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
             <div style="display:flex;gap:8px;align-items:center;">
               <span class="pill ${cls}">${present}/${total} · ${pct}%</span>
+              <button class="btn btn-ghost" style="padding:4px 9px;font-size:12px;" onclick="editSession('${s.id}',event)" title="Editar sesión">✏️</button>
+              <button class="btn btn-ghost" style="padding:4px 9px;font-size:12px;color:var(--inj);" onclick="deleteSession('${s.id}',event)" title="Eliminar sesión">🗑</button>
               <span style="color:var(--faint)">▸</span>
             </div>
           </div>
