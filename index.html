@@ -353,7 +353,7 @@ const MODULES = [
   { id:'04', name:'Performance FC',        desc:'Rendimiento individual, lesiones y tests',         status:'active', url:'performance.html'      },
   { id:'05', name:'Entrenamientos',        desc:'Sesiones, pizarra táctica y planificación',        status:'active', url:'entrenamientos.html'   },
   { id:'06', name:'Análisis',              desc:'Informes de rival por jornada, vídeo y plan de partido',  status:'active', url:'analisis.html'        },
-  { id:'07', name:'Actas',                 desc:'Ingesta de actas RFAF · sanciones, árbitros y goleadores', status:'dev',    url:null                    },
+  { id:'07', name:'Actas',                 desc:'Registro en vivo de resultados, alineaciones y árbitros del Grupo X', status:'active', url:'actas.html'            },
   { id:'08', name:'Calendario',            desc:'Vista unificada de partidos y entrenamientos',     status:'active', url:'calendario.html'       },
   { id:'09', name:'El Almacén',            desc:'Documentos, presentaciones y actas indexados desde Dropbox', status:'active', url:'almacen.html' },
   { id:'10', name:'Accesos',               desc:'Usuarios, roles y permisos del sistema',           status:'soon',   url:null                    },
@@ -368,7 +368,7 @@ const STATUS_CFG = {
 
 function renderModules(){
   const grid = document.getElementById('modules-grid');
-  document.getElementById('modules-count').textContent = MODULES.length + ' módulos · v2.2';
+  document.getElementById('modules-count').textContent = MODULES.length + ' módulos · v2.3';
   grid.innerHTML = MODULES.map((m, i) => {
     const s = STATUS_CFG[m.status];
     const disabled = m.status !== 'active';
