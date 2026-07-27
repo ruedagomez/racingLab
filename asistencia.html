@@ -298,6 +298,11 @@ input,select,textarea{font-family:inherit;outline:none;}
         <div>
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);margin-bottom:8px;">Foto del papel</div>
           <div class="att-img-preview"><img id="result-img" src="" alt=""/></div>
+          <div style="margin-top:12px;padding:12px 14px;background:var(--bg);border:1px solid var(--bdr);border-radius:8px;">
+            <label for="reg-session-date" style="display:block;font-family:'Barlow Condensed',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:6px;">¿A qué día pertenece esta sesión?</label>
+            <input type="date" id="reg-session-date" style="width:100%;font-size:14px;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;background:var(--wh);"/>
+            <div style="font-size:10.5px;color:var(--faint);margin-top:5px;">Por defecto es hoy — cámbialo si estás subiendo la firma de un día anterior.</div>
+          </div>
         </div>
         <div>
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);margin-bottom:12px;">
@@ -725,6 +730,11 @@ window.handlePhoto = async function(input) {
 function showResults() {
   document.getElementById('reg-results').style.display='block';
   document.getElementById('result-img').src = currentPhotoB64;
+  // Fecha local del día (evita el bug de toISOString/UTC ya documentado:
+  // pasadas ciertas horas en España, toISOString() puede saltar al día siguiente).
+  const hoy = new Date();
+  const localIso = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  document.getElementById('reg-session-date').value = localIso;
   updateResultMeta();
   document.getElementById('att-result-list').innerHTML = attendanceResults.map((r,i) => `
     <div class="att-row2 st-${r.status}" id="row-${i}">
@@ -798,7 +808,11 @@ window.setFineType = function(i, typeId){
 };
 
 window.saveSession = async function() {
-  const date = new Date().toISOString().slice(0,10);
+  const date = document.getElementById('reg-session-date').value;
+  if(!date){
+    showToast('Selecciona a qué día pertenece la sesión antes de guardar','err');
+    return;
+  }
   document.getElementById('proc-msg').textContent = 'Subiendo foto a Cloudinary…';
   document.getElementById('reg-results').style.display='none';
   document.getElementById('reg-processing').style.display='block';
