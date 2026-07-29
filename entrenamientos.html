@@ -276,8 +276,32 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
 .toast.ok{border-left-color:#15803d;}
 .toast.err{border-left-color:#dc2626;}
 
+.mobnav{display:none;}
+.mobtopuser{display:none;}
+
 @media(max-width:1000px){.reg-layout,.detail-layout,.dash-two{grid-template-columns:1fr;}.detail-sidebar{position:static;}.reg-photo-panel{position:static;}}
-@media(max-width:700px){.sidebar{display:none;}.page{padding:16px 12px 40px;}.hdr-grid{grid-template-columns:1fr 1fr;}.task-cols,.prepf-grid,.dt-body{grid-template-columns:1fr;}}
+@media(max-width:700px){
+  .sidebar{display:none;}
+  .page{padding:16px 12px 40px;}
+  .hdr-grid{grid-template-columns:1fr 1fr;}
+  .task-cols,.prepf-grid,.dt-body{grid-template-columns:1fr;}
+  .mobtopuser{display:flex;}
+  .mobnav{
+    display:flex; position:fixed; left:0; right:0; bottom:0; z-index:80;
+    background:#101014; border-top:1px solid rgba(255,255,255,.08);
+    padding-bottom:env(safe-area-inset-bottom); overflow-x:auto;
+  }
+  .mobnav-item{
+    flex:1; min-width:58px; display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:9px 3px 8px; position:relative;
+    color:rgba(255,255,255,.45); border-top:2px solid transparent;
+  }
+  .mobnav-item .ni{font-size:15px;}
+  .mobnav-item small{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;}
+  .mobnav-item.active{color:#fff;border-top-color:var(--r);}
+  .mobnav-badge{position:absolute;top:5px;right:calc(50% - 22px);background:var(--r);color:#fff;font-size:8.5px;font-weight:700;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+  .main{padding-bottom:66px;}
+}
 </style>
 </head>
 <body>
@@ -312,11 +336,24 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
   </div>
 </div>
 
+<nav class="mobnav">
+  <div class="mobnav-item active" onclick="nav('p-register',this)"><span class="ni">📋</span><small>Registrar</small></div>
+  <div class="mobnav-item" onclick="nav('p-history',this)"><span class="ni">◫</span><small>Historial</small><span class="mobnav-badge" id="nb-sessions-m">0</span></div>
+  <div class="mobnav-item" onclick="nav('p-library',this)"><span class="ni">📚</span><small>Librería</small><span class="mobnav-badge" id="nb-library-m">0</span></div>
+  <div class="mobnav-item" onclick="nav('p-vocab',this)"><span class="ni">🏷</span><small>Vocab.</small><span class="mobnav-badge" id="nb-vocab-m">0</span></div>
+  <div class="mobnav-item" onclick="nav('p-dashboard',this)"><span class="ni">◧</span><small>Dashboard</small></div>
+  <div class="mobnav-item" onclick="nav('p-trash',this)"><span class="ni">🗑</span><small>Papelera</small><span class="mobnav-badge" id="nb-trash-m">0</span></div>
+</nav>
+
 <!-- MAIN -->
 <div class="main">
   <div class="topbar">
     <div class="topbar-title" id="page-title">Registrar Sesión</div>
     <div class="topbar-right" id="topbar-actions"></div>
+    <div class="sb-user mobtopuser" onclick="openModal('modal-user')">
+      <div class="sb-av" id="sb-av-m">?</div>
+      <div class="sb-uname" id="sb-uname-m" style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Usuario</div>
+    </div>
   </div>
 
   <!-- REGISTER -->
@@ -1150,10 +1187,14 @@ function startListeners(){
 }
 function updateBadges(){
   document.getElementById('nb-sessions').textContent=sessions.length;
+  document.getElementById('nb-sessions-m').textContent=sessions.length;
   document.getElementById('nb-library').textContent=library.length;
+  document.getElementById('nb-library-m').textContent=library.length;
   document.getElementById('nb-trash').textContent=trash.length;
+  document.getElementById('nb-trash-m').textContent=trash.length;
   const vocab=buildTipoVocab();
   document.getElementById('nb-vocab').textContent=vocab.length;
+  document.getElementById('nb-vocab-m').textContent=vocab.length;
 }
 
 /* ══════════ VOCABULARIO DE TIPOS DE TAREA ══════════
@@ -1435,8 +1476,12 @@ window.nav=function(id,el){
   document.getElementById('detail-wrap').classList.remove('active');
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  if(el) el.classList.add('active');
+  // Sincroniza SIEMPRE sidebar (escritorio) y barra inferior (móvil) por id,
+  // no solo el elemento pulsado — evitan quedar desincronizadas entre sí.
+  document.querySelectorAll('.nav-item, .mobnav-item').forEach(n=>{
+    const onclickAttr = n.getAttribute('onclick') || '';
+    n.classList.toggle('active', onclickAttr.includes("'"+id+"'"));
+  });
   document.getElementById('page-title').textContent=PAGE_TITLES[id]||'';
   if(id==='p-history') renderHistory();
   if(id==='p-library') renderLibrary();
@@ -1460,8 +1505,10 @@ const STAFF=['Bruno Herrero','Pedro Ríos','Alejandro García','Alejandro Aguile
 let currentUser=localStorage.getItem('rl_train_user')||'';
 function initials(n){const p=n.trim().split(/\s+/);return p.length>=2?(p[0][0]+p[p.length-1][0]).toUpperCase():n.slice(0,2).toUpperCase();}
 function updateUserUI(){
-  if(currentUser){document.getElementById('sb-av').textContent=initials(currentUser);document.getElementById('sb-uname').textContent=currentUser;}
-  else{document.getElementById('sb-av').textContent='?';document.getElementById('sb-uname').textContent='Seleccionar usuario';}
+  if(currentUser){document.getElementById('sb-av').textContent=initials(currentUser);document.getElementById('sb-uname').textContent=currentUser;
+    document.getElementById('sb-av-m').textContent=initials(currentUser);document.getElementById('sb-uname-m').textContent=currentUser;}
+  else{document.getElementById('sb-av').textContent='?';document.getElementById('sb-uname').textContent='Seleccionar usuario';
+    document.getElementById('sb-av-m').textContent='?';document.getElementById('sb-uname-m').textContent='Usuario';}
 }
 document.getElementById('user-grid').innerHTML=STAFF.map(u=>`<div class="user-opt${currentUser===u?' selected':''}" onclick="selectUser('${u}')">${u}</div>`).join('');
 window.selectUser=function(n){currentUser=n;localStorage.setItem('rl_train_user',n);updateUserUI();closeModal('modal-user');showToast('Bienvenido, '+n.split(' ')[0],'ok');};
