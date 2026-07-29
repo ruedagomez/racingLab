@@ -216,7 +216,29 @@ input,select,textarea{font-family:inherit;outline:none;}
 .toast.ok{border-left-color:var(--fit);}
 .toast.err{border-left-color:var(--inj);}
 
-@media(max-width:900px){.sidebar{display:none;}.att-two-col{grid-template-columns:1fr;}.zone-layout{grid-template-columns:1fr;}.dash-grid{grid-template-columns:1fr;}}
+.mobnav{display:none;}
+
+@media(max-width:900px){
+  .sidebar{display:none;}
+  .att-two-col{grid-template-columns:1fr;}
+  .zone-layout{grid-template-columns:1fr;}
+  .dash-grid{grid-template-columns:1fr;}
+  .mobnav{
+    display:flex; position:fixed; left:0; right:0; bottom:0; z-index:80;
+    background:#101014; border-top:1px solid rgba(255,255,255,.08);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .mobnav-item{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:9px 4px 8px; position:relative;
+    color:rgba(255,255,255,.45); border-top:2px solid transparent;
+  }
+  .mobnav-item .nav-icon{font-size:16px;}
+  .mobnav-item small{font-family:'Barlow Condensed',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;}
+  .mobnav-item.active{color:#fff;border-top-color:var(--r);}
+  .mobnav-badge{position:absolute;top:5px;right:calc(50% - 20px);background:var(--r);color:#fff;font-size:8.5px;font-weight:700;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+  .main{padding-bottom:64px;} /* deja hueco para que la barra inferior no tape contenido */
+}
 @media(max-width:600px){.page{padding:18px 14px 36px;}.topbar{padding:0 16px;}.form-row{grid-template-columns:1fr;}}
 </style>
 </head>
@@ -252,6 +274,14 @@ input,select,textarea{font-family:inherit;outline:none;}
     <div class="sb-foot-txt">Racing Club Portuense · 2026/27</div>
   </div>
 </div>
+
+<nav class="mobnav">
+  <div class="mobnav-item active" onclick="nav('p-register',this)"><span class="nav-icon">📷</span><small>Registrar</small></div>
+  <div class="mobnav-item" onclick="nav('p-history',this)"><span class="nav-icon">◫</span><small>Historial</small></div>
+  <div class="mobnav-item" onclick="nav('p-fines',this)"><span class="nav-icon">◉</span><small>Registro</small><span class="mobnav-badge" id="unpaid-badge-m">0</span></div>
+  <div class="mobnav-item" onclick="nav('p-fine-types',this)"><span class="nav-icon">◐</span><small>Catálogo</small></div>
+  <div class="mobnav-item" onclick="nav('p-dashboard',this)"><span class="nav-icon">◧</span><small>Dashboard</small></div>
+</nav>
 
 <!-- MAIN -->
 <div class="main">
@@ -649,10 +679,12 @@ const PAGE_TITLES = {
 window.nav = function(id, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  if(el) el.classList.add('active');
-  else document.querySelectorAll('.nav-item').forEach(n => {
-    if(n.getAttribute('onclick') && n.getAttribute('onclick').includes("'"+id+"'")) n.classList.add('active');
+  // Se sincronizan SIEMPRE ambas barras (sidebar de escritorio + barra
+  // inferior de móvil) por id, no solo el elemento que se pulsó — si no,
+  // la que esté oculta se queda desincronizada con el tiempo.
+  document.querySelectorAll('.nav-item, .mobnav-item').forEach(n => {
+    const onclickAttr = n.getAttribute('onclick') || '';
+    n.classList.toggle('active', onclickAttr.includes("'"+id+"'"));
   });
   document.getElementById('page-title').textContent = PAGE_TITLES[id] || '';
   renderPage(id);
@@ -1287,6 +1319,7 @@ function renderDashboard() {
 /* ── UTILS ── */
 function updateBadge() {
   document.getElementById('unpaid-badge').textContent = FINES.filter(f=>!f.paid).length;
+  document.getElementById('unpaid-badge-m').textContent = FINES.filter(f=>!f.paid).length;
 }
 
 window.openModal = function(id) {
