@@ -770,6 +770,10 @@ input,select,textarea{font-family:inherit;outline:none;}
           <label class="form-label">Evaluador</label>
           <input type="text" class="form-control" id="cc-imp-evaluador" placeholder="Quién tomó las medidas"/>
         </div>
+        <div class="form-group" style="margin:0;flex:1;min-width:120px;display:none;" id="cc-imp-hoja-wrap">
+          <label class="form-label">Hoja del Excel</label>
+          <select class="form-control" id="cc-imp-hoja" onchange="ccCambiarHoja(this.value)"></select>
+        </div>
       </div>
       <div class="cc-hint" style="margin-bottom:10px;">La fecha del Excel manda si cada fila trae la suya; si no, se usa esta.</div>
       <div class="imp-prev" id="cc-imp-prev"></div>
@@ -1439,6 +1443,7 @@ let CC_MED = [];       // todas las mediciones
 let CC_IMPORTS = [];   // registro de importaciones
 let ccPendiente = null; // filas parseadas pendientes de confirmar
 let ccFechaSugerida = null;
+let ccLibro = null, ccNombreArchivo = '', ccHojaActual = '';
 
 /* ── Faulkner ── */
 function faulkner(pl){
@@ -1725,7 +1730,7 @@ function ccRenderLastImport(){
 
 /* ══ IMPORTACIÓN DE EXCEL ══ */
 window.ccOpenImport = function(){
-  ccPendiente = null; ccFechaSugerida = null;
+  ccPendiente = null; ccFechaSugerida = null; ccLibro = null; ccHojaActual = '';
   document.getElementById('cc-imp-step1').style.display='block';
   document.getElementById('cc-imp-step2').style.display='none';
   document.getElementById('cc-imp-save').style.display='none';
@@ -1740,7 +1745,19 @@ window.ccHandleFile = function(file){
   reader.onload = e => {
     try{
       const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
-      const nombreHoja = wb.SheetNames[0];
+      ccLibro = wb; ccNombreArchivo = file.name;
+      ccLeerHoja(wb.SheetNames[0]);
+    }catch(err){
+      console.error('[CC parse]', err);
+      alert('No he podido leer el archivo. Comprueba que es un Excel válido (.xlsx, .xls o .csv).');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+};
+
+/* Lee una hoja concreta del libro ya cargado (una hoja = una fecha de medición) */
+function ccLeerHoja(nombreHoja){
+      const wb = ccLibro;
       const hoja = wb.Sheets[nombreHoja];
       // Convención observada: la hoja se llama "3007" = 30 de julio. Se propone
       // esa fecha en el formulario, pero Carlos la confirma antes de guardar.
@@ -1753,21 +1770,48 @@ window.ccHandleFile = function(file){
         }
       }
       const filas = XLSX.utils.sheet_to_json(hoja, {header:1, blankrows:false, raw:false, dateNF:'yyyy-mm-dd'});
-      ccProcesar(filas, file.name);
-    }catch(err){
-      console.error('[CC parse]', err);
-      alert('No he podido leer el archivo. Comprueba que es un Excel válido (.xlsx, .xls o .csv).');
-    }
-  };
-  reader.readAsArrayBuffer(file);
-};
+      ccHojaActual = nombreHoja;
+      ccProcesar(filas, ccNombreArchivo);
+}
+window.ccCambiarHoja = function(nombre){ ccFechaSugerida=null; ccLeerHoja(nombre); };
+
+/* ¿Es este valor un número puro? "14" sí; "1. Jesus Cataño" no (aunque
+   parseFloat lo leería como 1, que es justo el error que queremos evitar). */
+function esNumeroPuro(v){
+  if(v==null || v==='') return false;
+  return /^-?\d+([.,]\d+)?$/.test(String(v).trim());
+}
 
 function ccProcesar(filas, nombreArchivo){
   if(!filas.length){ alert('El archivo está vacío.'); return; }
-  // Buscar la fila de cabeceras: la primera que contenga algo parecido a "jugador"/"nombre"
-  let idxCab = filas.findIndex(f => f.some(c => COLS.jugador.some(k=>norm(c).includes(k))));
-  if(idxCab<0) idxCab = 0;
+
+  /* ── Fila de cabeceras ──
+     No se busca la palabra "jugador": en la hoja real del cuerpo técnico esa
+     columna NO tiene cabecera. Se puntúa cada una de las primeras filas por
+     cuántas columnas reconocibles contiene y se elige la mejor. */
+  let idxCab = 0, mejorPunt = -1;
+  for(let i=0; i<Math.min(filas.length, 12); i++){
+    const m = mapearCabeceras(filas[i] || []);
+    const punt = Object.keys(m).length;
+    if(punt > mejorPunt){ mejorPunt = punt; idxCab = i; }
+  }
   const map = mapearCabeceras(filas[idxCab]);
+
+  /* ── Columna de jugadores ──
+     Si no viene etiquetada, se deduce: la primera columna cuyos datos sean
+     mayoritariamente texto (no números) es la de los nombres. */
+  if(map.jugador == null){
+    const datos = filas.slice(idxCab+1).filter(f=>f && f.some(c=>c!=null && c!==''));
+    const nCols = Math.max(...filas.map(f=>(f||[]).length), 0);
+    const ocupadas = new Set(Object.values(map));
+    for(let c=0; c<nCols; c++){
+      if(ocupadas.has(c)) continue;
+      const vals = datos.map(f=>f[c]).filter(v=>v!=null && String(v).trim()!=='');
+      if(vals.length < Math.max(3, datos.length*0.5)) continue;   // columna demasiado vacía
+      const texto = vals.filter(v=>!esNumeroPuro(v)).length;
+      if(texto / vals.length >= 0.8){ map.jugador = c; break; }   // mayoría texto → nombres
+    }
+  }
   const tienePliegueCols = ['triceps','subescapular','suprailiaco','abdominal'].every(k=>map[k]!=null);
   if(map.jugador==null || (map.peso==null && !tienePliegueCols)){
     alert('No encuentro las columnas necesarias.\n\nHace falta una columna de jugador y, al menos, o bien el peso o bien los 4 pliegues.');
@@ -1859,6 +1903,13 @@ function ccPreview(){
     ${err.length?`<span style="color:var(--inj)">· ✗ ${err.length} no se importarán</span>`:''}`;
 
   if(ccFechaSugerida) document.getElementById('cc-imp-fecha').value = ccFechaSugerida;
+  // Si el libro tiene varias hojas (una por fecha de medición), permitir elegir
+  const selHoja = document.getElementById('cc-imp-hoja-wrap');
+  if(ccLibro && ccLibro.SheetNames.length > 1){
+    selHoja.style.display = '';
+    document.getElementById('cc-imp-hoja').innerHTML = ccLibro.SheetNames
+      .map(n=>`<option value="${n}" ${n===ccHojaActual?'selected':''}>${n}</option>`).join('');
+  } else { selHoja.style.display = 'none'; }
   document.getElementById('cc-imp-step1').style.display='none';
   document.getElementById('cc-imp-step2').style.display='block';
   document.getElementById('cc-imp-save').style.display = ok.length?'':'none';
