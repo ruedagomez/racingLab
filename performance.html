@@ -270,6 +270,47 @@ input,select,textarea{font-family:inherit;outline:none;}
   .topbar{padding:0 16px;}
   .form-row,.form-row-3{grid-template-columns:1fr;}
 }
+
+/* ══ COMPOSICIÓN CORPORAL ══ */
+.cc-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px;}
+.cc-toolbar .cc-hint{font-size:11.5px;color:var(--faint);}
+.cc-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.cc-table th{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--mid);text-align:left;padding:9px 10px;border-bottom:1.5px solid var(--bdr);white-space:nowrap;}
+.cc-table td{padding:10px;border-bottom:1px solid var(--bg);vertical-align:middle;}
+.cc-table tr:last-child td{border-bottom:none;}
+.cc-table tr.alerta{background:var(--inj-bg);}
+.cc-num{font-family:'JetBrains Mono',monospace;font-size:12px;text-align:right;}
+.cc-player{display:flex;align-items:center;gap:9px;}
+.cc-dorsal{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;color:var(--faint);min-width:22px;}
+.cc-nick{font-weight:600;}
+.cc-delta{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;}
+.cc-delta.up{color:var(--inj);}
+.cc-delta.down{color:var(--fit);}
+.cc-delta.flat{color:var(--faint);}
+.cc-badge{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:4px;white-space:nowrap;}
+.cc-badge.alta{background:var(--inj-bg);color:var(--inj);}
+.cc-badge.ok{background:var(--fit-bg);color:var(--fit);}
+.cc-badge.sin{background:var(--bg);color:var(--faint);}
+.cc-badge.stale{background:var(--caut-bg);color:var(--caut);}
+.cc-spark{display:inline-flex;align-items:flex-end;gap:1.5px;height:20px;}
+.cc-spark i{width:4px;background:var(--r3);border-radius:1px;display:block;}
+.cc-spark i.last{background:var(--r);}
+.cc-empty{text-align:center;padding:46px 20px;color:var(--faint);}
+.cc-empty .cce-t{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mid);margin-bottom:6px;}
+/* Modal importación */
+.imp-drop{border:2px dashed var(--bdr);border-radius:10px;padding:26px;text-align:center;cursor:pointer;transition:.15s;}
+.imp-drop:hover,.imp-drop.over{border-color:var(--r);background:var(--r2);}
+.imp-drop .impi{font-size:26px;margin-bottom:6px;}
+.imp-prev{max-height:270px;overflow-y:auto;border:1px solid var(--bdr);border-radius:8px;margin-top:14px;}
+.imp-prev table{width:100%;border-collapse:collapse;font-size:11.5px;}
+.imp-prev th{position:sticky;top:0;background:var(--bg);font-family:'Barlow Condensed',sans-serif;font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--mid);padding:7px 9px;text-align:left;}
+.imp-prev td{padding:7px 9px;border-top:1px solid var(--bg);}
+.imp-prev tr.err td{background:var(--inj-bg);color:var(--inj);}
+.imp-prev tr.warn td{background:var(--caut-bg);}
+.imp-sum{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px;}
+.imp-sum span{font-weight:600;}
+.tpl-box{background:var(--bg);border-radius:8px;padding:12px 14px;margin-top:14px;font-size:11.5px;color:var(--mid);line-height:1.65;}
+.tpl-box code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:var(--wh);padding:1px 5px;border-radius:3px;border:1px solid var(--bdr);}
 </style>
 </head>
 <body>
@@ -302,6 +343,10 @@ input,select,textarea{font-family:inherit;outline:none;}
         <span class="nav-badge" id="inj-badge">0</span>
       </div>
       <div class="sb-section">Rendimiento</div>
+      <div class="nav-item" onclick="showSection('s-composicion',this)">
+        <span class="nav-icon">◑</span>Composición Corporal
+        <span class="nav-badge" id="cc-badge">0</span>
+      </div>
       <div class="nav-item" onclick="showSection('s-tests',this)">
         <span class="nav-icon">◐</span>Tests Físicos
       </div>
@@ -443,6 +488,23 @@ input,select,textarea{font-family:inherit;outline:none;}
     </div>
 
     <!-- ESTADÍSTICAS -->
+    <!-- COMPOSICIÓN CORPORAL -->
+    <div class="page" id="s-composicion">
+      <div class="sh">
+        <div class="st">Composición Corporal</div>
+        <div class="sc" id="cc-subtitle">Método Faulkner · 4 pliegues</div>
+      </div>
+      <div class="kpi-grid" id="cc-kpis"></div>
+      <div class="cc-toolbar">
+        <button class="btn btn-primary btn-sm" onclick="ccOpenImport()">📊 Importar Excel</button>
+        <button class="btn btn-ghost btn-sm" onclick="ccOpenHistorial()">🕐 Importaciones</button>
+        <span class="cc-hint" id="cc-lastimport"></span>
+      </div>
+      <div class="card" style="padding:0;overflow-x:auto;">
+        <div id="cc-tabla"></div>
+      </div>
+    </div>
+
     <div class="page" id="s-estadisticas">
       <div class="sh"><div class="st">Estadísticas</div><div class="sc">Temporada 2026/27</div></div>
       <div class="card" style="text-align:center;padding:48px;color:var(--faint);">
@@ -677,6 +739,73 @@ input,select,textarea{font-family:inherit;outline:none;}
   </div>
 </div>
 
+
+<!-- MODAL: IMPORTAR EXCEL -->
+<div class="overlay" id="modal-cc-import" onclick="if(event.target===this)closeModal('modal-cc-import')">
+  <div class="modal" style="max-width:760px;">
+    <div class="modal-head">
+      <h3>Importar composición corporal</h3>
+      <button class="modal-close" onclick="closeModal('modal-cc-import')">×</button>
+    </div>
+    <div id="cc-imp-step1">
+      <div class="imp-drop" id="cc-drop" onclick="document.getElementById('cc-file').click()">
+        <div class="impi">📊</div>
+        <div style="font-weight:600;font-size:13px;">Arrastra el Excel aquí o pulsa para elegirlo</div>
+        <div style="font-size:11.5px;color:var(--faint);margin-top:4px;">.xlsx · .xls · .csv</div>
+        <input type="file" id="cc-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="ccHandleFile(this.files[0])"/>
+      </div>
+      <div class="tpl-box">
+        <strong>Formato esperado</strong> — una fila por jugador. Los nombres de columna se detectan solos (con o sin tildes/mayúsculas):<br/>
+        <code>Jugador</code> <code>Fecha</code> <code>Peso</code> <code>Talla</code> <code>Tríceps</code> <code>Subescapular</code> <code>Suprailíaco</code> <code>Abdominal</code> <code>Evaluador</code><br/>
+        Solo <code>Jugador</code> y <code>Peso</code> son obligatorios. Si vienen los <strong>4 pliegues</strong>, se calcula el %MG por Faulkner; si no, se registra solo el peso y su variación.
+      </div>
+    </div>
+    <div id="cc-imp-step2" style="display:none;">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px;">
+        <div class="form-group" style="margin:0;flex:1;min-width:150px;">
+          <label class="form-label">Fecha de la medición</label>
+          <input type="date" class="form-control" id="cc-imp-fecha"/>
+        </div>
+        <div class="form-group" style="margin:0;flex:1;min-width:150px;">
+          <label class="form-label">Evaluador</label>
+          <input type="text" class="form-control" id="cc-imp-evaluador" placeholder="Quién tomó las medidas"/>
+        </div>
+      </div>
+      <div class="cc-hint" style="margin-bottom:10px;">La fecha del Excel manda si cada fila trae la suya; si no, se usa esta.</div>
+      <div class="imp-prev" id="cc-imp-prev"></div>
+      <div class="imp-sum" id="cc-imp-sum"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cc-import')">Cancelar</button>
+      <button class="btn btn-primary" id="cc-imp-save" style="display:none" onclick="ccConfirmImport()">Guardar en la base de datos</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: HISTORIAL IMPORTACIONES -->
+<div class="overlay" id="modal-cc-hist" onclick="if(event.target===this)closeModal('modal-cc-hist')">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-head">
+      <h3>Importaciones realizadas</h3>
+      <button class="modal-close" onclick="closeModal('modal-cc-hist')">×</button>
+    </div>
+    <div id="cc-hist-body"></div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-cc-hist')">Cerrar</button></div>
+  </div>
+</div>
+
+<!-- MODAL: FICHA JUGADOR -->
+<div class="overlay" id="modal-cc-player" onclick="if(event.target===this)closeModal('modal-cc-player')">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-head">
+      <h3 id="cc-pl-title">Evolución</h3>
+      <button class="modal-close" onclick="closeModal('modal-cc-player')">×</button>
+    </div>
+    <div id="cc-pl-body"></div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-cc-player')">Cerrar</button></div>
+  </div>
+</div>
+
 <script>
 /* ══ DATA ══════════════════════════════════════════ */
 const THRESHOLDS = { cmj:35, asim:15, sprint10:1.8, hooper:16 };
@@ -749,7 +878,7 @@ function shortName(n){
 const PAGE_TITLES = {
   's-dashboard':'Dashboard','s-plantilla':'Plantilla',
   's-disponibilidad':'Disponibilidad','s-lesiones':'Lesiones',
-  's-tests':'Tests Físicos','s-estadisticas':'Estadísticas'
+  's-tests':'Tests Físicos','s-composicion':'Composición Corporal','s-estadisticas':'Estadísticas'
 };
 const PAGE_ACTIONS = {
   's-lesiones': `<button class="btn btn-primary btn-sm" onclick="openModal('modal-add-injury')">+ Nueva lesión</button>`,
@@ -773,6 +902,7 @@ function renderSection(id){
     's-disponibilidad': renderDisponibilidad,
     's-lesiones': renderLesiones,
     's-tests': renderTests,
+    's-composicion': ()=>{ if(window.ccRender) window.ccRender(); },
   };
   if(map[id]) map[id]();
 }
@@ -1267,5 +1397,578 @@ function showToast(msg, type='ok') {
 updateBadges();
 renderDashboard();
 </script>
+
+<!-- SheetJS para leer Excel en el navegador -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script type="module">
+/* ══════════════════════════════════════════════════════════════
+   COMPOSICIÓN CORPORAL · Firestore (NO localStorage)
+   ──────────────────────────────────────────────────────────────
+   Los jugadores se leen de la colección `players` de Firestore —
+   la misma que usan Plantilla y Asistencia — y NO de la lista
+   local de este archivo, que sigue teniendo la plantilla 25/26.
+
+   Método Faulkner (4 pliegues):
+     Σ4  = tríceps + subescapular + suprailíaco + abdominal   (mm)
+     %MG = 0.153 · Σ4 + 5.783
+   Se guardan SIEMPRE los 4 pliegues en crudo: si mañana se cambia
+   de ecuación (Yuhasz, Carter…) se puede recalcular sin volver a
+   medir. El dato medido es el pliegue; el % es una estimación.
+   ══════════════════════════════════════════════════════════════ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, getDocs, onSnapshot, query, orderBy, limit as fsLimit }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
+  authDomain: "racing-portuense-scouting.firebaseapp.com",
+  projectId: "racing-portuense-scouting",
+  storageBucket: "racing-portuense-scouting.firebasestorage.app",
+  messagingSenderId: "1073919975511",
+  appId: "1:1073919975511:web:7c7f59495d1f67f6f44312"
+});
+const db = getFirestore(app);
+
+const UMBRAL_MG = 12;          // % de grasa a partir del cual se marca alerta
+const DIAS_PESO_OBSOLETO = 14; // sin pesar en 2 semanas → aviso
+const DIAS_PLIEGUES_OBSOLETO = 75; // pliegues cada 1-2 meses
+
+let CC_PLAYERS = [];   // plantilla real (Firestore `players`)
+let CC_MED = [];       // todas las mediciones
+let CC_IMPORTS = [];   // registro de importaciones
+let ccPendiente = null; // filas parseadas pendientes de confirmar
+let ccFechaSugerida = null;
+
+/* ── Faulkner ── */
+function faulkner(pl){
+  const suma = (+pl.triceps||0)+(+pl.subescapular||0)+(+pl.suprailiaco||0)+(+pl.abdominal||0);
+  return { suma4: +suma.toFixed(1), mg: +(0.153*suma + 5.783).toFixed(2) };
+}
+function derivadas(peso, mg){
+  if(!peso || mg==null) return {masaGrasa:null, masaLibre:null};
+  const mgKg = peso*mg/100;
+  return { masaGrasa:+mgKg.toFixed(2), masaLibre:+(peso-mgKg).toFixed(2) };
+}
+
+/* ── Normalización de texto para cruzar nombres y cabeceras ── */
+const norm = s => (s==null?'':String(s)).normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+  .toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(Boolean).join(' ');
+
+/* Detecta la columna por palabras clave, tolerando tildes y variantes */
+const COLS = {
+  jugador:   ['jugador','nombre','apodo','nick','player'],
+  fecha:     ['fecha','date','dia'],
+  peso:      ['peso','kg','peso kg','masa'],
+  altura:    ['talla','altura','estatura','cm'],
+  triceps:   ['triceps','tricipital'],
+  subescapular:['subescapular','subescapula','subscapular'],
+  suprailiaco:['suprailiaco','supra iliaco','suprailiaca','iliaco','supraespinal'],
+  abdominal: ['abdominal','abdomen'],
+  evaluador: ['evaluador','medido por','responsable','tecnico'],
+};
+/* Distancia de edición: tolera erratas de tecleo en las cabeceras.
+   Caso real: "Pliegue Andominal" por "Abdominal" (1 carácter de diferencia). */
+function distancia(a,b){
+  const m=a.length, n=b.length;
+  if(Math.abs(m-n)>2) return 99;
+  let prev=Array.from({length:n+1},(_,j)=>j), cur=new Array(n+1);
+  for(let i=1;i<=m;i++){
+    cur[0]=i;
+    for(let j=1;j<=n;j++){
+      cur[j]=Math.min(prev[j]+1, cur[j-1]+1, prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    }
+    [prev,cur]=[cur,prev];
+  }
+  return prev[n];
+}
+function pareceA(palabra, clave){
+  if(palabra===clave || palabra.includes(clave)) return true;
+  if(clave.length>=6 && palabra.length>=5){
+    // errata: hasta 2 caracteres de diferencia sobre la palabra completa
+    if(distancia(palabra, clave)<=2) return true;
+    // o sobre alguna de sus palabras sueltas ("pliegue andominal" → "andominal")
+    return palabra.split(' ').some(p => p.length>=5 && distancia(p, clave)<=2);
+  }
+  return false;
+}
+function mapearCabeceras(headers){
+  const map = {};
+  // 1ª pasada: coincidencia exacta o por inclusión (la más fiable)
+  headers.forEach((h,i)=>{
+    const hn = norm(h);
+    if(!hn) return;
+    for(const [campo, claves] of Object.entries(COLS)){
+      if(map[campo]!=null) continue;
+      if(claves.some(k => hn===k || hn.startsWith(k) || hn.includes(k))){ map[campo]=i; break; }
+    }
+  });
+  // 2ª pasada: solo para lo que quedó sin asignar, admitiendo erratas
+  headers.forEach((h,i)=>{
+    const hn = norm(h);
+    if(!hn || Object.values(map).includes(i)) return;
+    for(const [campo, claves] of Object.entries(COLS)){
+      if(map[campo]!=null) continue;
+      if(claves.some(k => pareceA(hn, k))){ map[campo]=i; break; }
+    }
+  });
+  return map;
+}
+
+/* ── Cruce de jugador del Excel con la plantilla real ──
+   El Excel del cuerpo técnico escribe "1. Jesus Cataño": dorsal + nombre, con
+   erratas y apodos abreviados. El DORSAL es la clave fiable; el nombre sirve
+   para confirmar. Devuelve también CÓMO se cruzó, para mostrarlo en la vista
+   previa y que Carlos pueda verificarlo antes de guardar (nunca a ciegas). */
+function separarDorsal(txt){
+  const m = String(txt||'').trim().match(/^(\d{1,2})\s*[.\-)ºª]*\s+(.+)$/);
+  return m ? { dorsal:parseInt(m[1]), resto:m[2].trim() } : { dorsal:null, resto:String(txt||'').trim() };
+}
+function buscarJugador(txt){
+  const { dorsal, resto } = separarDorsal(txt);
+  const t = norm(resto);
+  const porDorsal = dorsal!=null ? CC_PLAYERS.find(x=>+x.d===dorsal) : null;
+
+  const coincideNombre = p => {
+    if(!p || !t) return false;
+    const nick = norm(p.nick), full = norm(p.n);
+    if(nick===t || full===t) return true;
+    if(full.includes(t) || t.includes(nick)) return true;
+    // tolerancia a erratas: "Cataño"→"Castaño", "Ruben"→"Rubén"
+    if(distancia(nick, t)<=2) return true;
+    const palabras = t.split(' ');
+    return palabras.length>0 && palabras.every(w => full.split(' ').some(v=>v===w || distancia(v,w)<=1));
+  };
+
+  // 1 · dorsal y nombre concuerdan → máxima confianza
+  if(porDorsal && coincideNombre(porDorsal)) return { jugador:porDorsal, via:'dorsal+nombre', confianza:'alta' };
+
+  // 2 · solo el nombre (sin dorsal en el Excel, o dorsal desactualizado)
+  let p = CC_PLAYERS.find(x=>norm(x.nick)===t) || CC_PLAYERS.find(x=>norm(x.n)===t);
+  if(p) return { jugador:p, via:'nombre', confianza:'alta' };
+  p = CC_PLAYERS.find(x=>norm(x.n).includes(t) || (t && t.includes(norm(x.nick))));
+  if(p) return { jugador:p, via:'nombre', confianza:'media' };
+  const cands = CC_PLAYERS.filter(x=>coincideNombre(x));
+  if(cands.length===1) return { jugador:cands[0], via:'nombre aproximado', confianza:'media' };
+
+  // 3 · solo el dorsal: se acepta pero se marca para revisión visual
+  if(porDorsal) return { jugador:porDorsal, via:`dorsal ${dorsal}`, confianza:'revisar' };
+
+  return { jugador:null, via:null, confianza:null };
+}
+
+/* ── Fechas sin bug de zona horaria ── */
+function hoyIso(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function parseFecha(v){
+  if(!v) return null;
+  if(v instanceof Date && !isNaN(v))
+    return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,'0')}-${String(v.getDate()).padStart(2,'0')}`;
+  const s = String(v).trim();
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if(m){
+    let y = m[3].length===2 ? '20'+m[3] : m[3];
+    return `${y}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+  }
+  return null;
+}
+const diasDesde = iso => iso ? Math.floor((new Date(hoyIso()) - new Date(iso))/86400000) : null;
+const fmtFecha = iso => iso ? iso.slice(8,10)+'/'+iso.slice(5,7)+'/'+iso.slice(2,4) : '—';
+
+/* ══ CARGA ══ */
+async function ccCargarJugadores(){
+  try{
+    const snap = await getDocs(collection(db,'players'));
+    CC_PLAYERS = snap.docs.map(d=>({id:d.id, ...d.data()})).filter(p=>p.active!==false);
+  }catch(e){ console.error('[CC players]', e); }
+}
+function ccEscucharMediciones(){
+  onSnapshot(collection(db,'bodyComp'),
+    snap => {
+      CC_MED = snap.docs.map(d=>({id:d.id, ...d.data()}))
+        .sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+      ccRender();
+    },
+    err => console.error('[CC bodyComp]', err));
+  onSnapshot(collection(db,'bodyCompImports'),
+    snap => { CC_IMPORTS = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>(b.importadoEn||'').localeCompare(a.importadoEn||'')); ccRenderLastImport(); },
+    err => console.error('[CC imports]', err));
+}
+
+/* ══ CONSULTAS ══ */
+const medicionesDe = pid => CC_MED.filter(m=>m.playerId===pid);
+function ultimaCompleta(pid){
+  const c = medicionesDe(pid).filter(m=>m.mg!=null);
+  return c.length ? c[c.length-1] : null;
+}
+function ultimoPeso(pid){
+  const c = medicionesDe(pid).filter(m=>m.peso!=null);
+  return c.length ? c[c.length-1] : null;
+}
+function anteriorPeso(pid){
+  const c = medicionesDe(pid).filter(m=>m.peso!=null);
+  return c.length>1 ? c[c.length-2] : null;
+}
+function anteriorCompleta(pid){
+  const c = medicionesDe(pid).filter(m=>m.mg!=null);
+  return c.length>1 ? c[c.length-2] : null;
+}
+
+/* ══ RENDER ══ */
+function deltaHtml(val, unidad, invertirColor){
+  if(val==null) return '<span class="cc-delta flat">—</span>';
+  const v = +val.toFixed(unidad==='kg'?1:2);
+  if(Math.abs(v)<0.05) return '<span class="cc-delta flat">=</span>';
+  const sube = v>0;
+  const cls = sube ? (invertirColor?'down':'up') : (invertirColor?'up':'down');
+  return `<span class="cc-delta ${cls}">${sube?'+':''}${v}${unidad}</span>`;
+}
+function sparkline(pid, campo){
+  const serie = medicionesDe(pid).filter(m=>m[campo]!=null).slice(-8).map(m=>m[campo]);
+  if(serie.length<2) return '';
+  const min=Math.min(...serie), max=Math.max(...serie), rango=(max-min)||1;
+  return `<span class="cc-spark">${serie.map((v,i)=>{
+    const h = 4 + Math.round((v-min)/rango*14);
+    return `<i style="height:${h}px" class="${i===serie.length-1?'last':''}"></i>`;
+  }).join('')}</span>`;
+}
+
+function ccRender(){
+  if(!CC_PLAYERS.length){ ccRenderVacio('Cargando plantilla…'); return; }
+  const filas = CC_PLAYERS.map(p=>{
+    const uP = ultimoPeso(p.id), aP = anteriorPeso(p.id);
+    const uC = ultimaCompleta(p.id), aC = anteriorCompleta(p.id);
+    return {
+      p,
+      peso: uP?uP.peso:null, fechaPeso: uP?uP.fecha:null,
+      dPeso: (uP&&aP)?(uP.peso-aP.peso):null,
+      mg: uC?uC.mg:null, suma4: uC?uC.suma4:null, fechaMg: uC?uC.fecha:null,
+      dMg: (uC&&aC)?(uC.mg-aC.mg):null,
+      masaLibre: uC?uC.masaLibre:null,
+      dMasaLibre: (uC&&aC&&uC.masaLibre!=null&&aC.masaLibre!=null)?(uC.masaLibre-aC.masaLibre):null,
+    };
+  }).sort((a,b)=>{
+    const am = a.mg==null?-1:(a.mg>=UMBRAL_MG?2:1), bm = b.mg==null?-1:(b.mg>=UMBRAL_MG?2:1);
+    if(am!==bm) return bm-am;
+    return (a.p.d||99)-(b.p.d||99);
+  });
+
+  const conDato = filas.filter(f=>f.peso!=null).length;
+  const alertas = filas.filter(f=>f.mg!=null && f.mg>=UMBRAL_MG).length;
+  const conMg = filas.filter(f=>f.mg!=null);
+  const mediaMg = conMg.length ? (conMg.reduce((s,f)=>s+f.mg,0)/conMg.length).toFixed(1) : '—';
+  const ultFecha = CC_MED.length ? CC_MED[CC_MED.length-1].fecha : null;
+
+  document.getElementById('cc-kpis').innerHTML = `
+    <div class="kpi"><div class="kv">${conDato}</div><div class="kl">Jugadores medidos</div><div class="ks">de ${CC_PLAYERS.length} en plantilla</div></div>
+    <div class="kpi"><div class="kv ${alertas?'red':'green'}">${alertas}</div><div class="kl">Por encima del ${UMBRAL_MG}%</div><div class="ks">${conMg.length} con pliegues</div></div>
+    <div class="kpi"><div class="kv">${mediaMg}${mediaMg!=='—'?'%':''}</div><div class="kl">Media de grasa</div><div class="ks">equipo · Faulkner</div></div>
+    <div class="kpi"><div class="kv" style="font-size:22px">${ultFecha?fmtFecha(ultFecha):'—'}</div><div class="kl">Última medición</div><div class="ks">${ultFecha?diasDesde(ultFecha)+' días':'sin datos'}</div></div>`;
+  const badge = document.getElementById('cc-badge');
+  if(badge){ badge.textContent = alertas; badge.style.display = alertas?'':'none'; }
+
+  if(!CC_MED.length){ ccRenderVacio(); return; }
+
+  document.getElementById('cc-tabla').innerHTML = `<table class="cc-table">
+    <thead><tr>
+      <th>Jugador</th><th class="cc-num">Peso</th><th class="cc-num">Δ</th><th></th>
+      <th class="cc-num">%MG</th><th class="cc-num">Δ</th><th></th>
+      <th class="cc-num">Σ4 mm</th><th class="cc-num">M. magra</th><th>Estado</th><th></th>
+    </tr></thead><tbody>
+    ${filas.map(f=>{
+      const alta = f.mg!=null && f.mg>=UMBRAL_MG;
+      const sinPeso = f.peso==null;
+      const pesoViejo = f.fechaPeso && diasDesde(f.fechaPeso)>DIAS_PESO_OBSOLETO;
+      const pliegViejo = f.fechaMg && diasDesde(f.fechaMg)>DIAS_PLIEGUES_OBSOLETO;
+      let estado;
+      if(sinPeso) estado = '<span class="cc-badge sin">Sin datos</span>';
+      else if(alta) estado = `<span class="cc-badge alta">⚠ ${f.mg}% grasa</span>`;
+      else if(f.mg!=null) estado = '<span class="cc-badge ok">En rango</span>';
+      else estado = '<span class="cc-badge sin">Sin pliegues</span>';
+      const avisos = [];
+      if(pesoViejo) avisos.push(`<span class="cc-badge stale" title="Último peso hace ${diasDesde(f.fechaPeso)} días">Peso ${diasDesde(f.fechaPeso)}d</span>`);
+      if(pliegViejo) avisos.push(`<span class="cc-badge stale" title="Últimos pliegues hace ${diasDesde(f.fechaMg)} días">Pliegues ${diasDesde(f.fechaMg)}d</span>`);
+      return `<tr class="${alta?'alerta':''}">
+        <td><div class="cc-player"><span class="cc-dorsal">${f.p.d??'—'}</span><span class="cc-nick">${f.p.nick}</span></div></td>
+        <td class="cc-num">${f.peso!=null?f.peso.toFixed(1):'—'}</td>
+        <td class="cc-num">${deltaHtml(f.dPeso,'kg')}</td>
+        <td>${sparkline(f.p.id,'peso')}</td>
+        <td class="cc-num" style="font-weight:700;${alta?'color:var(--inj)':''}">${f.mg!=null?f.mg.toFixed(1):'—'}</td>
+        <td class="cc-num">${deltaHtml(f.dMg,'%')}</td>
+        <td>${sparkline(f.p.id,'mg')}</td>
+        <td class="cc-num">${f.suma4!=null?f.suma4.toFixed(1):'—'}</td>
+        <td class="cc-num">${f.masaLibre!=null?f.masaLibre.toFixed(1)+' kg':'—'} ${f.dMasaLibre!=null?deltaHtml(f.dMasaLibre,'kg',true):''}</td>
+        <td>${estado} ${avisos.join(' ')}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="ccVerJugador('${f.p.id}')">Ver</button></td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>`;
+}
+function ccRenderVacio(msg){
+  document.getElementById('cc-tabla').innerHTML = `<div class="cc-empty">
+    <div class="cce-t">${msg||'Sin mediciones registradas'}</div>
+    <div style="font-size:12px;">${msg?'':'Importa el primer Excel para empezar a construir el histórico.'}</div>
+  </div>`;
+}
+function ccRenderLastImport(){
+  const el = document.getElementById('cc-lastimport');
+  if(!el) return;
+  el.textContent = CC_IMPORTS.length
+    ? `Última importación: ${CC_IMPORTS[0].archivo} · ${fmtFecha((CC_IMPORTS[0].importadoEn||'').slice(0,10))} · ${CC_IMPORTS[0].filas} registros`
+    : '';
+}
+
+/* ══ IMPORTACIÓN DE EXCEL ══ */
+window.ccOpenImport = function(){
+  ccPendiente = null; ccFechaSugerida = null;
+  document.getElementById('cc-imp-step1').style.display='block';
+  document.getElementById('cc-imp-step2').style.display='none';
+  document.getElementById('cc-imp-save').style.display='none';
+  document.getElementById('cc-file').value='';
+  document.getElementById('cc-imp-fecha').value = hoyIso();
+  openModal('modal-cc-import');
+};
+
+window.ccHandleFile = function(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
+      const nombreHoja = wb.SheetNames[0];
+      const hoja = wb.Sheets[nombreHoja];
+      // Convención observada: la hoja se llama "3007" = 30 de julio. Se propone
+      // esa fecha en el formulario, pero Carlos la confirma antes de guardar.
+      const mHoja = String(nombreHoja).trim().match(/^(\d{2})(\d{2})$/);
+      if(mHoja){
+        const dd=+mHoja[1], mm=+mHoja[2];
+        if(dd>=1&&dd<=31&&mm>=1&&mm<=12){
+          const anio = mm>=7 ? 2026 : 2027;   // temporada 26/27
+          ccFechaSugerida = `${anio}-${mHoja[2]}-${mHoja[1]}`;
+        }
+      }
+      const filas = XLSX.utils.sheet_to_json(hoja, {header:1, blankrows:false, raw:false, dateNF:'yyyy-mm-dd'});
+      ccProcesar(filas, file.name);
+    }catch(err){
+      console.error('[CC parse]', err);
+      alert('No he podido leer el archivo. Comprueba que es un Excel válido (.xlsx, .xls o .csv).');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+};
+
+function ccProcesar(filas, nombreArchivo){
+  if(!filas.length){ alert('El archivo está vacío.'); return; }
+  // Buscar la fila de cabeceras: la primera que contenga algo parecido a "jugador"/"nombre"
+  let idxCab = filas.findIndex(f => f.some(c => COLS.jugador.some(k=>norm(c).includes(k))));
+  if(idxCab<0) idxCab = 0;
+  const map = mapearCabeceras(filas[idxCab]);
+  const tienePliegueCols = ['triceps','subescapular','suprailiaco','abdominal'].every(k=>map[k]!=null);
+  if(map.jugador==null || (map.peso==null && !tienePliegueCols)){
+    alert('No encuentro las columnas necesarias.\n\nHace falta una columna de jugador y, al menos, o bien el peso o bien los 4 pliegues.');
+    return;
+  }
+  // Columna de %MG ya calculada en la hoja: se usa SOLO para contrastar el
+  // cálculo propio y avisar si la fórmula del Excel estuviera tocada.
+  let colMgHoja = null;
+  filas[idxCab].forEach((h,i)=>{ const hn=norm(h); if(hn.includes('mg')||hn.includes('faulkner')||hn.includes('grasa')) colMgHoja=i; });
+  const num = v => { if(v==null||v==='') return null; const n = parseFloat(String(v).replace(',','.')); return isNaN(n)?null:n; };
+  const registros = [];
+  for(let i=idxCab+1;i<filas.length;i++){
+    const f = filas[i];
+    if(!f || !f.length) continue;
+    const nombreTxt = f[map.jugador];
+    if(!nombreTxt || !String(nombreTxt).trim()) continue;
+    const peso = map.peso!=null ? num(f[map.peso]) : null;
+    const cruce = buscarJugador(nombreTxt);
+    const jugador = cruce.jugador;
+    const pl = {
+      triceps: map.triceps!=null?num(f[map.triceps]):null,
+      subescapular: map.subescapular!=null?num(f[map.subescapular]):null,
+      suprailiaco: map.suprailiaco!=null?num(f[map.suprailiaco]):null,
+      abdominal: map.abdominal!=null?num(f[map.abdominal]):null,
+    };
+    const tienePliegues = ['triceps','subescapular','suprailiaco','abdominal'].every(k=>pl[k]!=null && pl[k]>0);
+    const parciales = !tienePliegues && Object.values(pl).some(v=>v!=null && v>0);
+    let mg=null, suma4=null, masaGrasa=null, masaLibre=null;
+    if(tienePliegues){
+      const r = faulkner(pl); mg=r.mg; suma4=r.suma4;
+      const d = derivadas(peso, mg); masaGrasa=d.masaGrasa; masaLibre=d.masaLibre;
+    }
+    // Contraste con el %MG que ya trae la hoja (si lo trae)
+    let avisoMg = null;
+    if(mg!=null && colMgHoja!=null){
+      const mgHoja = num(f[colMgHoja]);
+      if(mgHoja!=null && Math.abs(mgHoja-mg)>0.05)
+        avisoMg = `El Excel dice ${mgHoja.toFixed(2)}% y el cálculo da ${mg.toFixed(2)}%`;
+    }
+    registros.push({
+      textoOriginal: String(nombreTxt).trim(),
+      jugador, peso, via:cruce.via, confianza:cruce.confianza, avisoMg,
+      altura: map.altura!=null?num(f[map.altura]):null,
+      fecha: map.fecha!=null?parseFecha(f[map.fecha]):null,
+      evaluadorFila: map.evaluador!=null?(f[map.evaluador]||'').toString().trim():'',
+      pliegues: tienePliegues?pl:null,
+      pliegesParciales: parciales,
+      suma4, mg, masaGrasa, masaLibre,
+      tipo: tienePliegues?'completo':'peso',
+      error: !jugador ? 'No cruza con ningún jugador de la plantilla'
+            : (peso==null && !tienePliegues) ? 'Sin peso ni pliegues completos' : null,
+    });
+  }
+  if(!registros.length){ alert('No he encontrado ninguna fila con datos.'); return; }
+  ccPendiente = { registros, archivo:nombreArchivo };
+  ccPreview();
+}
+
+function ccPreview(){
+  const {registros} = ccPendiente;
+  const ok = registros.filter(r=>!r.error);
+  const err = registros.filter(r=>r.error);
+  const completos = ok.filter(r=>r.tipo==='completo').length;
+  const parciales = ok.filter(r=>r.pliegesParciales).length;
+
+  document.getElementById('cc-imp-prev').innerHTML = `<table>
+    <thead><tr><th>Jugador (Excel)</th><th>Cruza con</th><th>Peso</th><th>Σ4</th><th>%MG</th><th>Estado</th></tr></thead>
+    <tbody>${registros.map(r=>`
+      <tr class="${r.error?'err':((r.pliegesParciales||r.confianza==='revisar'||r.avisoMg)?'warn':'')}">
+        <td>${r.textoOriginal}</td>
+        <td>${r.jugador?`<strong>${r.jugador.d??'—'} · ${r.jugador.nick}</strong>${r.confianza==='revisar'?' <span style="color:var(--caut);font-size:10px">⚠ solo por dorsal, verifica</span>':(r.via&&r.via!=='dorsal+nombre'?` <span style="color:var(--faint);font-size:10px">(${r.via})</span>`:'')}`:'<em>—</em>'}</td>
+        <td>${r.peso!=null?r.peso.toFixed(1):'—'}</td>
+        <td>${r.suma4!=null?r.suma4.toFixed(1):'—'}</td>
+        <td>${r.mg!=null?r.mg.toFixed(1)+'%':'—'}</td>
+        <td>${r.error ? '✗ '+r.error
+             : r.avisoMg ? '⚠ '+r.avisoMg
+             : r.pliegesParciales ? '⚠ Pliegues incompletos — se guarda solo el peso'
+             : (r.tipo==='completo' && r.peso!=null) ? '✓ Peso + pliegues'
+             : r.tipo==='completo' ? '✓ Pliegues (sin peso)' : '✓ Solo peso'}</td>
+      </tr>`).join('')}</tbody></table>`;
+
+  document.getElementById('cc-imp-sum').innerHTML = `
+    <span style="color:var(--fit)">✓ ${ok.length} listos</span>
+    <span>· ${completos} con pliegues (se calcula %MG)</span>
+    <span>· ${ok.length-completos} solo peso</span>
+    ${parciales?`<span style="color:var(--caut)">· ⚠ ${parciales} con pliegues incompletos</span>`:''}
+    ${ok.filter(r=>r.confianza==='revisar').length?`<span style="color:var(--caut)">· ⚠ ${ok.filter(r=>r.confianza==='revisar').length} cruzados solo por dorsal — verifícalos</span>`:''}
+    ${ok.filter(r=>r.avisoMg).length?`<span style="color:var(--caut)">· ⚠ ${ok.filter(r=>r.avisoMg).length} con %MG distinto al de la hoja</span>`:''}
+    ${err.length?`<span style="color:var(--inj)">· ✗ ${err.length} no se importarán</span>`:''}`;
+
+  if(ccFechaSugerida) document.getElementById('cc-imp-fecha').value = ccFechaSugerida;
+  document.getElementById('cc-imp-step1').style.display='none';
+  document.getElementById('cc-imp-step2').style.display='block';
+  document.getElementById('cc-imp-save').style.display = ok.length?'':'none';
+}
+
+window.ccConfirmImport = async function(){
+  if(!ccPendiente) return;
+  const fechaDefecto = document.getElementById('cc-imp-fecha').value || hoyIso();
+  const evaluador = document.getElementById('cc-imp-evaluador').value.trim();
+  const ok = ccPendiente.registros.filter(r=>!r.error);
+  const btn = document.getElementById('cc-imp-save');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  try{
+    for(const r of ok){
+      const fecha = r.fecha || fechaDefecto;
+      // ID determinista: reimportar la misma medición actualiza, no duplica.
+      const id = `${r.jugador.id}_${fecha}`;
+      const prev = CC_MED.find(m=>m.id===id);
+      const payload = {
+        playerId: r.jugador.id, playerName: r.jugador.nick, fecha,
+        peso: r.peso, altura: r.altura ?? (prev?prev.altura:null) ?? null,
+        tipo: r.tipo,
+        evaluador: r.evaluadorFila || evaluador || '',
+        metodo: 'Faulkner',
+        archivoOrigen: ccPendiente.archivo,
+        actualizadoEn: new Date().toISOString(),
+      };
+      if(r.pliegues){
+        Object.assign(payload, {
+          pliegues: r.pliegues, suma4: r.suma4, mg: r.mg,
+          masaGrasa: r.masaGrasa, masaLibre: r.masaLibre,
+        });
+      } else if(prev && prev.mg!=null && prev.fecha===fecha){
+        // Reimportación solo-peso sobre una medición que ya tenía pliegues:
+        // se conservan los pliegues y se recalculan los kg con el peso nuevo.
+        const d = derivadas(r.peso, prev.mg);
+        Object.assign(payload, {
+          pliegues: prev.pliegues, suma4: prev.suma4, mg: prev.mg,
+          masaGrasa: d.masaGrasa, masaLibre: d.masaLibre, tipo:'completo',
+        });
+      }
+      await setDoc(doc(db,'bodyComp',id), payload, {merge:true});
+    }
+    await setDoc(doc(db,'bodyCompImports', `${Date.now()}`), {
+      archivo: ccPendiente.archivo, filas: ok.length,
+      conPliegues: ok.filter(r=>r.tipo==='completo').length,
+      descartadas: ccPendiente.registros.length-ok.length,
+      fechaMedicion: fechaDefecto, evaluador,
+      importadoEn: new Date().toISOString(),
+    });
+    closeModal('modal-cc-import');
+    ccPendiente = null;
+  }catch(e){
+    console.error('[CC import]', e);
+    alert('Error guardando en la base de datos. Revisa la consola.');
+  }finally{
+    btn.disabled = false; btn.textContent = 'Guardar en la base de datos';
+  }
+};
+
+window.ccOpenHistorial = function(){
+  document.getElementById('cc-hist-body').innerHTML = CC_IMPORTS.length
+    ? `<table class="cc-table"><thead><tr><th>Archivo</th><th>Medición</th><th class="cc-num">Registros</th><th>Evaluador</th></tr></thead><tbody>
+       ${CC_IMPORTS.map(i=>`<tr>
+         <td style="font-weight:600">${i.archivo||'—'}</td>
+         <td>${fmtFecha(i.fechaMedicion)}</td>
+         <td class="cc-num">${i.filas} <span style="color:var(--faint)">(${i.conPliegues} c/pliegues)</span></td>
+         <td>${i.evaluador||'—'}</td></tr>`).join('')}</tbody></table>`
+    : '<div style="text-align:center;padding:30px;color:var(--faint);font-size:12.5px;">Todavía no se ha importado ningún archivo.</div>';
+  openModal('modal-cc-hist');
+};
+
+window.ccVerJugador = function(pid){
+  const p = CC_PLAYERS.find(x=>x.id===pid); if(!p) return;
+  const meds = medicionesDe(pid).slice().reverse();
+  document.getElementById('cc-pl-title').textContent = `${p.nick} · evolución`;
+  const uC = ultimaCompleta(pid), aC = anteriorCompleta(pid);
+  const resumen = uC ? `
+    <div class="kpi-grid" style="margin-bottom:16px;">
+      <div class="kpi"><div class="kv ${uC.mg>=UMBRAL_MG?'red':'green'}">${uC.mg.toFixed(1)}%</div><div class="kl">Grasa (Faulkner)</div><div class="ks">${fmtFecha(uC.fecha)}</div></div>
+      <div class="kpi"><div class="kv">${uC.suma4.toFixed(1)}</div><div class="kl">Σ4 pliegues (mm)</div><div class="ks">${aC?`antes ${aC.suma4.toFixed(1)}`:'primera medición'}</div></div>
+      <div class="kpi"><div class="kv">${uC.masaLibre!=null?uC.masaLibre.toFixed(1):'—'}</div><div class="kl">Masa magra (kg)</div><div class="ks">${uC.masaGrasa!=null?uC.masaGrasa.toFixed(1)+' kg de grasa':''}</div></div>
+    </div>` : '';
+  document.getElementById('cc-pl-body').innerHTML = resumen + (meds.length
+    ? `<table class="cc-table"><thead><tr><th>Fecha</th><th class="cc-num">Peso</th><th class="cc-num">Σ4</th><th class="cc-num">%MG</th><th class="cc-num">M. magra</th><th>Evaluador</th></tr></thead><tbody>
+       ${meds.map(m=>`<tr><td>${fmtFecha(m.fecha)}</td>
+         <td class="cc-num">${m.peso!=null?m.peso.toFixed(1):'—'}</td>
+         <td class="cc-num">${m.suma4!=null?m.suma4.toFixed(1):'—'}</td>
+         <td class="cc-num" ${m.mg>=UMBRAL_MG?'style="color:var(--inj);font-weight:700"':''}>${m.mg!=null?m.mg.toFixed(1):'—'}</td>
+         <td class="cc-num">${m.masaLibre!=null?m.masaLibre.toFixed(1):'—'}</td>
+         <td style="font-size:11.5px;color:var(--mid)">${m.evaluador||'—'}</td></tr>`).join('')}</tbody></table>`
+    : '<div style="text-align:center;padding:26px;color:var(--faint);">Sin mediciones.</div>');
+  openModal('modal-cc-player');
+};
+
+/* Drag & drop sobre la zona de importación */
+const ccDrop = document.getElementById('cc-drop');
+if(ccDrop){
+  ['dragenter','dragover'].forEach(ev=>ccDrop.addEventListener(ev,e=>{e.preventDefault();ccDrop.classList.add('over');}));
+  ['dragleave','drop'].forEach(ev=>ccDrop.addEventListener(ev,e=>{e.preventDefault();ccDrop.classList.remove('over');}));
+  ccDrop.addEventListener('drop', e=>{ if(e.dataTransfer?.files?.length) window.ccHandleFile(e.dataTransfer.files[0]); });
+}
+
+window.ccRender = ccRender;
+(async function ccInit(){
+  await ccCargarJugadores();
+  ccEscucharMediciones();
+  ccRender();
+})();
+</script>
+
 </body>
 </html>
