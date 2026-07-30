@@ -442,7 +442,39 @@ const firebaseReady = (async () => {
     appId:"1:1073919975511:web:7c7f59495d1f67f6f44312"
   });
   db = FS.getFirestore(app);
+  cargarComposicion();
 })();
+
+/* ── COMPOSICIÓN CORPORAL — colección `bodyComp` (la escribe Performance FC
+   al importar el Excel). Aquí solo se lee para la ficha del jugador. ── */
+let BODYCOMP = [];
+async function cargarComposicion(){
+  try{
+    FS.onSnapshot(FS.collection(db,'bodyComp'), snap=>{
+      BODYCOMP = snap.docs.map(d=>({id:d.id, ...d.data()}))
+        .sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+      // Si hay una ficha abierta, se refresca sola
+      if(currentProfileId && document.getElementById('p-profile')?.classList.contains('active')){
+        const p = PLAYERS.find(x=>x.id===currentProfileId);
+        if(p) renderProfilePerf(p, getPerfData());
+      }
+    }, err=>console.error('[bodyComp]', err));
+  }catch(e){ console.error('[bodyComp init]', e); }
+}
+const UMBRAL_MG = 12;
+function bcDe(pid){ return BODYCOMP.filter(m=>m.playerId===pid); }
+function bcUltimaCompleta(pid){ const c=bcDe(pid).filter(m=>m.mg!=null); return c.length?c[c.length-1]:null; }
+function bcAnteriorCompleta(pid){ const c=bcDe(pid).filter(m=>m.mg!=null); return c.length>1?c[c.length-2]:null; }
+function bcUltimoPeso(pid){ const c=bcDe(pid).filter(m=>m.peso!=null); return c.length?c[c.length-1]:null; }
+function bcAnteriorPeso(pid){ const c=bcDe(pid).filter(m=>m.peso!=null); return c.length>1?c[c.length-2]:null; }
+const bcFmtFecha = iso => iso ? iso.slice(8,10)+'/'+iso.slice(5,7)+'/'+iso.slice(2,4) : '—';
+function bcDelta(v, u, invertir){
+  if(v==null) return '<span style="color:var(--faint)">—</span>';
+  const n=+v.toFixed(u==='kg'?1:2);
+  if(Math.abs(n)<0.05) return '<span style="color:var(--faint)">=</span>';
+  const sube=n>0, col = sube ? (invertir?'var(--fit)':'var(--inj)') : (invertir?'var(--inj)':'var(--fit)');
+  return `<span style="color:${col};font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600">${sube?'+':''}${n}${u}</span>`;
+}
 
 /* ── SYNC DE PLANTILLA — Firestore colección 'players', tiempo real
    entre todos los dispositivos. Migración única: si Firestore está
@@ -799,7 +831,72 @@ function renderProfilePerf(p,perf){
           <span class="module-link-arr">→</span>
         </a>
       </div>
+    </div>
+    ${renderComposicionCard(p)}`;
+}
+
+/* ── Tarjeta de Composición Corporal en la ficha del jugador ── */
+function renderComposicionCard(p){
+  const uC = bcUltimaCompleta(p.id), aC = bcAnteriorCompleta(p.id);
+  const uP = bcUltimoPeso(p.id),     aP = bcAnteriorPeso(p.id);
+  const hist = bcDe(p.id).slice().reverse();
+  if(!hist.length){
+    return `<div class="card" style="margin-top:16px;">
+      <div class="card-title">Composición corporal</div>
+      <div style="font-size:12px;color:var(--faint)">Sin mediciones registradas.</div>
+      <a class="module-link" href="performance.html"><span class="module-link-txt">Importar en Performance FC</span><span class="module-link-arr">→</span></a>
     </div>`;
+  }
+  const alta = uC && uC.mg>=UMBRAL_MG;
+  const dPeso = (uP&&aP)?(uP.peso-aP.peso):null;
+  const dMg   = (uC&&aC)?(uC.mg-aC.mg):null;
+  const dMagra= (uC&&aC&&uC.masaLibre!=null&&aC.masaLibre!=null)?(uC.masaLibre-aC.masaLibre):null;
+
+  return `<div class="card" style="margin-top:16px;${alta?'border-left:3px solid var(--inj);':''}">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div class="card-title" style="margin:0">Composición corporal</div>
+      ${alta?`<span class="pill pill-red">⚠ ${uC.mg.toFixed(1)}% grasa · por encima del ${UMBRAL_MG}%</span>`
+            :uC?`<span class="pill pill-green">${uC.mg.toFixed(1)}% grasa · en rango</span>`:''}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin:14px 0;">
+      <div><div style="font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1">${uP&&uP.peso!=null?uP.peso.toFixed(1):'—'}<span style="font-size:13px;color:var(--mid)"> kg</span></div>
+        <div style="font-size:10.5px;color:var(--mid);text-transform:uppercase;letter-spacing:.06em">Peso ${bcDelta(dPeso,'kg')}</div>
+        <div style="font-size:10px;color:var(--faint)">${uP?bcFmtFecha(uP.fecha):''}</div></div>
+      <div><div style="font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1;${alta?'color:var(--inj)':''}">${uC?uC.mg.toFixed(1):'—'}<span style="font-size:13px;color:var(--mid)">%</span></div>
+        <div style="font-size:10.5px;color:var(--mid);text-transform:uppercase;letter-spacing:.06em">Grasa ${bcDelta(dMg,'%')}</div>
+        <div style="font-size:10px;color:var(--faint)">${uC?bcFmtFecha(uC.fecha):'sin pliegues'}</div></div>
+      <div><div style="font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1">${uC&&uC.suma4!=null?uC.suma4.toFixed(1):'—'}<span style="font-size:13px;color:var(--mid)"> mm</span></div>
+        <div style="font-size:10.5px;color:var(--mid);text-transform:uppercase;letter-spacing:.06em">Σ4 pliegues</div>
+        <div style="font-size:10px;color:var(--faint)">medida directa</div></div>
+      <div><div style="font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1">${uC&&uC.masaLibre!=null?uC.masaLibre.toFixed(1):'—'}<span style="font-size:13px;color:var(--mid)"> kg</span></div>
+        <div style="font-size:10.5px;color:var(--mid);text-transform:uppercase;letter-spacing:.06em">M. magra ${bcDelta(dMagra,'kg',true)}</div>
+        <div style="font-size:10px;color:var(--faint)">${uC&&uC.masaGrasa!=null?uC.masaGrasa.toFixed(1)+' kg grasa':''}</div></div>
+    </div>
+    <div class="card-title" style="margin-top:6px;">Histórico</div>
+    <div style="max-height:210px;overflow-y:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr>
+          <th style="text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--mid);padding:6px 8px;border-bottom:1px solid var(--bdr)">Fecha</th>
+          <th style="text-align:right;font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--mid);padding:6px 8px;border-bottom:1px solid var(--bdr)">Peso</th>
+          <th style="text-align:right;font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--mid);padding:6px 8px;border-bottom:1px solid var(--bdr)">Σ4</th>
+          <th style="text-align:right;font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--mid);padding:6px 8px;border-bottom:1px solid var(--bdr)">%MG</th>
+          <th style="text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--mid);padding:6px 8px;border-bottom:1px solid var(--bdr)">Evaluador</th>
+        </tr></thead>
+        <tbody>${hist.map(m=>`<tr>
+          <td style="padding:6px 8px;border-bottom:1px solid var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px">${bcFmtFecha(m.fecha)}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid var(--bg);text-align:right;font-family:'JetBrains Mono',monospace">${m.peso!=null?m.peso.toFixed(1):'—'}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid var(--bg);text-align:right;font-family:'JetBrains Mono',monospace">${m.suma4!=null?m.suma4.toFixed(1):'—'}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid var(--bg);text-align:right;font-family:'JetBrains Mono',monospace;${m.mg>=UMBRAL_MG?'color:var(--inj);font-weight:700':''}">${m.mg!=null?m.mg.toFixed(1):'—'}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid var(--bg);font-size:11px;color:var(--mid)">${m.evaluador||'—'}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+    <div style="font-size:10.5px;color:var(--faint);margin-top:10px;line-height:1.5">
+      Método Faulkner · %MG = 0,153 · Σ4 + 5,783 (tríceps, subescapular, suprailíaco, abdominal).
+      El dato medido es el pliegue; el porcentaje es una estimación con margen de error.
+    </div>
+    <a class="module-link" href="performance.html"><span class="module-link-txt">Gestionar en Performance FC</span><span class="module-link-arr">→</span></a>
+  </div>`;
 }
 
 function renderProfileAtt(p,att){
