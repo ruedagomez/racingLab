@@ -160,6 +160,7 @@ input,select,textarea{font-family:inherit;outline:none;}
 .inj-tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
 .inj-tag{font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 8px;border-radius:2px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;}
 .t-muscular{background:#fff7ed;color:#c2410c;}
+.t-molestia{background:#fffbeb;color:#a16207;}
 .t-ligamentosa{background:#fef2f2;color:#dc2626;}
 .t-tendinosa{background:#f5f3ff;color:#7c3aed;}
 .t-osea{background:#eff6ff;color:#1d4ed8;}
@@ -369,6 +370,7 @@ input,select,textarea{font-family:inherit;outline:none;}
 
     <!-- DASHBOARD -->
     <div class="page active" id="s-dashboard">
+      <div id="dash-aviso" style="display:none;background:var(--caut-bg);border:1px solid #fcd34d;color:#92400e;padding:12px 16px;border-radius:8px;font-size:12.5px;line-height:1.6;margin-bottom:16px;"></div>
       <div class="kpi-grid" id="dash-kpis"></div>
       <div class="dash-grid">
         <div class="card">
@@ -545,7 +547,8 @@ input,select,textarea{font-family:inherit;outline:none;}
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Tipo</label>
-        <select class="form-control" id="ni-type">
+        <select class="form-control" id="ni-type" onchange="onTipoLesionChange(this.value)">
+          <option value="molestia">Molestia (pasa a precaución, no baja)</option>
           <option value="muscular">Muscular</option>
           <option value="ligamentosa">Ligamentosa</option>
           <option value="tendinosa">Tendinosa</option>
@@ -814,53 +817,24 @@ input,select,textarea{font-family:inherit;outline:none;}
 /* ══ DATA ══════════════════════════════════════════ */
 const THRESHOLDS = { cmj:35, asim:15, sprint10:1.8, hooper:16 };
 
-const DEFAULT_PLAYERS = [
-  // PORTEROS
-  {id:'p00',d:0,  nick:'Castañeda', n:'Alejandro Castañeda Sánchez', pos:'POR',dem:'Portero',         age:20,h:0,w:0,status:'fit'},
-  {id:'p13',d:13, nick:'Juanma',    n:'Juan Manuel Lozano Álvarez',  pos:'POR',dem:'Portero',         age:23,h:0,w:0,status:'fit'},
-  {id:'p01',d:1,  nick:'Manu',      n:'Manuel López García',         pos:'POR',dem:'Portero',         age:32,h:0,w:0,status:'fit'},
-  // DEFENSAS
-  {id:'p06',d:6,  nick:'Alberto Durán', n:'Alberto Durán López',       pos:'DEF',dem:'Central',          age:28,h:0,w:0,status:'fit'},
-  {id:'p20',d:20, nick:'Barba',         n:'Roberto Barba Castillo',    pos:'DEF',dem:'Lateral Izquierdo',age:27,h:0,w:0,status:'fit'},
-  {id:'p02',d:2,  nick:'Carmelo',       n:'Carmelo Manuel Humanes Porras',pos:'DEF',dem:'Central',       age:25,h:0,w:0,status:'fit'},
-  {id:'p04',d:4,  nick:'Kevin',         n:'Kevin Roberto Gil Navarro', pos:'DEF',dem:'Central',          age:31,h:0,w:0,status:'fit'},
-  {id:'p42',d:42, nick:'Lainez',        n:'Daniel Lainez Herrera',     pos:'DEF',dem:'Lateral Derecho',  age:26,h:0,w:0,status:'fit'},
-  {id:'p11',d:11, nick:'Manu Moreno',   n:'Manuel Domínguez Moreno',   pos:'DEF',dem:'Lateral Izquierdo',age:27,h:0,w:0,status:'fit'},
-  {id:'p18',d:18, nick:'Oca',           n:'Antonio Miguel Oca Contreras',pos:'DEF',dem:'Central',        age:35,h:0,w:0,status:'fit'},
-  {id:'p15',d:15, nick:'Rodri',         n:'José Luis Rodríguez Muñoz', pos:'DEF',dem:'Central',          age:29,h:0,w:0,status:'fit'},
-  // CENTROCAMPISTAS
-  {id:'p28',d:28, nick:'Adri Cuevas',   n:'Adrián Cuevas',             pos:'MED',dem:'Medio Centro',     age:36,h:0,w:0,status:'fit'},
-  {id:'p14',d:14, nick:'Adri Romero',   n:'Adrián Romero Rodríguez',   pos:'MED',dem:'Media Punta',      age:32,h:0,w:0,status:'fit'},
-  {id:'p10',d:10, nick:'Chicho',        n:'Antonio Jesús Garrido Fernández',pos:'MED',dem:'Media Punta', age:23,h:0,w:0,status:'fit'},
-  {id:'p05',d:5,  nick:'Fernando',      n:'Fernando Ramos Delgado',    pos:'MED',dem:'MC Ofensivo',      age:0, h:0,w:0,status:'fit'},
-  {id:'p21',d:21, nick:'Fran García',   n:'Francisco José García Pavón',pos:'MED',dem:'Medio Centro',    age:27,h:0,w:0,status:'fit'},
-  {id:'p08',d:8,  nick:'Kevin',         n:'Juan Kevin Bonilla Durán',  pos:'MED',dem:'Media Punta',      age:34,h:0,w:0,status:'fit'},
-  // DELANTEROS
-  {id:'p16',d:16, nick:'Borja',         n:'Borja Jiménez Macías',      pos:'DEL',dem:'Extremo Derecho',  age:32,h:0,w:0,status:'fit'},
-  {id:'p99',d:0,  nick:'Elías',         n:'Elías Sebastián Palacio',   pos:'DEL',dem:'Extremo Izquierdo',age:28,h:0,w:0,status:'fit'},
-  {id:'p17',d:17, nick:'Fran Jiménez',  n:'Francisco Jiménez Cruz',    pos:'DEL',dem:'Delantero Centro', age:28,h:0,w:0,status:'fit'},
-  {id:'p30',d:30, nick:'Hugo Rodríguez',n:'Hugo Rodríguez Romero',     pos:'DEL',dem:'Extremo Izquierdo',age:36,h:0,w:0,status:'fit'},
-  {id:'p24',d:24, nick:'Jacobo',        n:'Jacobo Cornejo Salas',      pos:'DEL',dem:'Extremo Derecho',  age:30,h:0,w:0,status:'fit'},
-  {id:'p09',d:9,  nick:'Javi Tamayo',   n:'Manuel Javier Tamayo Pacheco',pos:'DEL',dem:'Delantero Centro',age:35,h:0,w:0,status:'fit'},
-  {id:'p07',d:7,  nick:'Manu Heredia',  n:'Manuel Heredia Montoya',    pos:'DEL',dem:'Extremo Izquierdo',age:31,h:0,w:0,status:'fit'},
-  {id:'p27',d:27, nick:'Pepe Sáinz',    n:'José Luis Sáinz Hugues',    pos:'DEL',dem:'Delantero',        age:24,h:0,w:0,status:'fit'},
-  {id:'p19',d:19, nick:'Tocino',        n:'Antonio Jesús Tocino Sánchez',pos:'DEL',dem:'Extremo Derecho',age:22,h:0,w:0,status:'fit'},
-];
+/* ══════════════════════════════════════════════════════════════
+   DATOS · Firestore, NO localStorage
+   ──────────────────────────────────────────────────────────────
+   Antes este módulo llevaba la plantilla 25/26 escrita a mano y
+   guardaba todo en el navegador: los datos no se compartían entre
+   dispositivos y la plantilla nunca se actualizaba. Ahora:
 
-function loadData() {
-  const stored = localStorage.getItem('rl_perf_v2');
-  if (stored) {
-    try { return JSON.parse(stored); } catch(e) {}
-  }
-  return {
-    players: JSON.parse(JSON.stringify(DEFAULT_PLAYERS)),
-    injuries: [],
-    tests: [],
-  };
-}
-function saveData() { localStorage.setItem('rl_perf_v2', JSON.stringify(DATA)); }
+     players        → colección `players`  (la misma que Plantilla)
+     estado físico  → colección `playerStatus`
+     lesiones       → colección `injuries`
+     tests          → colección `physicalTests`
 
-let DATA = loadData();
+   El bloque de módulo del final del archivo rellena DATA y vuelve
+   a pintar. Aquí solo se declara vacío porque los scripts clásicos
+   se ejecutan antes de que Firebase esté disponible.
+   ══════════════════════════════════════════════════════════════ */
+let DATA = { players: [], injuries: [], tests: [] };
+function saveData() { if (window.perfSync) window.perfSync(); }
 let currentPlantillaFilter = '';
 
 /* ══ HELPERS ══════════════════════════════════════ */
@@ -914,6 +888,26 @@ function renderSection(id){
 /* ══ DASHBOARD ══════════════════════════════════ */
 function renderDashboard() {
   const total = DATA.players.length;
+  // Diagnóstico: si la plantilla llega vacía o casi, el problema está en la
+  // colección `players` de Firestore, no en este módulo. Se dice en pantalla
+  // en vez de mostrar un número raro sin explicación.
+  const avisoEl = document.getElementById('dash-aviso');
+  if(avisoEl){
+    if(total === 0){
+      avisoEl.style.display='';
+      avisoEl.innerHTML = `<strong>No hay ningún jugador en la base de datos.</strong>
+        Este módulo lee la plantilla de Firestore (colección <code>players</code>), la misma que usa Plantilla.
+        Abre <a href="plantilla.html">Plantilla</a> y comprueba que los jugadores están ahí y se han sincronizado.`;
+    } else if(total < 15){
+      avisoEl.style.display='';
+      avisoEl.innerHTML = `<strong>Solo ${total} jugador${total===1?'':'es'} en la base de datos.</strong>
+        Deberían ser 24. La plantilla se lee de Firestore (colección <code>players</code>).
+        Si en <a href="plantilla.html">Plantilla</a> los ves todos pero aquí no, es que allí se están
+        guardando en el navegador y no en Firestore: hay que actualizar ese módulo.`;
+    } else {
+      avisoEl.style.display='none';
+    }
+  }
   const fit = DATA.players.filter(p=>p.status==='fit').length;
   const inj = DATA.players.filter(p=>p.status==='injury').length;
   const caut = DATA.players.filter(p=>p.status==='caution').length;
@@ -933,11 +927,12 @@ function renderDashboard() {
   activeInj.forEach(inj=>{
     const p = DATA.players.find(pl=>pl.id===inj.pid);
     const dAgo = daysSince(inj.date);
+    const esMolestia = inj.type==='molestia';
     injHtml += `<div class="dash-item">
       <div><div class="dash-name">${p?p.d+' · '+p.nick:'—'}</div>
       <div class="dash-sub">${cap(inj.type)} · ${inj.zone}</div></div>
       <div style="text-align:right">
-        <div class="status s-inj">Día ${dAgo}</div>
+        <div class="status ${esMolestia?'s-caut':'s-inj'}">Día ${dAgo}</div>
         <div style="font-size:10px;color:var(--faint);margin-top:3px">RTP ~${rtpDaysLeft(inj)}d</div>
       </div>
     </div>`;
@@ -1053,17 +1048,22 @@ function addPlayer() {
   const nick = document.getElementById('np-nick').value.trim();
   const n = document.getElementById('np-name').value.trim();
   if(!nick&&!n){showToast('El nombre es obligatorio','err');return;}
-  DATA.players.push({
+  // Se escribe en la colección `players` de Firestore: es la misma que usa
+  // Plantilla, así que el alta aparece en todos los módulos a la vez.
+  // (Antes se guardaba solo en memoria y se perdía al recargar.)
+  const nuevo = {
     id:'p'+Date.now(), d, nick:nick||n.split(' ')[0], n:n||nick,
     pos:document.getElementById('np-pos').value,
     dem:document.getElementById('np-dem').value,
     age:parseInt(document.getElementById('np-age').value)||0,
     h:parseInt(document.getElementById('np-h').value)||0,
     w:parseInt(document.getElementById('np-w').value)||0,
-    status:'fit'
-  });
-  saveData(); closeModal('modal-add-player');
-  renderPlantilla(); showToast('Jugador añadido');
+    active:true,
+  };
+  if(!window.perfAddPlayer){ showToast('Aún conectando con la base de datos, prueba en unos segundos','err'); return; }
+  window.perfAddPlayer(nuevo)
+    .then(()=>{ closeModal('modal-add-player'); showToast('Jugador añadido'); })
+    .catch(()=>showToast('Error al guardar el jugador','err'));
 }
 
 /* ══ DISPONIBILIDAD ════════════════════════════ */
@@ -1248,6 +1248,22 @@ function saveInjuryUpdate() {
   showToast('Actualización guardada');
 }
 
+/* Al marcar "Molestia" se proponen plazos cortos y severidad leve: no es una
+   baja, es un seguimiento. Todo sigue siendo editable a mano. */
+function onTipoLesionChange(tipo){
+  const sev = document.getElementById('ni-severity');
+  const rtt = document.getElementById('ni-rtt-est');
+  const rtp = document.getElementById('ni-rtp-est');
+  if(tipo==='molestia'){
+    if(sev) sev.value='leve';
+    if(rtt && !rtt.dataset.tocado) rtt.value = 2;
+    if(rtp && !rtp.dataset.tocado) rtp.value = 4;
+  }
+}
+['ni-rtt-est','ni-rtp-est'].forEach(id=>{
+  document.addEventListener('input', e=>{ if(e.target && e.target.id===id) e.target.dataset.tocado='1'; });
+});
+
 function addInjury() {
   const pid = document.getElementById('ni-player').value;
   const date = document.getElementById('ni-date').value;
@@ -1265,11 +1281,13 @@ function addInjury() {
   };
   DATA.injuries.push(inj);
   const p = DATA.players.find(pl=>pl.id===pid);
-  if(p) p.status='injury';
+  // Una molestia no es una baja: el jugador sigue disponible pero entra en
+  // seguimiento. Por eso pasa a PRECAUCIÓN y no a LESIONADO.
+  if(p) p.status = (inj.type==='molestia') ? 'caution' : 'injury';
   saveData(); updateBadges();
   closeModal('modal-add-injury');
   renderLesiones(); renderDashboard();
-  showToast('Lesión registrada');
+  showToast(inj.type==='molestia' ? 'Molestia registrada · jugador en precaución' : 'Lesión registrada');
 }
 
 function dischargeInjury(id) {
@@ -1421,7 +1439,7 @@ renderDashboard();
    medir. El dato medido es el pliegue; el % es una estimación.
    ══════════════════════════════════════════════════════════════ */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, getDocs, onSnapshot, query, orderBy, limit as fsLimit }
+import { getFirestore, collection, doc, setDoc, deleteDoc, getDocs, onSnapshot, writeBatch, query, orderBy, limit as fsLimit }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app = initializeApp({
@@ -2013,8 +2031,89 @@ if(ccDrop){
   ccDrop.addEventListener('drop', e=>{ if(e.dataTransfer?.files?.length) window.ccHandleFile(e.dataTransfer.files[0]); });
 }
 
+/* ══════════════════════════════════════════════════════════════
+   SINCRONIZACIÓN DE PERFORMANCE CON FIRESTORE
+   Rellena el objeto DATA del script clásico y repinta. La plantilla
+   sale de `players` (misma fuente que Plantilla y Asistencia), así
+   que altas y bajas se reflejan solas y no hay dos verdades.
+   ══════════════════════════════════════════════════════════════ */
+let PERF_STATUS = {};   // playerId → 'fit' | 'caution' | 'injury'
+
+function perfComponerPlayers(docsPlayers){
+  DATA.players = docsPlayers.map(p => ({
+    id:p.id, d:p.d, nick:p.nick, n:p.n, pos:p.pos, dem:p.dem,
+    age:p.age, h:p.h, w:p.w,
+    status: PERF_STATUS[p.id] || 'fit',
+  })).sort((a,b)=>(a.d??99)-(b.d??99));
+}
+
+function perfRepintar(){
+  try{
+    const activa = document.querySelector('.page.active');
+    const id = activa ? activa.id : 's-dashboard';
+    if(id==='s-dashboard' && window.renderDashboard) renderDashboard();
+    else if(id==='s-plantilla' && window.renderPlantilla) renderPlantilla();
+    else if(id==='s-disponibilidad' && window.renderDisponibilidad) renderDisponibilidad();
+    else if(id==='s-lesiones' && window.renderLesiones) renderLesiones();
+    else if(id==='s-tests' && window.renderTests) renderTests();
+    if(window.updateBadges) updateBadges();
+  }catch(e){ console.error('[perfRepintar]', e); }
+}
+
+/* Guarda en Firestore lo que el módulo clásico tenga en memoria.
+   Sustituye al antiguo saveData() de localStorage. */
+window.perfAddPlayer = async function(p){
+  await setDoc(doc(db,'players',p.id), {...p, createdAt:new Date().toISOString()});
+};
+
+window.perfSync = async function(){
+  try{
+    const batch = writeBatch(db);
+    DATA.players.forEach(p=>{
+      if((PERF_STATUS[p.id]||'fit') !== (p.status||'fit')){
+        batch.set(doc(db,'playerStatus',p.id), {status:p.status||'fit', updatedAt:new Date().toISOString()});
+      }
+    });
+    DATA.injuries.forEach(i=>{
+      if(!i.id) i.id = 'inj_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+      batch.set(doc(db,'injuries', i.id), i);
+    });
+    DATA.tests.forEach(t=>{
+      if(!t.id) t.id = 'tst_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+      batch.set(doc(db,'physicalTests', t.id), t);
+    });
+    await batch.commit();
+  }catch(e){ console.error('[perfSync]', e); }
+};
+
+function perfEscuchar(){
+  let players = [];
+  onSnapshot(collection(db,'playerStatus'), snap=>{
+    PERF_STATUS = {};
+    snap.docs.forEach(d=>{ PERF_STATUS[d.id] = d.data().status; });
+    if(players.length){ perfComponerPlayers(players); perfRepintar(); }
+  }, err=>console.error('[playerStatus]', err));
+
+  onSnapshot(collection(db,'players'), snap=>{
+    players = snap.docs.map(d=>({id:d.id, ...d.data()})).filter(p=>p.active!==false);
+    perfComponerPlayers(players);
+    perfRepintar();
+  }, err=>console.error('[players]', err));
+
+  onSnapshot(collection(db,'injuries'), snap=>{
+    DATA.injuries = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    perfRepintar();
+  }, err=>console.error('[injuries]', err));
+
+  onSnapshot(collection(db,'physicalTests'), snap=>{
+    DATA.tests = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    perfRepintar();
+  }, err=>console.error('[physicalTests]', err));
+}
+
 window.ccRender = ccRender;
 (async function ccInit(){
+  perfEscuchar();
   await ccCargarJugadores();
   ccEscucharMediciones();
   ccRender();
