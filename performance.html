@@ -261,10 +261,28 @@ input,select,textarea{font-family:inherit;outline:none;}
 .tm-v.bad{color:var(--inj);}
 
 /* RESPONSIVE */
+.mobnav{display:none;}
 @media(max-width:900px){
   .sidebar{display:none;}
   .dash-grid{grid-template-columns:1fr;}
   .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .mobnav{
+    display:flex; position:fixed; left:0; right:0; bottom:0; z-index:90;
+    background:#101014; border-top:1px solid rgba(255,255,255,.08);
+    padding-bottom:env(safe-area-inset-bottom); overflow-x:auto;
+  }
+  .mobnav-item{
+    flex:1; min-width:58px; display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:9px 3px 8px; position:relative; cursor:pointer;
+    color:rgba(255,255,255,.45); border-top:2px solid transparent; transition:.15s;
+  }
+  .mobnav-item .mni{font-size:15px;line-height:1;}
+  .mobnav-item small{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;}
+  .mobnav-item.active{color:#fff;border-top-color:var(--r);}
+  .mobnav-badge{position:absolute;top:5px;right:calc(50% - 22px);background:var(--r);color:#fff;font-size:8.5px;font-weight:700;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+  .main{padding-bottom:66px;}
+  .inj-actions{flex-wrap:wrap;}
+  .modal-foot{flex-wrap:wrap;gap:8px;}
 }
 @media(max-width:600px){
   .page{padding:20px 16px 36px;}
@@ -360,6 +378,15 @@ input,select,textarea{font-family:inherit;outline:none;}
     </div>
   </div>
 
+  <nav class="mobnav">
+    <div class="mobnav-item active" onclick="showSection('s-dashboard',this)"><span class="mni">◧</span><small>Panel</small></div>
+    <div class="mobnav-item" onclick="showSection('s-plantilla',this)"><span class="mni">◉</span><small>Plantilla</small></div>
+    <div class="mobnav-item" onclick="showSection('s-disponibilidad',this)"><span class="mni">◍</span><small>Disponib.</small></div>
+    <div class="mobnav-item" onclick="showSection('s-lesiones',this)"><span class="mni">✚</span><small>Lesiones</small><span class="mobnav-badge" id="mob-badge-inj">0</span></div>
+    <div class="mobnav-item" onclick="showSection('s-composicion',this)"><span class="mni">◑</span><small>Composic.</small><span class="mobnav-badge" id="mob-badge-cc">0</span></div>
+    <div class="mobnav-item" onclick="showSection('s-tests',this)"><span class="mni">◐</span><small>Tests</small></div>
+  </nav>
+
   <!-- MAIN -->
   <div class="main">
     <!-- TOP BAR -->
@@ -446,7 +473,7 @@ input,select,textarea{font-family:inherit;outline:none;}
           <div class="sc" id="lesiones-count"></div>
         </div>
         <div class="sh-actions">
-          <button class="btn btn-primary" onclick="openModal('modal-add-injury')">+ Nueva lesión</button>
+          <button class="btn btn-primary" onclick="resetInjuryModal();openModal('modal-add-injury')">+ Nueva lesión</button>
         </div>
       </div>
       <div class="ftabs">
@@ -585,8 +612,9 @@ input,select,textarea{font-family:inherit;outline:none;}
       <textarea class="form-control" id="ni-notes" rows="3" placeholder="Descripción, mecanismo de lesión…"></textarea>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-ghost" onclick="closeModal('modal-add-injury')">Cancelar</button>
-      <button class="btn btn-primary" onclick="addInjury()">Registrar lesión</button>
+      <button class="btn btn-danger" id="btn-del-injury" style="display:none;margin-right:auto" onclick="deleteInjury()">🗑 Eliminar</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-injury');resetInjuryModal()">Cancelar</button>
+      <button class="btn btn-primary" id="btn-save-injury" onclick="addInjury()">Registrar lesión</button>
     </div>
   </div>
 </div>
@@ -861,7 +889,7 @@ const PAGE_TITLES = {
   's-tests':'Tests Físicos','s-composicion':'Composición Corporal','s-estadisticas':'Estadísticas'
 };
 const PAGE_ACTIONS = {
-  's-lesiones': `<button class="btn btn-primary btn-sm" onclick="openModal('modal-add-injury')">+ Nueva lesión</button>`,
+  's-lesiones': `<button class="btn btn-primary btn-sm" onclick="resetInjuryModal();openModal('modal-add-injury')">+ Nueva lesión</button>`,
   's-tests':    `<button class="btn btn-primary btn-sm" onclick="openModal('modal-add-test')">+ Registrar test</button>`,
   's-plantilla':`<button class="btn btn-primary btn-sm" onclick="openModal('modal-add-player')">+ Jugador</button>`,
 };
@@ -869,8 +897,13 @@ const PAGE_ACTIONS = {
 function showSection(id, el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  if(el) el.classList.add('active');
+  // Se sincronizan SIEMPRE las dos barras (lateral de escritorio y inferior de
+  // móvil) por id: si solo se marcase el elemento pulsado, la oculta quedaría
+  // desincronizada.
+  document.querySelectorAll('.nav-item, .mobnav-item').forEach(n=>{
+    const oc = n.getAttribute('onclick') || '';
+    n.classList.toggle('active', oc.includes("'"+id+"'"));
+  });
   document.getElementById('page-title').textContent = PAGE_TITLES[id]||id;
   document.getElementById('topbar-actions').innerHTML = PAGE_ACTIONS[id]||'';
   renderSection(id);
@@ -1207,6 +1240,7 @@ function injCardHtml(inj, historical=false) {
       </div>
       ${inj.active?`<div class="inj-actions">
         <button class="btn-update" onclick="openUpdateInjury('${inj.id}')">+ Añadir actualización</button>
+        <button class="btn btn-ghost btn-sm" onclick="openEditInjury('${inj.id}')">✎ Editar</button>
         <button class="btn btn-danger btn-sm" onclick="dischargeInjury('${inj.id}')">Alta médica</button>
       </div>`:''}
     </div>
@@ -1279,6 +1313,68 @@ function onGravedadChange(gravedad){
   document.addEventListener('input', e=>{ if(e.target && e.target.id===id) e.target.dataset.tocado='1'; });
 });
 
+/* ══ EDITAR UNA LESIÓN YA REGISTRADA ══
+   Reutiliza el modal de alta: se rellena con los datos existentes y al
+   guardar actualiza en vez de crear. Las actualizaciones del historial no
+   se tocan — solo se corrige el registro de origen. */
+let editandoLesionId = null;
+
+function openEditInjury(id){
+  const inj = DATA.injuries.find(i=>i.id===id);
+  if(!inj){ showToast('Lesión no encontrada','err'); return; }
+  editandoLesionId = id;
+  populatePlayerSelects();
+  const V = (el,v) => { const e=document.getElementById(el); if(e) e.value = v ?? ''; };
+  V('ni-player', inj.pid);
+  V('ni-date', inj.date);
+  V('ni-recaida', inj.recaida || 'no');
+  V('ni-type', inj.type);
+  V('ni-severity', inj.severity);
+  V('ni-zone', inj.zone);
+  V('ni-rtt-est', inj.rtt_est ?? '');
+  V('ni-rtp-est', inj.rtp_est ?? '');
+  V('ni-notes', inj.notes || '');
+  onGravedadChange(inj.severity);
+  // Marcar como tocados para que cambiar la gravedad no borre lo que ya había
+  ['ni-rtt-est','ni-rtp-est'].forEach(i=>{
+    const e=document.getElementById(i); if(e && e.value!=='') e.dataset.tocado='1';
+  });
+  document.querySelector('#modal-add-injury .modal-head h3').textContent = 'Editar lesión';
+  document.getElementById('btn-save-injury').textContent = 'Guardar cambios';
+  const del = document.getElementById('btn-del-injury');
+  if(del) del.style.display = '';
+  openModal('modal-add-injury');
+}
+
+function resetInjuryModal(){
+  editandoLesionId = null;
+  const h3 = document.querySelector('#modal-add-injury .modal-head h3');
+  if(h3) h3.textContent = 'Nueva Lesión';
+  const btn = document.getElementById('btn-save-injury');
+  if(btn) btn.textContent = 'Registrar';
+  const del = document.getElementById('btn-del-injury');
+  if(del) del.style.display = 'none';
+  ['ni-rtt-est','ni-rtp-est'].forEach(i=>{
+    const e=document.getElementById(i); if(e) delete e.dataset.tocado;
+  });
+}
+
+function deleteInjury(){
+  if(!editandoLesionId) return;
+  const inj = DATA.injuries.find(i=>i.id===editandoLesionId);
+  if(!inj) return;
+  const p = DATA.players.find(pl=>pl.id===inj.pid);
+  if(!confirm(`¿Eliminar este registro de ${p?p.nick:'el jugador'} (${inj.zone})? Se borrará también su historial de evolución. No se puede deshacer.`)) return;
+  DATA.injuries = DATA.injuries.filter(i=>i.id!==editandoLesionId);
+  // Si no le quedan lesiones activas, vuelve a disponible
+  if(p && !DATA.injuries.some(i=>i.pid===p.id && i.active)) p.status='fit';
+  if(window.perfDeleteInjury) window.perfDeleteInjury(editandoLesionId);
+  saveData(); updateBadges();
+  closeModal('modal-add-injury'); resetInjuryModal();
+  renderLesiones(); renderDashboard();
+  showToast('Registro eliminado','ok');
+}
+
 function addInjury() {
   const pid = document.getElementById('ni-player').value;
   const date = document.getElementById('ni-date').value;
@@ -1296,6 +1392,21 @@ function addInjury() {
     notes:document.getElementById('ni-notes').value.trim(),
     updates:[], active:true
   };
+  if(editandoLesionId){
+    const orig = DATA.injuries.find(i=>i.id===editandoLesionId);
+    if(orig){
+      // Se conservan id, historial de evolución y estado de alta
+      Object.assign(orig, inj, {id:orig.id, updates:orig.updates||[],
+                                active:orig.active, discharge_date:orig.discharge_date});
+      const pl = DATA.players.find(x=>x.id===orig.pid);
+      if(pl && orig.active) pl.status = (orig.severity==='molestia') ? 'caution' : 'injury';
+      saveData(); updateBadges();
+      closeModal('modal-add-injury'); resetInjuryModal();
+      renderLesiones(); renderDashboard();
+      showToast('Lesión actualizada','ok');
+      return;
+    }
+  }
   DATA.injuries.push(inj);
   const p = DATA.players.find(pl=>pl.id===pid);
   // Una molestia no es una baja: el jugador sigue disponible pero entra en
@@ -1415,7 +1526,14 @@ function populatePlayerSelects() {
 }
 
 function updateBadges() {
-  document.getElementById('inj-badge').textContent = DATA.injuries.filter(i=>i.active).length;
+  const activas = DATA.injuries.filter(i=>i.active).length;
+  const alertasCC = document.getElementById('cc-badge');
+  const set = (id,v)=>{ const e=document.getElementById(id); if(e){ e.textContent=v; e.style.display = v?'':'none'; } };
+  const inj = document.getElementById('inj-badge');
+  if(inj) inj.textContent = activas;
+  set('mob-badge-inj', activas);
+  // El de composición corporal lo calcula su propio módulo; aquí solo se copia
+  set('mob-badge-cc', alertasCC ? (parseInt(alertasCC.textContent)||0) : 0);
 }
 
 function openModal(id) { document.getElementById(id).classList.add('open'); }
@@ -1711,6 +1829,8 @@ function ccRender(){
     <div class="kpi"><div class="kv" style="font-size:22px">${ultFecha?fmtFecha(ultFecha):'—'}</div><div class="kl">Última medición</div><div class="ks">${ultFecha?diasDesde(ultFecha)+' días':'sin datos'}</div></div>`;
   const badge = document.getElementById('cc-badge');
   if(badge){ badge.textContent = alertas; badge.style.display = alertas?'':'none'; }
+  const badgeM = document.getElementById('mob-badge-cc');
+  if(badgeM){ badgeM.textContent = alertas; badgeM.style.display = alertas?'':'none'; }
 
   if(!CC_MED.length){ ccRenderVacio(); return; }
 
@@ -2079,6 +2199,11 @@ function perfRepintar(){
 
 /* Guarda en Firestore lo que el módulo clásico tenga en memoria.
    Sustituye al antiguo saveData() de localStorage. */
+window.perfDeleteInjury = async function(id){
+  try{ await deleteDoc(doc(db,'injuries',id)); }
+  catch(e){ console.error('[perfDeleteInjury]', e); }
+};
+
 window.perfAddPlayer = async function(p){
   await setDoc(doc(db,'players',p.id), {...p, createdAt:new Date().toISOString()});
 };
