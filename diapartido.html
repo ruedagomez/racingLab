@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Día de Partido · Racing Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --r:#e8192c;--r2:rgba(232,25,44,.09);--r3:rgba(232,25,44,.2);
+  --blk:#0b0b0b;--txt:#111;--mid:#6b6b6b;--faint:#b0b0b0;
+  --bdr:#e2e2e2;--bg:#f3f3f1;--wh:#fff;
+  --fit:#15803d;--fit-bg:#f0fdf4;
+  --warn:#c2410c;--warn-bg:#fff7ed;
+}
+html,body{min-height:100%;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--txt);}
+button{font-family:inherit;cursor:pointer;border:none;outline:none;background:none;}
+select{font-family:inherit;}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.nav{height:62px;background:var(--wh);border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;padding:0 40px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(0,0,0,.05);}
+.nav-left{display:flex;align-items:center;gap:14px;}
+.back{display:flex;align-items:center;gap:6px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--mid);text-transform:uppercase;text-decoration:none;padding:6px 12px;border:1.5px solid var(--bdr);border-radius:4px;transition:all .2s;}
+.back:hover{border-color:var(--r);color:var(--r);}
+.nav-title{font-family:'Bebas Neue',cursive;font-size:23px;letter-spacing:1.5px;}
+.nav-title span{color:var(--r);}
+.nav-sub{font-size:11px;color:var(--faint);font-family:'JetBrains Mono',monospace;}
+
+.wrap{max-width:980px;margin:0 auto;padding:28px 24px 70px;}
+
+/* ── SELECTOR JORNADA ── */
+.jsel{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+.jsel button{width:34px;height:34px;border:1.5px solid var(--bdr);border-radius:8px;font-size:16px;color:var(--mid);transition:.15s;flex-shrink:0;background:var(--wh);}
+.jsel button:hover:not(:disabled){border-color:var(--r);color:var(--r);}
+.jsel button:disabled{opacity:.3;cursor:default;}
+.jsel .jtitle{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;flex:1;text-align:center;}
+.jsel .jtitle small{display:block;font-size:11px;font-weight:500;color:var(--mid);font-family:'Barlow',sans-serif;margin-top:1px;}
+.jsel select{border:1.5px solid var(--bdr);border-radius:8px;padding:7px 10px;font-size:12.5px;font-weight:600;background:var(--wh);}
+
+/* ── CABECERA DEL PARTIDO ── */
+.match{background:var(--wh);border:1px solid var(--bdr);border-radius:14px;overflow:hidden;margin-bottom:22px;animation:fadeUp .3s both;}
+.match-top{background:var(--blk);color:#fff;padding:12px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.mt-left{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;}
+.mt-left b{color:var(--r);}
+.mt-right{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:rgba(255,255,255,.65);}
+.mt-right .martes{color:#fbbf24;font-weight:600;}
+.match-teams{display:flex;align-items:center;justify-content:center;gap:26px;padding:30px 26px 24px;}
+.team{flex:1;max-width:280px;text-align:center;}
+.team img{width:64px;height:64px;object-fit:contain;margin-bottom:10px;}
+.team .shield-ph{width:64px;height:64px;border-radius:50%;background:var(--bg);border:1px dashed var(--bdr);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:20px;color:var(--faint);}
+.team .tname{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:800;line-height:1.15;}
+.team .tname.rcp{color:var(--r);}
+.team .ttag{font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-top:3px;}
+.center{text-align:center;flex-shrink:0;}
+.center .score{font-family:'Bebas Neue',cursive;font-size:46px;line-height:1;color:var(--txt);display:flex;gap:12px;align-items:center;justify-content:center;}
+.center .score.pend{color:var(--faint);font-size:34px;}
+.center .cstate{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-top:8px;display:inline-block;padding:3px 10px;border-radius:10px;}
+.cstate.jugado{background:var(--fit-bg);color:var(--fit);}
+.cstate.pendiente{background:var(--bg);color:var(--mid);}
+.match-foot{display:flex;justify-content:center;gap:26px;padding:0 22px 18px;font-size:12px;color:var(--mid);flex-wrap:wrap;}
+.match-foot .mf{display:flex;align-items:center;gap:6px;}
+.match-foot .mf b{font-weight:600;color:var(--txt);}
+
+/* ── PESTAÑAS ── */
+.tabs{display:flex;gap:8px;margin-bottom:16px;}
+.tab{flex:1;padding:12px 14px;background:var(--wh);border:1.5px solid var(--bdr);border-radius:10px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mid);transition:.15s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.tab.on{border-color:var(--r);color:var(--r);background:var(--r2);}
+.tab:hover:not(.on):not(:disabled){border-color:var(--r3);}
+.tab .lock{font-size:12px;}
+.tab:disabled{opacity:.55;cursor:default;}
+
+.pane{background:var(--wh);border:1px solid var(--bdr);border-radius:14px;padding:34px 28px;animation:fadeUp .25s both;}
+.pane-empty{text-align:center;color:var(--mid);}
+.pane-empty .pe-t{font-family:'Bebas Neue',cursive;font-size:20px;letter-spacing:.5px;color:var(--txt);margin-bottom:8px;}
+.pane-empty p{font-size:13px;max-width:520px;margin:0 auto;line-height:1.55;}
+.pane-empty .badge{display:inline-block;margin-top:14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:4px 12px;border-radius:12px;background:var(--warn-bg);color:var(--warn);}
+
+.spinner{width:22px;height:22px;border:2.5px solid var(--bdr);border-top-color:var(--r);border-radius:50%;animation:spin .7s linear infinite;margin:60px auto;}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--blk);color:#fff;font-size:12.5px;font-weight:500;padding:10px 20px;border-radius:8px;z-index:500;display:none;}
+
+@media(max-width:620px){
+  .nav{padding:0 16px;}
+  .match-teams{gap:14px;padding:24px 14px 18px;}
+  .team img,.team .shield-ph{width:50px;height:50px;}
+  .team .tname{font-size:15px;}
+  .center .score{font-size:36px;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-left">
+    <a href="index.html" class="back">← Lab</a>
+    <div>
+      <div class="nav-title">DÍA DE PARTIDO <span>· RCP</span></div>
+      <div class="nav-sub">Temporada 2026/27 · 3ª Federación G.10</div>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="jsel">
+    <button onclick="cambiarJornada(-1)" id="jprev">‹</button>
+    <div class="jtitle">
+      Jornada <span id="jnum">1</span>
+      <small id="jsub">—</small>
+    </div>
+    <button onclick="cambiarJornada(1)" id="jnext">›</button>
+    <select id="jjump" onchange="irAJornada(this.value)"></select>
+  </div>
+
+  <div id="content"><div class="spinner"></div></div>
+
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, getDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
+  authDomain: "racing-portuense-scouting.firebaseapp.com",
+  projectId: "racing-portuense-scouting",
+  storageBucket: "racing-portuense-scouting.firebasestorage.app",
+  messagingSenderId: "1073919975511",
+  appId: "1:1073919975511:web:7c7f59495d1f67f6f44312"
+});
+const db = getFirestore(app);
+const TEMPORADA = '2026-27';
+
+/* ── Rivales Grupo X (mismos ids/lpIds que analisis.html · tercera.html) ── */
+const CLUBS = [
+  { id:'san-roque',    lpId:'181',   name:'San Roque de Lepe',    city:'Lepe',                      stadium:'Ciudad de Lepe' },
+  { id:'xerez-dfc',    lpId:'12717', name:'Xerez DFC',            city:'Jerez de la Frontera',      stadium:'Chapín' },
+  { id:'onubense',     lpId:'362',   name:'Atlético Onubense',    city:'Huelva',                    stadium:'Ciudad Deportiva Decano' },
+  { id:'cadiz-b',      lpId:'163',   name:'Cádiz CF Mirandilla',  city:'Cádiz',                     stadium:'El Rosal' },
+  { id:'pozoblanco',   lpId:'21',    name:'CD Pozoblanco',        city:'Pozoblanco',                stadium:'Municipal Pozoblanco' },
+  { id:'ceuta-b',      lpId:'13159', name:'AD Ceuta FC B',        city:'Ceuta',                     stadium:'José Martínez Pirri' },
+  { id:'bollullos',    lpId:'582',   name:'Bollullos CF',         city:'Bollullos Par del Condado', stadium:'Eloy Ávila Cano' },
+  { id:'puente-genil', lpId:'2224',  name:'Salerm Puente Genil',  city:'Puente Genil',              stadium:'Manuel Polinario' },
+  { id:'dos-hermanas', lpId:'34672', name:'Dos Hermanas CF 1971', city:'Dos Hermanas',              stadium:'Miguel Román' },
+  { id:'egabrense',    lpId:'23',    name:'Egabrense',            city:'Cabra',                     stadium:'Antonio Povedano' },
+  { id:'linense',      lpId:'580',   name:'RB Linense',           city:'La Línea de la Concepción', stadium:'Ciudad de La Línea' },
+  { id:'tomares',      lpId:'199',   name:'UD Tomares',           city:'Tomares',                   stadium:'San Sebastián' },
+  { id:'utrera',       lpId:'201',   name:'CD Utrera',            city:'Utrera',                    stadium:'San Juan Bosco' },
+  { id:'chiclana',     lpId:'170',   name:'Chiclana CF',          city:'Chiclana de la Frontera',   stadium:'Municipal de Chiclana' },
+  { id:'conil',        lpId:'313',   name:'Conil CF',             city:'Conil de la Frontera',      stadium:'José Antonio Pérez Ureba' },
+  { id:'cordoba-b',    lpId:'472',   name:'Córdoba CF B',         city:'Córdoba',                   stadium:'Ciudad Deportiva CCF' },
+  { id:'betis-c',      lpId:'517',   name:'Real Betis C',         city:'Sevilla',                   stadium:'Luis del Sol' },
+];
+const clubById = id => CLUBS.find(c=>c.id===id) || null;
+
+/* ── Fechas OFICIALES RFAF 26/27 (J15 = martes 08/12; J18 sí se juega el 03/01) ── */
+const JORNADA_DATES = [
+  '2026-09-06','2026-09-13','2026-09-20','2026-09-27','2026-10-04','2026-10-11','2026-10-18','2026-10-25',
+  '2026-11-01','2026-11-08','2026-11-15','2026-11-22','2026-11-29','2026-12-06','2026-12-08','2026-12-13',
+  '2026-12-20','2027-01-03','2027-01-10','2027-01-17','2027-01-24','2027-01-31','2027-02-07','2027-02-14',
+  '2027-02-21','2027-02-28','2027-03-07','2027-03-14','2027-03-21','2027-04-04','2027-04-11','2027-04-18',
+  '2027-04-25','2027-05-02'
+];
+
+/* ── Calendario oficial embebido (fallback si Firestore no responde o el doc
+     sigue en provisional). Fuente única de escritura: analisis.html. ── */
+const CAL_OFICIAL_IDA = [
+  ['xerez-dfc','fuera'],   ['san-roque','casa'],   ['egabrense','fuera'],  ['chiclana','casa'],
+  ['tomares','fuera'],     ['dos-hermanas','casa'],['conil','fuera'],      ['pozoblanco','casa'],
+  ['utrera','fuera'],      ['cadiz-b','casa'],     ['linense','fuera'],    ['cordoba-b','casa'],
+  ['ceuta-b','fuera'],     ['onubense','casa'],    ['puente-genil','casa'],['bollullos','fuera'],
+  ['betis-c','casa'],
+];
+function calendarioOficial(){
+  const ida = CAL_OFICIAL_IDA.map(([clubId,condicion],i)=>({ n:i+1, clubId, condicion }));
+  const vuelta = CAL_OFICIAL_IDA.map(([clubId,condicion],i)=>({
+    n:i+18, clubId, condicion: condicion==='casa'?'fuera':'casa' }));
+  return { jornadas:[...ida,...vuelta], provisional:false };
+}
+
+const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const fmtDate = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.slice(2)}`; };
+const diaSemana = iso => DIAS[new Date(iso+'T12:00:00').getDay()];
+const todayIso = () => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; };
+
+/* ══════════ ESTADO ══════════ */
+let SHIELDS = {};       // clave = id del doc en clubShields (lpId o clubId según convención)
+let calendario = null;  // { jornadas:[{n,clubId,condicion}] }
+let ACTAS = [];         // actas de la temporada
+let jornadaActual = 1;
+let tabActual = 'conv';
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block';
+  clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none', 2600);
+}
+
+/* ══════════ CARGA ══════════ */
+async function loadShields(){
+  try{
+    const snap = await getDocs(collection(db,'clubShields'));
+    snap.docs.forEach(d=>{ SHIELDS[d.id]=d.data().shieldUrl; });
+  }catch(e){ console.error('[Shields]', e); }
+}
+function shieldUrl(club){
+  if(!club) return null;
+  return SHIELDS[club.lpId] || SHIELDS[club.id] || null;
+}
+function rcpShieldUrl(){
+  // El id propio del RCP en clubShields no está fijado en los módulos web:
+  // se busca por heurística sin inventar un id concreto.
+  const k = Object.keys(SHIELDS).find(k=>/racing|portuense|rcp/i.test(k));
+  return k ? SHIELDS[k] : null;
+}
+
+async function loadCalendario(){
+  try{
+    const snap = await getDoc(doc(db,'analisisCalendario',TEMPORADA));
+    if(snap.exists() && !snap.data().provisional){
+      calendario = snap.data();
+      return;
+    }
+    // Doc inexistente o aún provisional → oficial embebido (solo lectura;
+    // la migración del doc la hace analisis.html al abrirse).
+    calendario = calendarioOficial();
+  }catch(e){
+    console.error('[Calendario]', e);
+    calendario = calendarioOficial();
+    toast('Sin conexión a Firestore — calendario oficial local');
+  }
+}
+
+async function loadActas(){
+  try{
+    const q = query(collection(db,'actas'), where('temporada','==',TEMPORADA));
+    const snap = await getDocs(q);
+    ACTAS = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  }catch(e){ console.error('[Actas]', e); }
+}
+
+/* ══════════ NAVEGACIÓN ══════════ */
+window.cambiarJornada = function(delta){
+  jornadaActual = Math.min(34, Math.max(1, jornadaActual+delta));
+  render();
+};
+window.irAJornada = function(n){ jornadaActual = parseInt(n); render(); };
+window.setTab = function(t){ tabActual = t; render(); };
+
+function jornadaInicial(){
+  const hoy = todayIso();
+  const idx = JORNADA_DATES.findIndex(d=>d>=hoy);
+  return idx===-1 ? 34 : idx+1;
+}
+
+/* ══════════ RENDER ══════════ */
+const RIVAL_IDS = new Set(CLUBS.map(c=>c.id));
+function actaDeJornada(j){
+  /* Partido del RCP sin depender de su id en el pipeline:
+     el rival ocupa el lado que dicta la condición del calendario
+     y el otro equipo NO es ninguno de los 17 rivales conocidos.
+     (Evita el falso positivo de cruzar un partido entre dos rivales,
+     p.ej. Bollullos–Utrera en la jornada en que tocaba Bollullos.) */
+  return ACTAS.find(a=>{
+    if(a.jornada!==j.n) return false;
+    if(j.condicion==='casa')
+      return a.equipo_visitante===j.clubId && !RIVAL_IDS.has(a.equipo_local);
+    return a.equipo_local===j.clubId && !RIVAL_IDS.has(a.equipo_visitante);
+  }) || null;
+}
+
+function render(){
+  document.getElementById('jnum').textContent = jornadaActual;
+  document.getElementById('jprev').disabled = jornadaActual<=1;
+  document.getElementById('jnext').disabled = jornadaActual>=34;
+  const sel=document.getElementById('jjump');
+  sel.innerHTML = Array.from({length:34},(_,i)=>i+1).map(n=>
+    `<option value="${n}" ${n===jornadaActual?'selected':''}>J${n} · ${fmtDate(JORNADA_DATES[n-1])}</option>`).join('');
+
+  const j = calendario.jornadas.find(x=>x.n===jornadaActual);
+  const club = j ? clubById(j.clubId) : null;
+  const fecha = JORNADA_DATES[jornadaActual-1];
+  const dia = diaSemana(fecha);
+  document.getElementById('jsub').textContent = `${dia} ${fmtDate(fecha)}`;
+
+  if(!j || !club){
+    document.getElementById('content').innerHTML =
+      `<div class="pane pane-empty"><div class="pe-t">Jornada sin datos en el calendario</div>
+       <p>Revisa el calendario en el módulo Análisis.</p></div>`;
+    return;
+  }
+
+  const casa = j.condicion==='casa';
+  const acta = actaDeJornada(j);
+
+  // Marcador orientado: local a la izquierda, tal cual el acta.
+  let scoreHtml, estadoHtml;
+  if(acta){
+    scoreHtml = `<div class="score">${acta.goles_local}<span style="color:var(--faint);font-size:.6em;">–</span>${acta.goles_visitante}</div>`;
+    estadoHtml = `<span class="cstate jugado">Disputado</span>`;
+  }else{
+    scoreHtml = `<div class="score pend">VS</div>`;
+    estadoHtml = `<span class="cstate pendiente">Pendiente</span>`;
+  }
+
+  const rcpImg = rcpShieldUrl();
+  const rivImg = shieldUrl(club);
+  const rcpBlock = `
+    <div class="team">
+      ${rcpImg?`<img src="${rcpImg}" alt=""/>`:`<div class="shield-ph">RCP</div>`}
+      <div class="tname rcp">Racing Club Portuense</div>
+      <div class="ttag">${casa?'Local':'Visitante'}</div>
+    </div>`;
+  const rivBlock = `
+    <div class="team">
+      ${rivImg?`<img src="${rivImg}" alt=""/>`:`<div class="shield-ph">${club.name.slice(0,3).toUpperCase()}</div>`}
+      <div class="tname">${club.name}</div>
+      <div class="ttag">${casa?'Visitante':'Local'}</div>
+    </div>`;
+
+  const lugar = casa
+    ? `<b>El Puerto de Santa María</b>`
+    : `<b>${club.stadium}</b> · ${club.city}`;
+  const esMartes = dia==='Martes';
+
+  const matchHtml = `
+    <div class="match">
+      <div class="match-top">
+        <div class="mt-left">Jornada <b>${jornadaActual}</b> · Grupo 10</div>
+        <div class="mt-right">${esMartes?`<span class="martes">MARTES</span> · `:''}${dia} ${fmtDate(fecha)}</div>
+      </div>
+      <div class="match-teams">
+        ${casa ? rcpBlock : rivBlock}
+        <div class="center">${scoreHtml}${estadoHtml}</div>
+        ${casa ? rivBlock : rcpBlock}
+      </div>
+      <div class="match-foot">
+        <div class="mf">📍 ${lugar}</div>
+        <div class="mf">${casa?'🏠 Se juega en casa':'🚌 Desplazamiento'}</div>
+      </div>
+    </div>`;
+
+  const tabsHtml = `
+    <div class="tabs">
+      <button class="tab ${tabActual==='conv'?'on':''}" onclick="setTab('conv')">Convocatoria</button>
+      <button class="tab" disabled title="Disponible en Fase 3-4"><span class="lock">🔒</span> ABP</button>
+    </div>`;
+
+  const paneHtml = tabActual==='conv' ? `
+    <div class="pane pane-empty">
+      <div class="pe-t">Convocatoria · J${jornadaActual} vs ${club.name}</div>
+      <p>Aquí se seleccionarán los <b>18 convocados</b> desde la plantilla (colección <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;">players</span>),
+      con el estado físico de <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;">playerStatus</span>:
+      los jugadores en precaución o lesionados serán convocables pero quedarán resaltados.</p>
+      <span class="badge">Fase 2 · en desarrollo</span>
+    </div>` : '';
+
+  document.getElementById('content').innerHTML = matchHtml + tabsHtml + paneHtml;
+}
+
+/* ══════════ INIT ══════════ */
+(async()=>{
+  await Promise.all([loadCalendario(), loadShields(), loadActas()]);
+  jornadaActual = jornadaInicial();
+  render();
+})();
+</script>
+</body>
+</html>
