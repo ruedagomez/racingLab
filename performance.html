@@ -842,10 +842,12 @@ const pos_lbl = {POR:'Portero',DEF:'Defensa',MED:'Centrocampista',DEL:'Delantero
 function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function daysSince(dateStr){ return Math.ceil((Date.now()-new Date(dateStr))/86400000); }
+/* Devuelve null cuando no hay plazo estimado (molestia pendiente de
+   evolución). Quien lo use debe contemplar el null y mostrar "Pendiente". */
 function rtpDaysLeft(inj){
-  const elapsed = daysSince(inj.date);
   const est = (inj.updates||[]).reduce((last,u)=>u.rtp_est||last, inj.rtp_est);
-  return Math.max(0, est - elapsed);
+  if(est==null || isNaN(est)) return null;
+  return Math.max(0, est - daysSince(inj.date));
 }
 function shortName(n){
   const parts = n.split(' ');
@@ -933,7 +935,7 @@ function renderDashboard() {
       <div class="dash-sub">${cap(inj.type)} · ${inj.zone}</div></div>
       <div style="text-align:right">
         <div class="status ${esMolestia?'s-caut':'s-inj'}">Día ${dAgo}</div>
-        <div style="font-size:10px;color:var(--faint);margin-top:3px">RTP ~${rtpDaysLeft(inj)}d</div>
+        <div style="font-size:10px;color:var(--faint);margin-top:3px">${rtpDaysLeft(inj)==null?'Pendiente de evolución':'RTP ~'+rtpDaysLeft(inj)+'d'}</div>
       </div>
     </div>`;
   });
@@ -941,14 +943,14 @@ function renderDashboard() {
 
   // Returns
   const returning = activeInj.map(inj=>({inj,p:DATA.players.find(pl=>pl.id===inj.pid),left:rtpDaysLeft(inj)}))
-    .sort((a,b)=>a.left-b.left);
+    .sort((a,b)=>{ if(a.left==null) return 1; if(b.left==null) return -1; return a.left-b.left; });
   let retHtml = returning.length ? '' : '<div style="color:var(--faint);font-size:13px;padding:4px 0">Sin retornos pendientes</div>';
   returning.forEach(({inj,p,left})=>{
-    const cls = left<=3?'s-inj':left<=7?'s-caut':'s-fit';
+    const cls = left==null?'s-caut':left<=3?'s-inj':left<=7?'s-caut':'s-fit';
     retHtml += `<div class="dash-item">
       <div><div class="dash-name">${p?p.d+' · '+p.nick:'—'}</div>
       <div class="dash-sub">${cap(inj.type)} · ${inj.zone}</div></div>
-      <span class="status ${cls}">${left<=0?'RTP HOY':left+' días'}</span>
+      <span class="status ${cls}">${left==null?'Pendiente':left<=0?'RTP HOY':left+' días'}</span>
     </div>`;
   });
   document.getElementById('dash-returns').innerHTML = retHtml;
@@ -1140,8 +1142,8 @@ function injCardHtml(inj, historical=false) {
   const dAgo = daysSince(inj.date);
   const rttpEst = (inj.updates||[]).reduce((last,u)=>u.rtt_est||last, inj.rtt_est);
   const rtpEst = (inj.updates||[]).reduce((last,u)=>u.rtp_est||last, inj.rtp_est);
-  const progRTT = Math.min(100, Math.round(dAgo/rttpEst*100));
-  const progRTP = Math.min(100, Math.round(dAgo/rtpEst*100));
+  const progRTT = (rttpEst==null||isNaN(rttpEst)) ? null : Math.min(100, Math.round(dAgo/rttpEst*100));
+  const progRTP = (rtpEst==null||isNaN(rtpEst))   ? null : Math.min(100, Math.round(dAgo/rtpEst*100));
 
   // Timeline entries
   const tl_entries = [];
@@ -1180,20 +1182,25 @@ function injCardHtml(inj, historical=false) {
       <div class="inj-meta">
         <div class="inj-mi"><strong>${inj.date}</strong>Fecha lesión</div>
         <div class="inj-mi"><strong>${dAgo} días</strong>En baja</div>
-        <div class="inj-mi"><strong>~${rttpEst}d</strong>RTT estimado</div>
-        <div class="inj-mi"><strong>~${rtpEst}d</strong>RTP estimado</div>
+        <div class="inj-mi"><strong>${rttpEst==null?'—':'~'+rttpEst+'d'}</strong>RTT estimado</div>
+        <div class="inj-mi"><strong>${rtpEst==null?'—':'~'+rtpEst+'d'}</strong>RTP estimado</div>
         <div class="inj-mi"><strong>${(inj.updates||[]).length}</strong>Actualizaciones</div>
       </div>
-      ${inj.active?`<div class="prog-wrap">
+      ${inj.active?((progRTT==null&&progRTP==null)
+        ? `<div class="prog-wrap" style="text-align:center;color:var(--caut);font-size:12.5px;padding:10px 0;">
+             Pendiente de evolución · sin plazos estimados todavía.<br/>
+             <span style="color:var(--faint);font-size:11.5px;">Si se confirma como lesión, añade RTT y RTP al actualizarla.</span>
+           </div>`
+        : `<div class="prog-wrap">
         <div class="prog-row">
-          <div class="prog-lbl"><span>Return to Training</span><span>${Math.min(progRTT,100)}%</span></div>
-          <div class="prog-bar"><div class="prog-fill pf-rtt" style="width:${progRTT}%"></div></div>
+          <div class="prog-lbl"><span>Return to Training</span><span>${progRTT==null?'—':Math.min(progRTT,100)+'%'}</span></div>
+          <div class="prog-bar"><div class="prog-fill pf-rtt" style="width:${progRTT==null?0:progRTT}%"></div></div>
         </div>
         <div class="prog-row">
-          <div class="prog-lbl"><span>Return to Play</span><span>${Math.min(progRTP,100)}%</span></div>
-          <div class="prog-bar"><div class="prog-fill pf-rtp" style="width:${progRTP}%"></div></div>
+          <div class="prog-lbl"><span>Return to Play</span><span>${progRTP==null?'—':Math.min(progRTP,100)+'%'}</span></div>
+          <div class="prog-bar"><div class="prog-fill pf-rtp" style="width:${progRTP==null?0:progRTP}%"></div></div>
         </div>
-      </div>`:''}
+      </div>`):''}
       <div class="inj-timeline">
         <div class="tl-title">Historial de evolución</div>
         ${tlHtml}
@@ -1254,10 +1261,19 @@ function saveInjuryUpdate() {
 function onGravedadChange(gravedad){
   const rtt = document.getElementById('ni-rtt-est');
   const rtp = document.getElementById('ni-rtp-est');
-  if(gravedad==='molestia'){
-    if(rtt && !rtt.dataset.tocado) rtt.value = 2;
-    if(rtp && !rtp.dataset.tocado) rtp.value = 4;
-  }
+  const esMol = gravedad==='molestia';
+  [rtt, rtp].forEach(el=>{
+    if(!el) return;
+    if(esMol){
+      // Sin plazos: una molestia está pendiente de evolución. Si acaba
+      // confirmándose como lesión, se le ponen los plazos al actualizarla.
+      el.value = '';
+      el.placeholder = 'Pendiente de evolución';
+      delete el.dataset.tocado;
+    } else {
+      el.placeholder = el.id==='ni-rtt-est' ? '14' : '21';
+    }
+  });
 }
 ['ni-rtt-est','ni-rtp-est'].forEach(id=>{
   document.addEventListener('input', e=>{ if(e.target && e.target.id===id) e.target.dataset.tocado='1'; });
@@ -1272,8 +1288,10 @@ function addInjury() {
     type:document.getElementById('ni-type').value,
     zone:document.getElementById('ni-zone').value||'Sin especificar',
     severity:document.getElementById('ni-severity').value,
-    rtt_est:parseInt(document.getElementById('ni-rtt-est').value)||14,
-    rtp_est:parseInt(document.getElementById('ni-rtp-est').value)||21,
+    rtt_est:(function(){ const v=parseInt(document.getElementById('ni-rtt-est').value);
+      return isNaN(v) ? (document.getElementById('ni-severity').value==='molestia'?null:14) : v; })(),
+    rtp_est:(function(){ const v=parseInt(document.getElementById('ni-rtp-est').value);
+      return isNaN(v) ? (document.getElementById('ni-severity').value==='molestia'?null:21) : v; })(),
     recaida:document.getElementById('ni-recaida').value,
     notes:document.getElementById('ni-notes').value.trim(),
     updates:[], active:true
