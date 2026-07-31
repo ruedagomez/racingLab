@@ -289,7 +289,7 @@ img,svg,video{max-width:100%;}
   <div class="pagehead">
     <div>
       <div class="pt">Temporada 2026/27 · Grupo X</div>
-      <div class="ps">34 jornadas · Inicio 6 de septiembre · Descanso 27 dic y 3 ene</div>
+      <div class="ps">34 jornadas · Inicio 6 sep · J15 martes 8 dic · Parón 27 dic y 28 mar (Semana Santa) · Fin 2 may</div>
     </div>
     <div style="display:flex;gap:9px;">
       <button class="btn btn-ghost btn-sm" id="btnEditCal" onclick="toggleCalEdit()" style="display:none">✏️ Editar calendario</button>
@@ -420,13 +420,15 @@ const CLUBS = [
 ];
 const clubById = id => CLUBS.find(c=>c.id===id) || null;
 
-/* Fechas fijas: domingos desde 06/09/2026, sin 27/12 ni 03/01 */
+/* Fechas OFICIALES (Calendario RFAF 3ª Federación G.10 26/27, publicado).
+   Ojo: J15 es MARTES 08/12 (festivo), J18 SÍ se juega el 03/01.
+   Sin jornada el 27/12 ni el 28/03 (Semana Santa). Fin de liga 02/05/2027. */
 const JORNADA_DATES = [
   '2026-09-06','2026-09-13','2026-09-20','2026-09-27','2026-10-04','2026-10-11','2026-10-18','2026-10-25',
-  '2026-11-01','2026-11-08','2026-11-15','2026-11-22','2026-11-29','2026-12-06','2026-12-13','2026-12-20',
-  '2027-01-10','2027-01-17','2027-01-24','2027-01-31','2027-02-07','2027-02-14','2027-02-21','2027-02-28',
-  '2027-03-07','2027-03-14','2027-03-21','2027-03-28','2027-04-04','2027-04-11','2027-04-18','2027-04-25',
-  '2027-05-02','2027-05-09'
+  '2026-11-01','2026-11-08','2026-11-15','2026-11-22','2026-11-29','2026-12-06','2026-12-08','2026-12-13',
+  '2026-12-20','2027-01-03','2027-01-10','2027-01-17','2027-01-24','2027-01-31','2027-02-07','2027-02-14',
+  '2027-02-21','2027-02-28','2027-03-07','2027-03-14','2027-03-21','2027-04-04','2027-04-11','2027-04-18',
+  '2027-04-25','2027-05-02'
 ];
 const fmtDate = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.slice(2)}`; };
 const todayIso = () => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; };
@@ -522,26 +524,50 @@ function dbxRaw(url){
 }
 
 /* ══════════ CALENDARIO ══════════ */
+/* Calendario OFICIAL RFAF 26/27 — rival y condición de RCP en la primera vuelta,
+   transcrito del PDF oficial publicado. J18–J34 = espejo J±17 con condición
+   invertida (verificado jornada a jornada contra el PDF: cuadra las 34).
+   Nota: doble jornada en casa J14+J15 (6 y 8 dic) y doble fuera J31+J32. */
+const CAL_OFICIAL_IDA = [
+  ['xerez-dfc','fuera'],    // J1  06/09 Xerez DFC - RCP
+  ['san-roque','casa'],     // J2  13/09 RCP - San Roque de Lepe
+  ['egabrense','fuera'],    // J3  20/09 Egabrense - RCP
+  ['chiclana','casa'],      // J4  27/09 RCP - Chiclana
+  ['tomares','fuera'],      // J5  04/10 Tomares - RCP
+  ['dos-hermanas','casa'],  // J6  11/10 RCP - Dos Hermanas 1971
+  ['conil','fuera'],        // J7  18/10 Conil - RCP
+  ['pozoblanco','casa'],    // J8  25/10 RCP - Pozoblanco
+  ['utrera','fuera'],       // J9  01/11 Utrera - RCP
+  ['cadiz-b','casa'],       // J10 08/11 RCP - Cádiz (filial)
+  ['linense','fuera'],      // J11 15/11 Linense - RCP
+  ['cordoba-b','casa'],     // J12 22/11 RCP - Córdoba (filial)
+  ['ceuta-b','fuera'],      // J13 29/11 Ceuta (filial) - RCP
+  ['onubense','casa'],      // J14 06/12 RCP - Atlético Onubense
+  ['puente-genil','casa'],  // J15 08/12 RCP - Salerm Puente Genil (MARTES)
+  ['bollullos','fuera'],    // J16 13/12 Bollullos - RCP
+  ['betis-c','casa'],       // J17 20/12 RCP - Betis (filial)
+];
 function defaultCalendario(){
-  const jornadas = [];
-  for(let n=1;n<=17;n++){
-    const club = CLUBS[n-1];
-    const cond = n%2===1 ? 'casa' : 'fuera';
-    jornadas.push({ n, clubId:club.id, condicion:cond });
-  }
+  const jornadas = CAL_OFICIAL_IDA.map(([clubId,condicion],i)=>({ n:i+1, clubId, condicion }));
   for(let n=18;n<=34;n++){
     const ida = jornadas[n-18];
     jornadas.push({ n, clubId:ida.clubId, condicion: ida.condicion==='casa'?'fuera':'casa' });
   }
-  return { jornadas, provisional:true };
+  return { jornadas, provisional:false, fuente:'Calendario oficial RFAF 3ª Federación G.10 26/27' };
 }
 async function loadCalendario(){
   try{
     const snap = await getDoc(doc(db,'analisisCalendario',TEMPORADA));
-    if(snap.exists()){ calendario = snap.data(); }
-    else {
+    if(snap.exists() && !snap.data().provisional){
+      calendario = snap.data();
+    } else {
+      /* Doc inexistente O aún marcado como provisional → se sustituye por el
+         calendario oficial RFAF de una sola vez. Si Carlos ya lo hubiera
+         corregido a mano Y confirmado como oficial, se respeta el suyo. */
+      const migrando = snap.exists();
       calendario = defaultCalendario();
       await setDoc(doc(db,'analisisCalendario',TEMPORADA), calendario);
+      if(migrando) console.log('[Calendario] provisional sustituido por el oficial RFAF');
     }
   }catch(e){ console.error('[Calendario]', e); calendario = defaultCalendario(); }
 }
