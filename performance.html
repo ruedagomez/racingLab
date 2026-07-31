@@ -160,7 +160,7 @@ input,select,textarea{font-family:inherit;outline:none;}
 .inj-tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
 .inj-tag{font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 8px;border-radius:2px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;}
 .t-muscular{background:#fff7ed;color:#c2410c;}
-.t-molestia{background:#fffbeb;color:#a16207;}
+.t-sev.sev-molestia{background:#fffbeb;color:#a16207;}
 .t-ligamentosa{background:#fef2f2;color:#dc2626;}
 .t-tendinosa{background:#f5f3ff;color:#7c3aed;}
 .t-osea{background:#eff6ff;color:#1d4ed8;}
@@ -547,8 +547,7 @@ input,select,textarea{font-family:inherit;outline:none;}
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Tipo</label>
-        <select class="form-control" id="ni-type" onchange="onTipoLesionChange(this.value)">
-          <option value="molestia">Molestia (pasa a precaución, no baja)</option>
+        <select class="form-control" id="ni-type">
           <option value="muscular">Muscular</option>
           <option value="ligamentosa">Ligamentosa</option>
           <option value="tendinosa">Tendinosa</option>
@@ -559,7 +558,8 @@ input,select,textarea{font-family:inherit;outline:none;}
       </div>
       <div class="form-group">
         <label class="form-label">Gravedad</label>
-        <select class="form-control" id="ni-severity">
+        <select class="form-control" id="ni-severity" onchange="onGravedadChange(this.value)">
+          <option value="molestia">Molestia (precaución, no causa baja)</option>
           <option value="leve">Leve</option>
           <option value="moderada">Moderada</option>
           <option value="grave">Grave</option>
@@ -927,7 +927,7 @@ function renderDashboard() {
   activeInj.forEach(inj=>{
     const p = DATA.players.find(pl=>pl.id===inj.pid);
     const dAgo = daysSince(inj.date);
-    const esMolestia = inj.type==='molestia';
+    const esMolestia = inj.severity==='molestia';
     injHtml += `<div class="dash-item">
       <div><div class="dash-name">${p?p.d+' · '+p.nick:'—'}</div>
       <div class="dash-sub">${cap(inj.type)} · ${inj.zone}</div></div>
@@ -1170,7 +1170,7 @@ function injCardHtml(inj, historical=false) {
       </div>
       <div class="inj-tags">
         <span class="inj-tag t-${inj.type}">${cap(inj.type)}</span>
-        <span class="inj-tag t-sev">${cap(inj.severity)}</span>
+        <span class="inj-tag t-sev ${inj.severity==='molestia'?'sev-molestia':''}">${cap(inj.severity)}</span>
         ${inj.recaida==='si'?'<span class="inj-tag" style="background:#fef2f2;color:#dc2626;">Recaída</span>':''}
         ${inj.active?`<span class="status s-inj">Día ${dAgo}</span>`:`<span class="status s-fit">Alta</span>`}
         <span style="color:var(--faint);font-size:14px;">${'ib-'+inj.id}</span>
@@ -1248,14 +1248,13 @@ function saveInjuryUpdate() {
   showToast('Actualización guardada');
 }
 
-/* Al marcar "Molestia" se proponen plazos cortos y severidad leve: no es una
-   baja, es un seguimiento. Todo sigue siendo editable a mano. */
-function onTipoLesionChange(tipo){
-  const sev = document.getElementById('ni-severity');
+/* La MOLESTIA es un grado de gravedad, no un tipo de lesión: puede ser
+   muscular, tendinosa… lo que la define es que no causa baja. Al marcarla se
+   proponen plazos cortos; todo sigue siendo editable a mano. */
+function onGravedadChange(gravedad){
   const rtt = document.getElementById('ni-rtt-est');
   const rtp = document.getElementById('ni-rtp-est');
-  if(tipo==='molestia'){
-    if(sev) sev.value='leve';
+  if(gravedad==='molestia'){
     if(rtt && !rtt.dataset.tocado) rtt.value = 2;
     if(rtp && !rtp.dataset.tocado) rtp.value = 4;
   }
@@ -1283,11 +1282,11 @@ function addInjury() {
   const p = DATA.players.find(pl=>pl.id===pid);
   // Una molestia no es una baja: el jugador sigue disponible pero entra en
   // seguimiento. Por eso pasa a PRECAUCIÓN y no a LESIONADO.
-  if(p) p.status = (inj.type==='molestia') ? 'caution' : 'injury';
+  if(p) p.status = (inj.severity==='molestia') ? 'caution' : 'injury';
   saveData(); updateBadges();
   closeModal('modal-add-injury');
   renderLesiones(); renderDashboard();
-  showToast(inj.type==='molestia' ? 'Molestia registrada · jugador en precaución' : 'Lesión registrada');
+  showToast(inj.severity==='molestia' ? 'Molestia registrada · jugador en precaución' : 'Lesión registrada');
 }
 
 function dischargeInjury(id) {
