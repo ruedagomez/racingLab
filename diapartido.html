@@ -81,6 +81,55 @@ select{font-family:inherit;}
 .pane-empty p{font-size:13px;max-width:520px;margin:0 auto;line-height:1.55;}
 .pane-empty .badge{display:inline-block;margin-top:14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:4px 12px;border-radius:12px;background:var(--warn-bg);color:var(--warn);}
 
+/* ── CONVOCATORIA ── */
+.conv-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+.conv-count{display:flex;align-items:baseline;gap:10px;}
+.conv-count .cc-n{font-family:'Bebas Neue',cursive;font-size:34px;line-height:1;color:var(--r);}
+.conv-count .cc-n.full{color:var(--fit);}
+.conv-count .cc-l{font-size:11px;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;font-weight:600;}
+.conv-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.cchip{font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:4px 9px;border-radius:10px;background:var(--bg);color:var(--mid);border:1px solid var(--bdr);}
+.cchip b{color:var(--txt);}
+.conv-user{display:flex;align-items:center;gap:8px;padding:6px 12px;border:1.5px solid var(--bdr);border-radius:8px;font-size:12px;font-weight:600;color:var(--mid);background:var(--wh);transition:.15s;}
+.conv-user:hover{border-color:var(--r);color:var(--r);}
+.conv-user .cu-av{width:22px;height:22px;border-radius:50%;background:var(--blk);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:800;}
+.conv-warn{display:flex;align-items:center;gap:8px;background:var(--warn-bg);border:1px solid rgba(194,65,12,.25);color:var(--warn);font-size:12px;font-weight:500;padding:9px 14px;border-radius:8px;margin-bottom:16px;}
+.pos-sec{margin-bottom:18px;}
+.pos-t{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:9px;display:flex;align-items:center;gap:8px;}
+.pos-t::after{content:'';flex:1;height:1px;background:var(--bdr);}
+.pos-t .pt-c{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;}
+.pc{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1.5px solid var(--bdr);border-radius:9px;background:var(--wh);text-align:left;transition:.12s;position:relative;}
+.pc:hover{border-color:var(--r3);}
+.pc.sel{border-color:var(--r);background:var(--r2);}
+.pc.st-caution{border-color:rgba(194,65,12,.45);background:var(--warn-bg);}
+.pc.st-injury{border-color:rgba(220,38,38,.45);background:#fef2f2;}
+.pc.st-caution.sel{border-color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn);}
+.pc.st-injury.sel{border-color:#dc2626;box-shadow:inset 0 0 0 1px #dc2626;}
+.pc .pcd{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);min-width:18px;text-align:right;}
+.pc .pcinfo{flex:1;min-width:0;}
+.pc .pcn{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pc .pcdem{font-size:10px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pc .pcst{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.pc .pcst.fit{background:var(--fit);}
+.pc .pcst.caution{background:var(--warn);}
+.pc .pcst.injury{background:#dc2626;}
+.pc .pcck{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--r);color:#fff;font-size:11px;display:none;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.2);}
+.pc.sel .pcck{display:flex;}
+.savebar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--bdr);flex-wrap:wrap;}
+.savebar .sb-meta{font-size:11.5px;color:var(--faint);}
+.btn-save{background:var(--r);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:11px 26px;border-radius:9px;transition:.15s;}
+.btn-save:hover:not(:disabled){background:#c8102c;}
+.btn-save:disabled{opacity:.4;cursor:default;}
+#umodal-bg{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:20px;animation:fadeIn .15s;}
+#umodal-bg.open{display:flex;}
+.umodal{background:var(--wh);border-radius:14px;width:min(440px,100%);padding:26px;animation:fadeUp .2s;}
+.umodal h3{font-family:'Bebas Neue',cursive;font-size:20px;letter-spacing:.5px;margin-bottom:16px;}
+.ugrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.uopt{padding:11px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12.5px;font-weight:600;text-align:center;transition:.12s;}
+.uopt:hover{border-color:var(--r3);}
+.uopt.selected{border-color:var(--r);background:var(--r2);color:var(--r);}
+
 .spinner{width:22px;height:22px;border:2.5px solid var(--bdr);border-top-color:var(--r);border-radius:50%;animation:spin .7s linear infinite;margin:60px auto;}
 #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--blk);color:#fff;font-size:12.5px;font-weight:500;padding:10px 20px;border-radius:8px;z-index:500;display:none;}
 
@@ -121,11 +170,18 @@ select{font-family:inherit;}
 
 </div>
 
+<div id="umodal-bg" onclick="if(event.target===this)closeUserModal()">
+  <div class="umodal">
+    <h3>¿QUIÉN GUARDA LA CONVOCATORIA?</h3>
+    <div class="ugrid" id="ugrid"></div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, getDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, getDoc, doc, query, where, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app = initializeApp({
   apiKey: "AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
@@ -190,12 +246,30 @@ const fmtDate = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.sli
 const diaSemana = iso => DIAS[new Date(iso+'T12:00:00').getDay()];
 const todayIso = () => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; };
 
+/* ── Plantilla: mismas constantes que plantilla.html / performance.html ── */
+const POS_ORDER = ['POR','DEF','MED','DEL'];
+const POS_NAMES = {POR:'Porteros',DEF:'Defensas',MED:'Centrocampistas',DEL:'Delanteros'};
+const ST_LABEL  = {fit:'Disponible', caution:'Precaución', injury:'Lesionado'};
+/* Objetivo de convocados. NO es un tope duro: no bloqueo el guardado por encima
+   de 18 porque no he verificado el máximo que fija el reglamento de competición
+   para Tercera Federación. Solo se avisa. */
+const OBJETIVO_CONVOCADOS = 18;
+/* Mismo listado que el selector de usuario de entrenamientos.html */
+const STAFF = ['Bruno Herrero','Pedro Ríos','Alejandro García','Alejandro Aguilera','Carlos Rueda','Delegado','Borja Domínguez','Javier Romero','Ramón Herrera'];
+
 /* ══════════ ESTADO ══════════ */
 let SHIELDS = {};       // clave = id del doc en clubShields (lpId o clubId según convención)
 let calendario = null;  // { jornadas:[{n,clubId,condicion}] }
 let ACTAS = [];         // actas de la temporada
+let PLAYERS = [];       // players activos, ordenados por posición y dorsal
+let PSTATUS = {};       // playerId → 'fit' | 'caution' | 'injury'
+let INJURIES = {};      // playerId → lesión activa (para el motivo)
+let CONVOCS = {};       // jornada → doc de convocatorias
+let SEL = {};           // jornada → Set(playerId) en edición
 let jornadaActual = 1;
 let tabActual = 'conv';
+let currentUser = localStorage.getItem('rl_train_user') || '';
+let guardando = false;
 
 function toast(msg){
   const t=document.getElementById('toast');
@@ -244,6 +318,39 @@ async function loadActas(){
     const snap = await getDocs(q);
     ACTAS = snap.docs.map(d=>({id:d.id, ...d.data()}));
   }catch(e){ console.error('[Actas]', e); }
+}
+
+async function loadPlantilla(){
+  try{
+    const [ps, st, inj] = await Promise.all([
+      getDocs(collection(db,'players')),
+      getDocs(collection(db,'playerStatus')),
+      getDocs(collection(db,'injuries')),
+    ]);
+    PLAYERS = ps.docs.map(d=>({id:d.id, ...d.data()}))
+      .filter(p=>p.active!==false)
+      .sort((a,b)=>{
+        const pa=POS_ORDER.indexOf(a.pos), pb=POS_ORDER.indexOf(b.pos);
+        if(pa!==pb) return (pa<0?99:pa)-(pb<0?99:pb);
+        return (a.d||99)-(b.d||99);
+      });
+    PSTATUS = {};
+    st.docs.forEach(d=>{ PSTATUS[d.id] = d.data().status; });
+    INJURIES = {};
+    inj.docs.forEach(d=>{
+      const i = d.data();
+      if(i.active && i.pid) INJURIES[i.pid] = i;
+    });
+  }catch(e){ console.error('[Plantilla]', e); toast('Error cargando la plantilla'); }
+}
+
+async function loadConvocatorias(){
+  try{
+    const q = query(collection(db,'convocatorias'), where('temporada','==',TEMPORADA));
+    const snap = await getDocs(q);
+    CONVOCS = {};
+    snap.docs.forEach(d=>{ const c=d.data(); if(c.jornada) CONVOCS[c.jornada]={id:d.id, ...c}; });
+  }catch(e){ console.error('[Convocatorias]', e); }
 }
 
 /* ══════════ NAVEGACIÓN ══════════ */
@@ -353,21 +460,189 @@ function render(){
       <button class="tab" disabled title="Disponible en Fase 3-4"><span class="lock">🔒</span> ABP</button>
     </div>`;
 
-  const paneHtml = tabActual==='conv' ? `
-    <div class="pane pane-empty">
-      <div class="pe-t">Convocatoria · J${jornadaActual} vs ${club.name}</div>
-      <p>Aquí se seleccionarán los <b>18 convocados</b> desde la plantilla (colección <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;">players</span>),
-      con el estado físico de <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;">playerStatus</span>:
-      los jugadores en precaución o lesionados serán convocables pero quedarán resaltados.</p>
-      <span class="badge">Fase 2 · en desarrollo</span>
-    </div>` : '';
+  const paneHtml = tabActual==='conv' ? convocatoriaHtml() : '';
 
   document.getElementById('content').innerHTML = matchHtml + tabsHtml + paneHtml;
 }
 
+/* ══════════ CONVOCATORIA ══════════ */
+const inicialesDe = n => { const p=(n||'').trim().split(/\s+/); return p.length>=2?(p[0][0]+p[p.length-1][0]).toUpperCase():(n||'?').slice(0,2).toUpperCase(); };
+const estadoDe = pid => PSTATUS[pid] || 'fit';
+
+function seleccionActual(){
+  if(!SEL[jornadaActual]){
+    const guardada = CONVOCS[jornadaActual];
+    SEL[jornadaActual] = new Set(guardada && Array.isArray(guardada.playerIds) ? guardada.playerIds : []);
+  }
+  return SEL[jornadaActual];
+}
+function hayCambios(){
+  const sel = seleccionActual();
+  const guardada = CONVOCS[jornadaActual];
+  const prev = new Set(guardada && Array.isArray(guardada.playerIds) ? guardada.playerIds : []);
+  if(sel.size!==prev.size) return true;
+  for(const id of sel) if(!prev.has(id)) return true;
+  return false;
+}
+
+function convocatoriaHtml(){
+  if(!PLAYERS.length){
+    return `<div class="pane pane-empty">
+      <div class="pe-t">Sin plantilla cargada</div>
+      <p>No hay jugadores activos en la colección <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;">players</span>.
+      Revisa el módulo Plantilla.</p></div>`;
+  }
+  const sel = seleccionActual();
+  const total = sel.size;
+  const porPos = {};
+  POS_ORDER.forEach(p=>porPos[p]=0);
+  PLAYERS.forEach(p=>{ if(sel.has(p.id) && porPos[p.pos]!==undefined) porPos[p.pos]++; });
+
+  const tocados = PLAYERS.filter(p=>sel.has(p.id) && estadoDe(p.id)!=='fit');
+  const avisoHtml = tocados.length ? `
+    <div class="conv-warn">⚠ En la convocatoria hay ${tocados.length} jugador${tocados.length>1?'es':''} con parte físico abierto:
+      ${tocados.map(p=>`<b>${p.nick}</b> (${ST_LABEL[estadoDe(p.id)].toLowerCase()})`).join(', ')}</div>` : '';
+
+  const secciones = POS_ORDER.map(pos=>{
+    const grupo = PLAYERS.filter(p=>p.pos===pos);
+    if(!grupo.length) return '';
+    return `
+      <div class="pos-sec">
+        <div class="pos-t">${POS_NAMES[pos]} <span class="pt-c">${porPos[pos]}/${grupo.length}</span></div>
+        <div class="pgrid">${grupo.map(p=>tarjetaJugador(p, sel.has(p.id))).join('')}</div>
+      </div>`;
+  }).join('');
+
+  const guardada = CONVOCS[jornadaActual];
+  const cambios = hayCambios();
+  const meta = guardada
+    ? `Última versión: ${guardada.total} convocados · ${guardada.savedBy||'—'} · ${guardada.savedAt?fmtFechaHora(guardada.savedAt):'—'}${cambios?' · <b style="color:var(--warn)">cambios sin guardar</b>':''}`
+    : (cambios ? '<b style="color:var(--warn)">Sin guardar todavía</b>' : 'Todavía no hay convocatoria para esta jornada');
+
+  return `
+    <div class="pane">
+      <div class="conv-head">
+        <div class="conv-count">
+          <div class="cc-n ${total===OBJETIVO_CONVOCADOS?'full':''}">${total}</div>
+          <div class="cc-l">de ${OBJETIVO_CONVOCADOS}<br/>convocados</div>
+        </div>
+        <div class="conv-chips">
+          ${POS_ORDER.map(p=>`<span class="cchip">${p} <b>${porPos[p]}</b></span>`).join('')}
+        </div>
+        <button class="conv-user" onclick="openUserModal()">
+          <span class="cu-av">${currentUser?inicialesDe(currentUser):'?'}</span>
+          ${currentUser||'Identifícate'}
+        </button>
+      </div>
+      ${avisoHtml}
+      ${secciones}
+      <div class="savebar">
+        <div class="sb-meta">${meta}</div>
+        <button class="btn-save" id="btn-save" ${(!cambios||guardando)?'disabled':''} onclick="guardarConvocatoria()">
+          ${guardando?'Guardando…':'Guardar convocatoria'}
+        </button>
+      </div>
+    </div>`;
+}
+
+function tarjetaJugador(p, seleccionado){
+  const st = estadoDe(p.id);
+  const inj = INJURIES[p.id];
+  const motivo = inj ? `${inj.zone||inj.type||''}${inj.severity?' · '+inj.severity:''}`.trim() : '';
+  const sub = st==='fit' ? (p.dem||'') : `${ST_LABEL[st]}${motivo?' · '+motivo:''}`;
+  return `
+    <button class="pc ${seleccionado?'sel':''} st-${st}" onclick="togglePlayer('${p.id}')" title="${p.n||p.nick} — ${ST_LABEL[st]}">
+      <span class="pcd">${p.d??''}</span>
+      <span class="pcinfo">
+        <span class="pcn">${p.nick||p.n||p.id}</span>
+        <span class="pcdem">${sub}</span>
+      </span>
+      <span class="pcst ${st}"></span>
+      <span class="pcck">✓</span>
+    </button>`;
+}
+
+function fmtFechaHora(iso){
+  try{
+    const d = new Date(iso);
+    if(isNaN(d)) return '—';
+    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  }catch(e){ return '—'; }
+}
+
+window.togglePlayer = function(id){
+  const sel = seleccionActual();
+  if(sel.has(id)) sel.delete(id);
+  else sel.add(id);
+  render();
+};
+
+window.guardarConvocatoria = async function(){
+  if(guardando) return;
+  if(!currentUser){ toast('Identifícate antes de guardar'); openUserModal(); return; }
+  const sel = seleccionActual();
+  if(!sel.size){ toast('No hay ningún jugador seleccionado'); return; }
+
+  const j = calendario.jornadas.find(x=>x.n===jornadaActual);
+  const club = clubById(j.clubId);
+  const convocados = PLAYERS.filter(p=>sel.has(p.id));
+  const docId = `${TEMPORADA}_J${String(jornadaActual).padStart(2,'0')}`;
+  const ahora = new Date().toISOString();
+
+  /* Se guarda también una foto de los datos del jugador en el momento de la
+     convocatoria (dorsal, nick, posición, estado físico). Así el cruce futuro
+     con estadísticas no depende de que la ficha no haya cambiado después. */
+  const payload = {
+    temporada: TEMPORADA,
+    jornada: jornadaActual,
+    fecha: JORNADA_DATES[jornadaActual-1],
+    rivalId: j.clubId,
+    rivalNombre: club ? club.name : j.clubId,
+    condicion: j.condicion,
+    playerIds: convocados.map(p=>p.id),
+    jugadores: convocados.map(p=>({
+      id:p.id, d:p.d??null, nick:p.nick||'', pos:p.pos||'', dem:p.dem||'',
+      estado: estadoDe(p.id)
+    })),
+    total: convocados.length,
+    savedBy: currentUser,
+    savedAt: ahora,
+    updatedAt: serverTimestamp()
+  };
+
+  guardando = true; render();
+  try{
+    await setDoc(doc(db,'convocatorias',docId), payload);
+    CONVOCS[jornadaActual] = {id:docId, ...payload, savedAt:ahora};
+    guardando = false; render();
+    const dif = convocados.length - OBJETIVO_CONVOCADOS;
+    toast(dif===0 ? `Convocatoria J${jornadaActual} guardada · 18 jugadores`
+        : `Convocatoria J${jornadaActual} guardada · ${convocados.length} jugadores (${dif>0?'+':''}${dif} sobre 18)`);
+  }catch(e){
+    console.error('[guardarConvocatoria]', e);
+    guardando = false; render();
+    toast('No se pudo guardar — revisa la conexión');
+  }
+};
+
+/* ── Identidad: misma clave que entrenamientos.html (rl_train_user), para no
+   pedir el nombre dos veces al mismo miembro del staff. ── */
+function renderUserGrid(){
+  document.getElementById('ugrid').innerHTML = STAFF.map(u=>
+    `<button class="uopt ${currentUser===u?'selected':''}" onclick="selectUser('${u.replace(/'/g,"\\'")}')">${u}</button>`).join('');
+}
+window.openUserModal = function(){ renderUserGrid(); document.getElementById('umodal-bg').classList.add('open'); };
+window.closeUserModal = function(){ document.getElementById('umodal-bg').classList.remove('open'); };
+window.selectUser = function(n){
+  currentUser = n;
+  localStorage.setItem('rl_train_user', n);
+  closeUserModal();
+  render();
+};
+
 /* ══════════ INIT ══════════ */
 (async()=>{
-  await Promise.all([loadCalendario(), loadShields(), loadActas()]);
+  await Promise.all([loadCalendario(), loadShields(), loadActas(), loadPlantilla(), loadConvocatorias()]);
   jornadaActual = jornadaInicial();
   render();
 })();
