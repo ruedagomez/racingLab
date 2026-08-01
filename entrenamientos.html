@@ -632,9 +632,18 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
               <button class="btn btn-ghost btn-sm" onclick="abFila('riv')">Alinear rival</button>
             </div>
             <div class="ab-row">
-              <span class="ab-hint">Se trabaja sobre <b>media pista</b>: línea de fondo arriba, medio campo abajo. Arrastra jugadores y balón. <b>Doble clic</b> sobre un jugador para ponerle etiqueta (Saq, P1, T2, Bloq, Df3…): esas etiquetas son las que se asignarán a los convocados el día del partido.</span>
+              <span class="ab-lbl" style="width:100%;margin:0">Dorsales del equipo</span>
+              <button class="btn btn-ghost btn-sm" onclick="abNumerar('rcp',true)">Numerar Racing</button>
+              <button class="btn btn-ghost btn-sm" onclick="abNumerar('rcp',false)">Vaciar Racing</button>
+              <button class="btn btn-ghost btn-sm" onclick="abNumerar('riv',true)">Numerar rival</button>
+              <button class="btn btn-ghost btn-sm" onclick="abNumerar('riv',false)">Vaciar rival</button>
+            </div>
+            <div class="ab-row">
+              <span class="ab-hint">Se trabaja sobre <b>media pista</b>: línea de fondo arriba, medio campo abajo. Las fichas salen <b>sin dorsal</b>; pincha una para ponerle dorsal, letra (C corta, M marca, Z zona), etiqueta de puesto o marcarla como portero.</span>
             </div>
           </div>
+
+          <div class="ab-box" id="ab-ficha"></div>
 
           <div class="ab-box">
             <div class="ab-box-t">Dibujo</div>
@@ -1765,14 +1774,24 @@ const AB_PR=17;                                    // radio del jugador
 
 /* Colocación de partida: dos filas neutras cerca del centro del campo.
    No se imponen colocaciones tácticas: la jugada la dibuja el cuerpo
-   técnico arrastrando desde aquí. */
+   técnico arrastrando desde aquí.
+   Cada ficha tiene tres datos independientes:
+     · mark  → lo que se ve DENTRO del círculo: dorsal, letra (C/M/Z) o nada
+     · short → etiqueta bajo la ficha (Saq, P1, T2, Bloq…). Es el "puesto"
+               de la jugada: en Día de Partido se le asignará el jugador
+               convocado y el nombre saldrá en la plantilla exportada.
+     · gk    → portero (cambia el color de la ficha)
+   El id ('h0','a3'…) es estable y es la clave por la que la Fase 4
+   enlazará cada puesto con un jugador de la convocatoria. */
 const AB_MAX=11;
+const AB_LETRAS=[['C','Corta'],['M','Marca'],['Z','Zona']];
 function abFila_(team, n){
   const y = team==='rcp' ? 88 : 96;
   const arr=[];
   for(let i=0;i<n;i++){
     const x = n===1 ? 50 : 8 + (84*i)/(n-1);
-    arr.push({ id:(team==='rcp'?'h':'a')+i, team, num:i+1, x:+x.toFixed(2), y, short:'' });
+    arr.push({ id:(team==='rcp'?'h':'a')+i, team, mark:'', short:'', gk:false,
+      x:+x.toFixed(2), y });
   }
   return arr;
 }
@@ -1815,7 +1834,7 @@ let abPlayers=[], abBall={x:50,y:50}, abDrawings=[], abSeq=0;
 let abFrames=[], abCurF=-1;
 let abPlaying=false, abRAF=null, abSpeed=700, abAnimFrom=0, abAnimT0=null;
 let abTool='select', abColor='#facc15', abSize=3, abOpac=.92;
-let abDrag=null, abDragDraw=null, abStart=null, abSel=null;
+let abDrag=null, abDragDraw=null, abStart=null, abSel=null, abSelP=null;
 let abShowRCP=true, abShowRival=true;
 let abNRcp=AB_MAX, abNRiv=AB_MAX;
 let abFiltroFase='todas', abFiltroTipo='todos';
@@ -1915,7 +1934,16 @@ function abDrawEl(svg,d,selId){
 }
 
 /* ══════ RENDER ══════ */
-function abRenderState(svg, ps, bl, dws, selId){
+/* Colores de ficha. El portero se distingue por color, no por etiqueta:
+   Racing azul navy · rival verde, ambos con aro blanco para separarlos
+   del césped. */
+const AB_COL = {
+  rcp:   {fill:'#e8192c', stroke:'#ffffff'},
+  rcpGk: {fill:'#1e3a8a', stroke:'#ffffff'},
+  riv:   {fill:'#6b7280', stroke:'#1f2937'},
+  rivGk: {fill:'#22c55e', stroke:'#ffffff'},
+};
+function abRenderState(svg, ps, bl, dws, selId, selP){
   svg.innerHTML='';
   svg.appendChild(abMk('rect',{width:AB_VBW,height:AB_VBH,fill:'#1e7a31'}));
   abDrawField(svg);
@@ -1923,12 +1951,15 @@ function abRenderState(svg, ps, bl, dws, selId){
     if(p.team==='rcp' && !abShowRCP) return;
     if(p.team==='riv' && !abShowRival) return;
     const g=abMk('g',{transform:`translate(${abSx(p.x)},${abSy(p.y)})`,'data-pid':p.id});
-    const col = p.team==='rcp' ? '#e8192c' : '#6b7280';
-    const stk = p.team==='rcp' ? '#ffffff' : '#1f2937';
-    g.appendChild(abMk('circle',{r:AB_PR,fill:col,stroke:stk,'stroke-width':'2.5'}));
-    const t=abMk('text',{y:5,'text-anchor':'middle',fill:'#fff','font-size':'14',
-      'font-weight':'bold','font-family':'monospace'});
-    t.textContent=p.num; g.appendChild(t);
+    const c=AB_COL[p.team+(p.gk?'Gk':'')];
+    if(p.id===selP) g.appendChild(abMk('circle',{r:AB_PR+5,fill:'none',
+      stroke:'#60a5fa','stroke-width':'2.5','stroke-dasharray':'5 4'}));
+    g.appendChild(abMk('circle',{r:AB_PR,fill:c.fill,stroke:c.stroke,'stroke-width':'2.5'}));
+    if(p.mark){
+      const t=abMk('text',{y:5,'text-anchor':'middle',fill:'#fff','font-size':'14',
+        'font-weight':'bold','font-family':'monospace'});
+      t.textContent=p.mark; g.appendChild(t);
+    }
     if(p.short){
       const lw=Math.max(p.short.length*5.4+9,26);
       g.appendChild(abMk('rect',{x:-lw/2,y:AB_PR+2,width:lw,height:13,rx:3,fill:'rgba(0,0,0,0.8)'}));
@@ -1950,7 +1981,7 @@ function abRenderState(svg, ps, bl, dws, selId){
 function abRender(){
   const svg=document.getElementById('ab-pitch');
   if(!svg) return;
-  abRenderState(svg, abPlayers, abBall, abDrawings, abSel);
+  abRenderState(svg, abPlayers, abBall, abDrawings, abSel, abSelP);
 }
 
 /* ══════ INTERACCIÓN ══════ */
@@ -1978,12 +2009,18 @@ function abDown(e){
       if(p.team==='riv'&&!abShowRival) return false;
       return Math.hypot(c.x-abSx(p.x), c.y-abSy(p.y))<AB_PR+5;
     });
-    if(hitPlayer){ abDrag={type:'player',id:hitPlayer.id}; abSel=null; e.preventDefault(); abRender(); return; }
+    if(hitPlayer){
+      abDrag={type:'player',id:hitPlayer.id};
+      abSel=null; abSelP=hitPlayer.id;
+      e.preventDefault(); abPanelFicha(); abRender(); return;
+    }
     if(Math.hypot(c.x-abSx(abBall.x), c.y-abSy(abBall.y))<16){
-      abDrag={type:'ball'}; abSel=null; e.preventDefault(); abRender(); return; }
+      abDrag={type:'ball'}; abSel=null; abSelP=null;
+      e.preventDefault(); abPanelFicha(); abRender(); return; }
     // 2) dibujo
     const hitD=[...abDrawings].reverse().find(d=>abHitDraw(d,c.x,c.y));
     abSel = hitD ? hitD.id : null;
+    abSelP = null; abPanelFicha();
     if(hitD){ abDragDraw={id:hitD.id, ox:c.x, oy:c.y,
       x1:hitD.x1, y1:hitD.y1, x2:hitD.x2, y2:hitD.y2}; e.preventDefault(); }
     abRender();
@@ -2055,7 +2092,9 @@ function abLoadFrame(i){
   abPlayers=f.players.map(p=>({...p}));
   abBall={...f.ball};
   abDrawings=(f.drawings||[]).map(d=>({...d}));
-  abSel=null; abFramesUI(); abRender();
+  abSel=null;
+  if(abSelP && !abPlayers.some(p=>p.id===abSelP)) abSelP=null;
+  abPanelFicha(); abFramesUI(); abRender();
 }
 window.abAddFrame=function(){
   abFrames.push(abSnapshot());
@@ -2139,7 +2178,7 @@ function abStep(ts){
   }
   const it=abInterp(abFrames[abAnimFrom],abFrames[next],t);
   const svg=document.getElementById('ab-pitch');
-  if(svg) abRenderState(svg,it.players,it.ball,abFrames[abAnimFrom].drawings||[],null);
+  if(svg) abRenderState(svg,it.players,it.ball,abFrames[abAnimFrom].drawings||[],null,null);
   if(t>=1){ abAnimFrom=next; abCurF=next; abAnimT0=null; abFramesUI(); }
   abRAF=requestAnimationFrame(abStep);
 }
@@ -2162,7 +2201,7 @@ window.abSetSpeed=function(ms,el){
 
 /* ══════ HERRAMIENTAS ══════ */
 window.abSetTool=function(t,el){
-  abTool=t; abSel=null;
+  abTool=t; abSel=null; abSelP=null; abPanelFicha();
   document.querySelectorAll('.ab-tool').forEach(b=>b.classList.remove('on'));
   if(el) el.classList.add('on');
   abRender();
@@ -2214,21 +2253,69 @@ window.abSetCount=function(team,n){
   }
   if(team==='rcp'){ abNRcp=n; abPlayers=[...nuevos,...otros]; }
   else            { abNRiv=n; abPlayers=[...otros,...nuevos]; }
+  if(abSelP && !abPlayers.some(p=>p.id===abSelP)) abSelP=null;
+  abPanelFicha(); abRender();
+};
+/* ══════ PANEL DE LA FICHA SELECCIONADA ══════ */
+function abFichaSel(){ return abSelP ? abPlayers.find(p=>p.id===abSelP) : null; }
+function abPanelFicha(){
+  const box=document.getElementById('ab-ficha');
+  if(!box) return;
+  const p=abFichaSel();
+  if(!p){
+    box.innerHTML='<div class="ab-box-t">Ficha</div>'+
+      '<span class="ab-hint">Pincha una ficha en el campo para ponerle dorsal, letra (C corta, M marca, Z zona), etiqueta de puesto o marcarla como portero.<br/>La <b>etiqueta</b> es el puesto de la jugada: en Día de Partido se le asignará un convocado y su nombre aparecerá junto a la ficha en la plantilla exportada.</span>';
+    return;
+  }
+  const esc=s=>String(s||'').replace(/"/g,'&quot;');
+  box.innerHTML=`
+    <div class="ab-box-t">Ficha · ${p.team==='rcp'?'Racing':'Rival'}${p.gk?' · portero':''}</div>
+    <div class="ab-row">
+      <div class="ab-fld" style="max-width:96px">
+        <label class="ab-lbl">Dentro</label>
+        <input class="form-control" id="ab-fk-mark" maxlength="2" value="${esc(p.mark)}"
+               placeholder="—" oninput="abSetMark(this.value)"/>
+      </div>
+      <div class="ab-fld">
+        <label class="ab-lbl">Etiqueta (puesto)</label>
+        <input class="form-control" id="ab-fk-short" maxlength="8" value="${esc(p.short)}"
+               placeholder="Saq, P1, T2, Bloq…" oninput="abSetShort(this.value)"/>
+      </div>
+    </div>
+    <div class="ab-row">
+      ${AB_LETRAS.map(([l,n])=>`<button class="ab-tool" title="${n}" onclick="abQuickMark('${l}')">${l}</button>`).join('')}
+      <button class="ab-tool" title="Sin dorsal ni letra" onclick="abQuickMark('')">—</button>
+      <label class="ab-check" style="margin-left:6px">
+        <input type="checkbox" ${p.gk?'checked':''} onchange="abToggleGK(this.checked)"/> Portero
+      </label>
+    </div>`;
+}
+window.abSetMark=function(v){
+  const p=abFichaSel(); if(!p) return;
+  p.mark=String(v||'').trim().slice(0,2).toUpperCase();
   abRender();
 };
-function abDblClick(e){
-  const c=abSvgCoord(e);
-  const p=abPlayers.slice().reverse().find(pl=>{
-    if(pl.team==='rcp'&&!abShowRCP) return false;
-    if(pl.team==='riv'&&!abShowRival) return false;
-    return Math.hypot(c.x-abSx(pl.x), c.y-abSy(pl.y))<AB_PR+5;
-  });
-  if(!p) return;
-  const lbl=prompt(`Etiqueta de la posición (${p.team==='rcp'?'Racing':'rival'} · dorsal ${p.num}).\nEjemplos: Saq, Ay, P1, P2, T1, Bloq, Df3, Rechace`, p.short||'');
-  if(lbl===null) return;
-  p.short=lbl.trim().slice(0,8);
+window.abSetShort=function(v){
+  const p=abFichaSel(); if(!p) return;
+  p.short=String(v||'').slice(0,8);
   abRender();
-}
+};
+window.abQuickMark=function(l){
+  const p=abFichaSel(); if(!p) return;
+  p.mark=l;
+  const inp=document.getElementById('ab-fk-mark'); if(inp) inp.value=l;
+  abRender();
+};
+window.abToggleGK=function(on){
+  const p=abFichaSel(); if(!p) return;
+  p.gk=!!on;
+  abPanelFicha(); abRender();
+};
+window.abNumerar=function(team,conDorsal){
+  let i=1;
+  abPlayers.forEach(p=>{ if(p.team===team) p.mark = conDorsal ? String(i++) : ''; });
+  abPanelFicha(); abRender();
+};
 
 /* ══════ SERIALIZACIÓN ══════ */
 function abSerializeFrames(){
@@ -2237,8 +2324,11 @@ function abSerializeFrames(){
     final: !!f.final,
     nota: f.nota||'',
     ball: { x:+f.ball.x.toFixed(2), y:+f.ball.y.toFixed(2) },
-    players: f.players.map(p=>({ id:p.id, team:p.team, num:p.num,
-      x:+p.x.toFixed(2), y:+p.y.toFixed(2), short:p.short||'' })),
+    // id = clave estable del puesto: por él se enlazará en Día de Partido
+    // el jugador convocado cuyo nombre saldrá en la plantilla exportada
+    players: f.players.map(p=>({ id:p.id, team:p.team,
+      mark:p.mark||'', short:p.short||'', gk:!!p.gk,
+      x:+p.x.toFixed(2), y:+p.y.toFixed(2) })),
     // los dibujos se guardan en % del campo: independientes del tamaño de render
     drawings: (f.drawings||[]).map(d=>({
       type:d.type, color:d.color, size:d.size, opacity:d.opacity,
@@ -2253,7 +2343,11 @@ function abDeserializeFrames(fr){
     final: !!f.final,
     nota: f.nota||'',
     ball: {...f.ball},
-    players: (f.players||[]).map(p=>({...p})),
+    players: (f.players||[]).map(p=>({
+      ...p,
+      mark: p.mark!=null ? p.mark : (p.num!=null ? String(p.num) : ''),
+      short: p.short||'', gk: !!p.gk
+    })),
     drawings: (f.drawings||[]).map(d=>({
       ...d, id:++abSeq,
       x1:abSx(d.x1p), y1:abSy(d.y1p),
@@ -2277,7 +2371,8 @@ function abMiniSvg(j){
   const f=(j.frames&&j.frames[0])||null;
   if(!f) return '<div class="ab-mini-empty">sin datos</div>';
   const S='rgba(255,255,255,.7)';
-  const dot=p=>`<circle cx="${abSx(p.x).toFixed(1)}" cy="${abSy(p.y).toFixed(1)}" r="13" fill="${p.team==='rcp'?'#e8192c':'#6b7280'}" stroke="#fff" stroke-width="2.5"/>`;
+  const dot=p=>{ const c=AB_COL[p.team+(p.gk?'Gk':'')];
+    return `<circle cx="${abSx(p.x).toFixed(1)}" cy="${abSy(p.y).toFixed(1)}" r="13" fill="${c.fill}" stroke="${c.stroke}" stroke-width="2.5"/>`; };
   const line=d=>{
     if(d.type==='text'||d.type==='rect'||d.type==='circle') return '';
     return `<line x1="${abSx(d.x1p).toFixed(1)}" y1="${abSy(d.y1p).toFixed(1)}" x2="${abSx(d.x2p).toFixed(1)}" y2="${abSy(d.y2p).toFixed(1)}" stroke="${d.color}" stroke-width="3.5" opacity=".9"${d.type==='dashed'?' stroke-dasharray="9 6"':''}/>`;
@@ -2352,7 +2447,7 @@ function abSetMetaFields(j){
 window.abOpenEditor=function(id){
   abStopAnim();
   abEditId = id||null;
-  abSel=null; abTool='select';
+  abSel=null; abSelP=null; abTool='select';
   document.querySelectorAll('.ab-tool').forEach(b=>b.classList.toggle('on',b.dataset.tool==='select'));
   abShowRCP=true; abShowRival=true;
   document.querySelectorAll('.ab-teamtog').forEach(b=>b.classList.remove('off'));
@@ -2379,7 +2474,7 @@ window.abOpenEditor=function(id){
   document.getElementById('ab-edit').style.display='block';
   document.getElementById('ab-edit-title').textContent = id?'Editar jugada':'Nueva jugada';
   document.getElementById('page-title').textContent = 'Pizarra ABP · '+(id?'editar':'nueva');
-  abFramesUI(); abRender();
+  abPanelFicha(); abFramesUI(); abRender();
 };
 window.abCloseEditor=function(){
   abStopAnim();
@@ -2455,11 +2550,11 @@ function abBuildUI(){
     `<option value="${i}"${i===AB_MAX?' selected':''}>${i}</option>`).join('');
   const nr=document.getElementById('ab-n-rcp'); if(nr) nr.innerHTML=nOpts();
   const nv=document.getElementById('ab-n-riv'); if(nv) nv.innerHTML=nOpts();
+  abPanelFicha();
   const svg=document.getElementById('ab-pitch');
   if(svg){
     svg.addEventListener('mousedown',abDown);
     svg.addEventListener('touchstart',abDown,{passive:false});
-    svg.addEventListener('dblclick',abDblClick);
     window.addEventListener('mousemove',abMove);
     window.addEventListener('touchmove',abMove,{passive:false});
     window.addEventListener('mouseup',abUp);
