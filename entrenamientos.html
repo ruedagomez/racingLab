@@ -302,6 +302,66 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
   .mobnav-badge{position:absolute;top:5px;right:calc(50% - 22px);background:var(--r);color:#fff;font-size:8.5px;font-weight:700;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
   .main{padding-bottom:66px;}
 }
+/* ══ PIZARRA ABP ══ */
+.ab-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+.ab-bar select{max-width:180px;}
+.ab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;}
+.ab-card{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;overflow:hidden;
+  transition:border-color .18s,box-shadow .18s;animation:fadeUp .25s both;}
+.ab-card:hover{border-color:var(--r3);box-shadow:0 3px 12px rgba(0,0,0,.07);}
+.ab-mini{background:#1e7a31;cursor:pointer;aspect-ratio:68/105;overflow:hidden;display:block;}
+.ab-mini svg{width:100%;height:100%;display:block;}
+.ab-mini-empty{color:rgba(255,255,255,.6);font-size:11px;display:flex;align-items:center;justify-content:center;height:100%;}
+.ab-card-b{padding:11px 12px 10px;}
+.ab-card-n{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;letter-spacing:.02em;line-height:1.15;}
+.ab-card-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;}
+.ab-tag{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  padding:2px 7px;border-radius:9px;background:var(--bg);color:var(--mid);border:1px solid var(--bdr);}
+.ab-tag.of{background:var(--fit-bg);color:var(--fit);border-color:transparent;}
+.ab-tag.def{background:var(--warn-bg);color:var(--warn);border-color:transparent;}
+.ab-tag.mono{font-family:'JetBrains Mono',monospace;}
+.ab-card-s{font-size:11.5px;color:var(--mid);margin-top:7px;}
+.ab-card-f{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;
+  padding-top:9px;border-top:1px solid var(--bg);}
+.ab-card-by{font-size:10.5px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ab-empty{grid-column:1/-1;text-align:center;padding:46px 20px;color:var(--faint);}
+.ab-empty-t{font-family:'Bebas Neue',sans-serif;font-size:17px;color:var(--mid);letter-spacing:.5px;}
+.ab-empty-s{font-size:12.5px;max-width:520px;margin:8px auto 0;line-height:1.5;}
+/* editor */
+.ab-edit-grid{display:grid;grid-template-columns:minmax(280px,440px) 1fr;gap:18px;align-items:start;}
+.ab-pitch-wrap{background:var(--blk);border-radius:8px;padding:10px;position:sticky;top:0;}
+#ab-pitch{width:100%;height:auto;display:block;border-radius:4px;touch-action:none;user-select:none;}
+.ab-panel{display:flex;flex-direction:column;gap:14px;}
+.ab-box{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;padding:14px;}
+.ab-box-t{font-family:'Barlow Condensed',sans-serif;font-size:10.5px;font-weight:900;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--mid);margin-bottom:10px;}
+.ab-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.ab-row+.ab-row{margin-top:9px;}
+.ab-fld{flex:1;min-width:120px;}
+.ab-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);margin-bottom:3px;display:block;}
+.ab-tool,.ab-spd{width:36px;height:34px;border:1.5px solid var(--bdr);border-radius:5px;background:var(--wh);
+  color:var(--mid);font-size:15px;font-weight:700;transition:.15s;display:inline-flex;align-items:center;justify-content:center;}
+.ab-spd{width:auto;padding:0 11px;font-size:11px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.06em;}
+.ab-tool:hover,.ab-spd:hover{border-color:var(--r);color:var(--r);}
+.ab-tool.on,.ab-spd.on{background:var(--r);border-color:var(--r);color:var(--wh);}
+.ab-sw{width:26px;height:26px;border-radius:50%;border:2px solid var(--bdr);transition:.15s;}
+.ab-sw.on{border-color:var(--r);transform:scale(1.14);box-shadow:0 0 0 2px var(--r2);}
+.ab-teamtog{padding:6px 12px;border:1.5px solid var(--bdr);border-radius:5px;background:var(--wh);
+  font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--txt);transition:.15s;}
+.ab-teamtog.off{opacity:.4;text-decoration:line-through;}
+.ab-fstrip{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px;min-height:26px;align-items:center;}
+.ab-fchip{min-width:28px;height:26px;padding:0 7px;border:1.5px solid var(--bdr);border-radius:5px;
+  background:var(--wh);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mid);transition:.15s;}
+.ab-fchip:hover{border-color:var(--r);color:var(--r);}
+.ab-fchip.on{background:var(--r);border-color:var(--r);color:var(--wh);}
+.ab-hint{font-size:11.5px;color:var(--faint);line-height:1.45;}
+.ab-check{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--txt);cursor:pointer;}
+.ab-check input{width:15px;height:15px;accent-color:var(--r);}
+@media(max-width:900px){
+  .ab-edit-grid{grid-template-columns:1fr;}
+  .ab-pitch-wrap{position:static;max-width:440px;margin:0 auto;}
+}
 </style>
 </head>
 <body>
@@ -321,6 +381,7 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
     <div class="nav-item" onclick="nav('p-history',this)"><span class="ni">◫</span>Historial <span class="nb2 gray" id="nb-sessions">0</span></div>
     <div class="sb-sec">Recursos</div>
     <div class="nav-item" onclick="nav('p-library',this)"><span class="ni">📚</span>Librería <span class="nb2 gray" id="nb-library">0</span></div>
+    <div class="nav-item" onclick="nav('p-abp',this)"><span class="ni">⚽</span>Pizarra ABP <span class="nb2 gray" id="nb-abp">0</span></div>
     <div class="nav-item" onclick="nav('p-vocab',this)"><span class="ni">🏷</span>Vocabulario <span class="nb2 gray" id="nb-vocab">0</span></div>
     <div class="sb-sec">Análisis</div>
     <div class="nav-item" onclick="nav('p-dashboard',this)"><span class="ni">◧</span>Dashboard</div>
@@ -340,6 +401,7 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
   <div class="mobnav-item active" onclick="nav('p-register',this)"><span class="ni">📋</span><small>Registrar</small></div>
   <div class="mobnav-item" onclick="nav('p-history',this)"><span class="ni">◫</span><small>Historial</small><span class="mobnav-badge" id="nb-sessions-m">0</span></div>
   <div class="mobnav-item" onclick="nav('p-library',this)"><span class="ni">📚</span><small>Librería</small><span class="mobnav-badge" id="nb-library-m">0</span></div>
+  <div class="mobnav-item" onclick="nav('p-abp',this)"><span class="ni">⚽</span><small>ABP</small><span class="mobnav-badge" id="nb-abp-m">0</span></div>
   <div class="mobnav-item" onclick="nav('p-vocab',this)"><span class="ni">🏷</span><small>Vocab.</small><span class="mobnav-badge" id="nb-vocab-m">0</span></div>
   <div class="mobnav-item" onclick="nav('p-dashboard',this)"><span class="ni">◧</span><small>Dashboard</small></div>
   <div class="mobnav-item" onclick="nav('p-trash',this)"><span class="ni">🗑</span><small>Papelera</small><span class="mobnav-badge" id="nb-trash-m">0</span></div>
@@ -470,6 +532,147 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
   <div class="page" id="p-vocab">
     <div class="sh"><div><div class="st">Vocabulario de Ejercicios</div><div class="sc">Tipos de tarea usados en el histórico · toca uno para ver sus sesiones</div></div></div>
     <div id="vocab-list"></div>
+  </div>
+
+  <!-- PIZARRA ABP -->
+  <div class="page" id="p-abp">
+
+    <!-- LIBRERÍA DE JUGADAS -->
+    <div id="ab-lib">
+      <div class="sh">
+        <div class="st">Pizarra ABP</div>
+        <div class="sc" id="ab-lib-meta">0 jugadas</div>
+      </div>
+      <div class="ab-bar">
+        <select class="form-control" style="width:auto" onchange="abFiltro('fase',this.value)">
+          <option value="todas">Ofensivas y defensivas</option>
+          <option value="of">Solo ofensivas</option>
+          <option value="def">Solo defensivas</option>
+        </select>
+        <select class="form-control" style="width:auto" id="ab-f-tipo" onchange="abFiltro('tipo',this.value)"></select>
+        <button class="btn btn-primary" onclick="abOpenEditor(null)">+ Nueva jugada</button>
+      </div>
+      <div class="ab-grid" id="ab-grid"></div>
+    </div>
+
+    <!-- EDITOR -->
+    <div id="ab-edit" style="display:none">
+      <div class="sh">
+        <div class="st" id="ab-edit-title">Nueva jugada</div>
+        <div>
+          <button class="btn btn-ghost" onclick="abCloseEditor()">← Volver</button>
+          <button class="btn btn-ghost" onclick="abSave(true)">Guardar como nueva</button>
+          <button class="btn btn-primary" onclick="abSave(false)">✓ Guardar</button>
+        </div>
+      </div>
+
+      <div class="ab-edit-grid">
+        <div class="ab-pitch-wrap">
+          <svg id="ab-pitch" viewBox="0 0 680 1050" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+
+        <div class="ab-panel">
+
+          <div class="ab-box">
+            <div class="ab-box-t">Identificación</div>
+            <div class="ab-row">
+              <div class="ab-fld" style="flex:2">
+                <label class="ab-lbl">Nombre de la jugada</label>
+                <input class="form-control" id="ab-m-nombre" placeholder="Trenecito, Bloqueo al primer palo…"/>
+              </div>
+            </div>
+            <div class="ab-row">
+              <div class="ab-fld">
+                <label class="ab-lbl">Fase</label>
+                <select class="form-control" id="ab-m-fase">
+                  <option value="of">Ofensiva (a favor)</option>
+                  <option value="def">Defensiva (en contra)</option>
+                </select>
+              </div>
+              <div class="ab-fld">
+                <label class="ab-lbl">Tipo</label>
+                <select class="form-control" id="ab-m-tipo"></select>
+              </div>
+            </div>
+            <div class="ab-row">
+              <div class="ab-fld">
+                <label class="ab-lbl">Saque</label>
+                <select class="form-control" id="ab-m-saque">
+                  <option value="">— sin especificar —</option>
+                  <option value="abierto">Abierto</option>
+                  <option value="cerrado">Cerrado</option>
+                  <option value="corto">En corto</option>
+                </select>
+              </div>
+              <div class="ab-fld">
+                <label class="ab-lbl">Señal / marca</label>
+                <input class="form-control" id="ab-m-senal" placeholder="Brazo arriba, balón en la mano…"/>
+              </div>
+            </div>
+          </div>
+
+          <div class="ab-box">
+            <div class="ab-box-t">Jugadores</div>
+            <div class="ab-row">
+              <button class="ab-teamtog" onclick="abToggleTeam('rcp',this)">Racing</button>
+              <button class="ab-teamtog" onclick="abToggleTeam('riv',this)">Rival</button>
+            </div>
+            <div class="ab-row">
+              <div class="ab-fld">
+                <label class="ab-lbl">Colocar Racing</label>
+                <select class="form-control" id="ab-form-rcp" onchange="abApplyForm('rcp',this.value)"></select>
+              </div>
+              <div class="ab-fld">
+                <label class="ab-lbl">Colocar rival</label>
+                <select class="form-control" id="ab-form-riv" onchange="abApplyForm('riv',this.value)"></select>
+              </div>
+            </div>
+            <div class="ab-row">
+              <span class="ab-hint">Arrastra a los jugadores y al balón. <b>Doble clic</b> sobre un jugador para cambiar su etiqueta (Saq, P1, T2, Bloq, Df3…): esas etiquetas son las que se asignarán a los convocados el día del partido.</span>
+            </div>
+          </div>
+
+          <div class="ab-box">
+            <div class="ab-box-t">Dibujo</div>
+            <div class="ab-row" id="ab-toolbar"></div>
+            <div class="ab-row" id="ab-swatches"></div>
+            <div class="ab-row">
+              <button class="btn btn-ghost btn-sm" onclick="abDelSel()">Borrar seleccionado</button>
+              <button class="btn btn-red btn-sm" onclick="abClearDraw()">Vaciar dibujos</button>
+            </div>
+          </div>
+
+          <div class="ab-box">
+            <div class="ab-box-t">Secuencia</div>
+            <div class="ab-row">
+              <button class="btn btn-ghost btn-sm" id="ab-fprev" onclick="abGoFrame(-1)">‹</button>
+              <span class="sc" id="ab-flabel" style="min-width:110px;text-align:center">Sin frames</span>
+              <button class="btn btn-ghost btn-sm" id="ab-fnext" onclick="abGoFrame(1)">›</button>
+              <button class="btn btn-green btn-sm" onclick="abAddFrame()">+ Frame</button>
+              <button class="btn btn-ghost btn-sm" onclick="abUpdFrame()">Actualizar</button>
+              <button class="btn btn-red btn-sm" id="ab-fdel" onclick="abDelFrame()">🗑</button>
+            </div>
+            <div class="ab-row">
+              <button class="btn btn-primary btn-sm" id="ab-fplay" onclick="abPlay()">▶ Animar</button>
+              <button class="ab-spd" onclick="abSetSpeed(1200,this)">Lento</button>
+              <button class="ab-spd on" onclick="abSetSpeed(700,this)">Normal</button>
+              <button class="ab-spd" onclick="abSetSpeed(350,this)">Rápido</button>
+            </div>
+            <div class="ab-row">
+              <label class="ab-check"><input type="checkbox" id="ab-ffinal" onchange="abToggleFinal(this)"/> Este frame es la <b>acción final</b></label>
+            </div>
+            <div class="ab-fstrip" id="ab-fstrip"></div>
+          </div>
+
+          <div class="ab-box">
+            <div class="ab-box-t">Comportamientos y detalles</div>
+            <textarea class="form-control" id="ab-m-comp" rows="5" placeholder="Quién ataca cada zona, quién bloquea, quién queda al rechace, tareas de vigilancia y repliegue…"></textarea>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- DASHBOARD -->
@@ -1471,7 +1674,7 @@ function getWeekKey(d){
 }
 
 /* ── NAVIGATION ── */
-const PAGE_TITLES={'p-register':'Registrar Sesión','p-history':'Historial','p-library':'Librería','p-vocab':'Vocabulario','p-dashboard':'Dashboard','p-trash':'Papelera'};
+const PAGE_TITLES={'p-register':'Registrar Sesión','p-history':'Historial','p-library':'Librería','p-abp':'Pizarra ABP','p-vocab':'Vocabulario','p-dashboard':'Dashboard','p-trash':'Papelera'};
 window.nav=function(id,el){
   document.getElementById('detail-wrap').classList.remove('active');
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1485,6 +1688,7 @@ window.nav=function(id,el){
   document.getElementById('page-title').textContent=PAGE_TITLES[id]||'';
   if(id==='p-history') renderHistory();
   if(id==='p-library') renderLibrary();
+  if(id==='p-abp'){ abStartListener(); window.abCloseEditor(); }
   if(id==='p-vocab') renderVocabPage();
   if(id==='p-dashboard') renderDashboard();
   if(id==='p-trash') renderTrash();
@@ -1526,12 +1730,715 @@ function fmtDate(ds){
   try{return new Date(ds+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short',year:'numeric'});}catch(e){return ds;}
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   PIZARRA ABP · editor vectorial de jugadas a balón parado
+   Guarda JSON en la colección `abpJugadas` (NO imágenes: la jugada se
+   reproduce y se reasigna a jugadores desde Día de Partido).
+   Geometría idéntica a la pizarra táctica del club (campo vertical
+   680x1050). Todo prefijado AB_/ab para no chocar con el resto del módulo.
+   ══════════════════════════════════════════════════════════════════════ */
+const AB_NS = 'http://www.w3.org/2000/svg';
+const AB_FX=20, AB_FY=20, AB_FW=640, AB_FH=1010, AB_CX=340, AB_CY=525;
+const AB_PA_W=379, AB_PA_H=159, AB_PA_X=151;
+const AB_GA_W=172, AB_GA_H=53, AB_GA_X=254;
+const AB_PS_D=106, AB_ARC_R=87, AB_ARC_DX=69, AB_CR=10;
+const AB_GW=69, AB_GX=306;
+
+/* Formaciones base (mismas coordenadas que la pizarra táctica) */
+const AB_FORMS = {
+  "1-4-4-2":   [[50,88],[18,74],[37,74],[63,74],[82,74],[12,56],[37,56],[63,56],[88,56],[35,38],[65,38]],
+  "1-4-3-3":   [[50,88],[18,74],[37,74],[63,74],[82,74],[25,57],[50,57],[75,57],[18,36],[50,30],[82,36]],
+  "1-4-2-3-1": [[50,88],[18,74],[37,74],[63,74],[82,74],[35,63],[65,63],[18,48],[50,48],[82,48],[50,30]],
+  "1-3-5-2":   [[50,88],[25,74],[50,74],[75,74],[10,57],[30,57],[50,57],[70,57],[90,57],[35,38],[65,38]],
+  "1-5-3-2":   [[50,88],[10,74],[28,74],[50,74],[72,74],[90,74],[25,57],[50,57],[75,57],[35,38],[65,38]],
+};
+const AB_ROLES = ["POR","LI","DC","DC","LD","MC","MC","MC","MD","DEL","DEL"];
+
+const AB_TIPOS = [
+  {v:'corner',        t:'Córner'},
+  {v:'falta-lateral', t:'Falta lateral'},
+  {v:'falta-frontal', t:'Falta frontal'},
+  {v:'saque-banda',   t:'Saque de banda'},
+  {v:'penalti',       t:'Penalti'},
+  {v:'barrera',       t:'Barrera'},
+];
+const AB_TIPO_T = Object.fromEntries(AB_TIPOS.map(x=>[x.v,x.t]));
+const AB_COLORS = ['#ffffff','#facc15','#ff3030','#3b82f6','#111111','#22c55e'];
+const AB_TOOLS = [
+  {v:'select',  t:'✥', l:'Mover'},
+  {v:'arrow',   t:'↗', l:'Flecha'},
+  {v:'line',    t:'╱', l:'Línea'},
+  {v:'dashed',  t:'┄', l:'Discontinua'},
+  {v:'rect',    t:'▭', l:'Rectángulo'},
+  {v:'circle',  t:'◯', l:'Elipse'},
+  {v:'text',    t:'T', l:'Texto'},
+];
+
+/* ── utilidades de coordenadas ── */
+const abSx = x => AB_FX + (x/100)*AB_FW;          // % → svg
+const abSy = y => AB_FY + (y/100)*AB_FH;
+const abPx = x => (x-AB_FX)/AB_FW*100;            // svg → %
+const abPy = y => (y-AB_FY)/AB_FH*100;
+const abMirror = pts => pts.map(([x,y])=>[x,100-y]);
+const abLerp = (a,b,t) => a+(b-a)*t;
+const abEase = t => t<.5 ? 2*t*t : -1+(4-2*t)*t;
+function abMk(tag,a={}){ const e=document.createElementNS(AB_NS,tag);
+  for(const [k,v] of Object.entries(a)) e.setAttribute(k,String(v)); return e; }
+
+/* ── estado del editor ── */
+let abJugadas=[];                 // librería cargada de Firestore
+let abUnsub=null;
+let abEditId=null;                // id del doc en edición (null = nueva)
+let abPlayers=[], abBall={x:50,y:50}, abDrawings=[], abSeq=0;
+let abFrames=[], abCurF=-1;
+let abPlaying=false, abRAF=null, abSpeed=700, abAnimFrom=0, abAnimT0=null;
+let abTool='select', abColor='#facc15', abSize=3, abOpac=.92;
+let abDrag=null, abDragDraw=null, abStart=null, abSel=null;
+let abShowRCP=true, abShowRival=true;
+let abFiltroFase='todas', abFiltroTipo='todos';
+
+function abBuildPlayers(form){
+  const home = AB_FORMS[form].map(([x,y],i)=>({
+    id:'h'+i, team:'rcp', num:i+1, x, y, short:AB_ROLES[i]}));
+  const away = abMirror(AB_FORMS[form]).map(([x,y],i)=>({
+    id:'a'+i, team:'riv', num:i+1, x, y, short:AB_ROLES[i]}));
+  return [...home,...away];
+}
+
+/* ══════ CAMPO ══════ */
+function abDrawField(svg){
+  const L='rgba(255,255,255,0.75)', W='2';
+  for(let i=0;i<10;i++) svg.appendChild(abMk('rect',{x:0,y:i*105,width:680,height:105,
+    fill:i%2===0?'rgba(0,0,0,0.07)':'transparent'}));
+  const r=(x,y,w,h)=>svg.appendChild(abMk('rect',{x,y,width:w,height:h,fill:'none',stroke:L,'stroke-width':W}));
+  const c=(cx,cy,r2,f='none')=>svg.appendChild(abMk('circle',{cx,cy,r:r2,fill:f,
+    stroke:f==='none'?L:'none','stroke-width':f==='none'?W:0}));
+  const p=d=>svg.appendChild(abMk('path',{d,fill:'none',stroke:L,'stroke-width':W}));
+  r(AB_FX,AB_FY,AB_FW,AB_FH);
+  p(`M${AB_FX} ${AB_CY}L${AB_FX+AB_FW} ${AB_CY}`);
+  c(AB_CX,AB_CY,AB_ARC_R); c(AB_CX,AB_CY,4,L);
+  p(`M${AB_FX} ${AB_FY+AB_CR} A${AB_CR} ${AB_CR} 0 0 1 ${AB_FX+AB_CR} ${AB_FY}`);
+  p(`M${AB_FX+AB_FW-AB_CR} ${AB_FY} A${AB_CR} ${AB_CR} 0 0 1 ${AB_FX+AB_FW} ${AB_FY+AB_CR}`);
+  p(`M${AB_FX} ${AB_FY+AB_FH-AB_CR} A${AB_CR} ${AB_CR} 0 0 0 ${AB_FX+AB_CR} ${AB_FY+AB_FH}`);
+  p(`M${AB_FX+AB_FW-AB_CR} ${AB_FY+AB_FH} A${AB_CR} ${AB_CR} 0 0 0 ${AB_FX+AB_FW} ${AB_FY+AB_FH-AB_CR}`);
+  r(AB_PA_X,AB_FY,AB_PA_W,AB_PA_H); r(AB_GA_X,AB_FY,AB_GA_W,AB_GA_H); r(AB_GX,AB_FY-20,AB_GW,20);
+  c(AB_CX,AB_FY+AB_PS_D,4,L);
+  p(`M${AB_CX-AB_ARC_DX} ${AB_FY+AB_PA_H} A${AB_ARC_R} ${AB_ARC_R} 0 0 0 ${AB_CX+AB_ARC_DX} ${AB_FY+AB_PA_H}`);
+  r(AB_PA_X,AB_FY+AB_FH-AB_PA_H,AB_PA_W,AB_PA_H);
+  r(AB_GA_X,AB_FY+AB_FH-AB_GA_H,AB_GA_W,AB_GA_H); r(AB_GX,AB_FY+AB_FH,AB_GW,20);
+  c(AB_CX,AB_FY+AB_FH-AB_PS_D,4,L);
+  p(`M${AB_CX-AB_ARC_DX} ${AB_FY+AB_FH-AB_PA_H} A${AB_ARC_R} ${AB_ARC_R} 0 0 1 ${AB_CX+AB_ARC_DX} ${AB_FY+AB_FH-AB_PA_H}`);
+}
+
+/* ══════ DIBUJOS ══════ */
+function abDistSeg(px,py,x1,y1,x2,y2){
+  const dx=x2-x1, dy=y2-y1, l2=dx*dx+dy*dy;
+  if(!l2) return Math.hypot(px-x1,py-y1);
+  const t=Math.max(0,Math.min(1,((px-x1)*dx+(py-y1)*dy)/l2));
+  return Math.hypot(px-(x1+t*dx), py-(y1+t*dy));
+}
+function abHitDraw(d,px,py){
+  const TH=18;
+  if(d.type==='arrow'||d.type==='line'||d.type==='dashed') return abDistSeg(px,py,d.x1,d.y1,d.x2,d.y2)<TH;
+  if(d.type==='rect') return px>=Math.min(d.x1,d.x2)-TH&&px<=Math.max(d.x1,d.x2)+TH&&
+                             py>=Math.min(d.y1,d.y2)-TH&&py<=Math.max(d.y1,d.y2)+TH;
+  if(d.type==='circle'){
+    const rx=Math.abs(d.x2-d.x1)/2+TH, ry=Math.abs(d.y2-d.y1)/2+TH;
+    const cx=(d.x1+d.x2)/2, cy=(d.y1+d.y2)/2;
+    return ((px-cx)/rx)**2+((py-cy)/ry)**2<=1;
+  }
+  if(d.type==='text'){
+    const fs=d.fontSize||26, w=(d.text||'').length*fs*.6+TH;
+    return px>=d.x1-TH&&px<=d.x1+w&&py>=d.y1-fs-TH&&py<=d.y1+TH;
+  }
+  return false;
+}
+function abArrowId(svg,color,opacity){
+  const id='abah_'+color.replace('#','')+'_'+Math.round(opacity*100);
+  let defs=svg.querySelector('defs');
+  if(!defs){ defs=abMk('defs'); svg.insertBefore(defs,svg.firstChild); }
+  if(!defs.querySelector('#'+id)){
+    const m=abMk('marker',{id,markerWidth:10,markerHeight:7,refX:9,refY:3.5,
+      orient:'auto',markerUnits:'strokeWidth'});
+    m.appendChild(abMk('polygon',{points:'0 0,10 3.5,0 7',fill:color,opacity}));
+    defs.appendChild(m);
+  }
+  return id;
+}
+function abDrawEl(svg,d,selId){
+  const base={stroke:d.color,'stroke-width':d.size,fill:'none','stroke-linecap':'round',
+    'stroke-linejoin':'round',opacity:d.opacity,'data-did':d.id};
+  if(d.type==='dashed') base['stroke-dasharray']='9 6';
+  let e;
+  if(d.type==='arrow'||d.type==='line'||d.type==='dashed'){
+    e=abMk('line',{x1:d.x1,y1:d.y1,x2:d.x2,y2:d.y2,...base});
+    if(d.type==='arrow') e.setAttribute('marker-end',`url(#${abArrowId(svg,d.color,d.opacity)})`);
+  }else if(d.type==='rect'){
+    const x=Math.min(d.x1,d.x2), y=Math.min(d.y1,d.y2);
+    e=abMk('rect',{x,y,width:Math.max(1,Math.abs(d.x2-d.x1)),height:Math.max(1,Math.abs(d.y2-d.y1)),rx:2,...base});
+  }else if(d.type==='circle'){
+    e=abMk('ellipse',{cx:(d.x1+d.x2)/2,cy:(d.y1+d.y2)/2,
+      rx:Math.max(1,Math.abs(d.x2-d.x1)/2),ry:Math.max(1,Math.abs(d.y2-d.y1)/2),...base});
+  }else if(d.type==='text'){
+    e=abMk('text',{x:d.x1,y:d.y1,fill:d.color,opacity:d.opacity,'font-size':d.fontSize||26,
+      'font-family':'Barlow Condensed, sans-serif','font-weight':'700','data-did':d.id});
+    e.textContent=d.text||'';
+    if(d.id===selId) e.setAttribute('fill','#60a5fa');
+    return e;
+  }
+  if(e && d.id===selId){
+    e.setAttribute('stroke','#60a5fa');
+    e.setAttribute('stroke-dasharray','5 4');
+  }
+  return e;
+}
+
+/* ══════ RENDER ══════ */
+function abRenderState(svg, ps, bl, dws, selId){
+  svg.innerHTML='';
+  svg.appendChild(abMk('rect',{width:680,height:1050,fill:'#1e7a31'}));
+  abDrawField(svg);
+  ps.forEach(p=>{
+    if(p.team==='rcp' && !abShowRCP) return;
+    if(p.team==='riv' && !abShowRival) return;
+    const g=abMk('g',{transform:`translate(${abSx(p.x)},${abSy(p.y)})`,'data-pid':p.id});
+    const por = p.short==='POR';
+    const col = p.team==='rcp' ? (por?'#f59e0b':'#e8192c') : (por?'#111111':'#6b7280');
+    const stk = p.team==='rcp' ? '#ffffff' : '#1f2937';
+    g.appendChild(abMk('circle',{r:22,fill:col,stroke:stk,'stroke-width':'2.5'}));
+    const t=abMk('text',{y:7,'text-anchor':'middle',fill:'#fff','font-size':'16',
+      'font-weight':'bold','font-family':'monospace'});
+    t.textContent=p.num; g.appendChild(t);
+    const lb=p.short||'', lw=Math.max(lb.length*5.6+10,30);
+    g.appendChild(abMk('rect',{x:-lw/2,y:25,width:lw,height:14,rx:3,fill:'rgba(0,0,0,0.78)'}));
+    const lt=abMk('text',{y:35,'text-anchor':'middle',fill:'#fff','font-size':'9',
+      'font-family':'sans-serif'});
+    lt.textContent=lb; g.appendChild(lt);
+    svg.appendChild(g);
+  });
+  const bg=abMk('g',{transform:`translate(${abSx(bl.x)},${abSy(bl.y)})`,'data-pid':'__ball'});
+  bg.appendChild(abMk('circle',{r:11,fill:'#ffffff',stroke:'#111','stroke-width':'2'}));
+  bg.appendChild(abMk('circle',{r:4,fill:'#111'}));
+  svg.appendChild(bg);
+  const dl=abMk('g');
+  (dws||[]).forEach(d=>{ const el=abDrawEl(svg,d,selId); if(el) dl.appendChild(el); });
+  svg.appendChild(dl);
+  svg.style.cursor = abTool==='select' ? 'default' : 'crosshair';
+}
+function abRender(){
+  const svg=document.getElementById('ab-pitch');
+  if(!svg) return;
+  abRenderState(svg, abPlayers, abBall, abDrawings, abSel);
+}
+
+/* ══════ INTERACCIÓN ══════ */
+function abSvgCoord(e){
+  const svg=document.getElementById('ab-pitch');
+  const pt=svg.createSVGPoint();
+  const src=e.touches&&e.touches.length?e.touches[0]:e;
+  pt.x=src.clientX; pt.y=src.clientY;
+  try{ return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+  catch(err){ return {x:0,y:0}; }
+}
+function abSvgPct(e){
+  const c=abSvgCoord(e);
+  // 1..99 y no 3..97: en un córner el lanzador y el balón van literalmente
+  // sobre la esquina del campo.
+  return { x:Math.min(99,Math.max(1,abPx(c.x))), y:Math.min(99,Math.max(1,abPy(c.y))) };
+}
+function abDown(e){
+  if(abPlaying) abStopAnim();
+  const c=abSvgCoord(e);
+  if(abTool==='select'){
+    // 1) jugador o balón
+    const hitPlayer = abPlayers.slice().reverse().find(p=>{
+      if(p.team==='rcp'&&!abShowRCP) return false;
+      if(p.team==='riv'&&!abShowRival) return false;
+      return Math.hypot(c.x-abSx(p.x), c.y-abSy(p.y))<26;
+    });
+    if(hitPlayer){ abDrag={type:'player',id:hitPlayer.id}; abSel=null; e.preventDefault(); abRender(); return; }
+    if(Math.hypot(c.x-abSx(abBall.x), c.y-abSy(abBall.y))<24){
+      abDrag={type:'ball'}; abSel=null; e.preventDefault(); abRender(); return; }
+    // 2) dibujo
+    const hitD=[...abDrawings].reverse().find(d=>abHitDraw(d,c.x,c.y));
+    abSel = hitD ? hitD.id : null;
+    if(hitD){ abDragDraw={id:hitD.id, ox:c.x, oy:c.y,
+      x1:hitD.x1, y1:hitD.y1, x2:hitD.x2, y2:hitD.y2}; e.preventDefault(); }
+    abRender();
+    return;
+  }
+  // herramienta de dibujo
+  e.preventDefault();
+  if(abTool==='text'){
+    const txt=prompt('Texto a mostrar en el campo:');
+    if(txt && txt.trim()){
+      abDrawings.push({id:++abSeq,type:'text',x1:c.x,y1:c.y,x2:c.x,y2:c.y,
+        color:abColor,size:abSize,opacity:abOpac,text:txt.trim(),fontSize:26});
+      abRender();
+    }
+    return;
+  }
+  abStart={x:c.x,y:c.y};
+  abDrawings.push({id:++abSeq,type:abTool,x1:c.x,y1:c.y,x2:c.x,y2:c.y,
+    color:abColor,size:abSize,opacity:abOpac});
+  abRender();
+}
+function abMove(e){
+  if(abDrag){
+    e.preventDefault();
+    const p=abSvgPct(e);
+    if(abDrag.type==='ball') abBall={x:p.x,y:p.y};
+    else abPlayers=abPlayers.map(pl=>pl.id===abDrag.id?{...pl,x:p.x,y:p.y}:pl);
+    abRender(); return;
+  }
+  if(abDragDraw){
+    e.preventDefault();
+    const c=abSvgCoord(e);
+    const dx=c.x-abDragDraw.ox, dy=c.y-abDragDraw.oy;
+    abDrawings=abDrawings.map(d=>d.id!==abDragDraw.id?d:{...d,
+      x1:abDragDraw.x1+dx, y1:abDragDraw.y1+dy,
+      x2:abDragDraw.x2+dx, y2:abDragDraw.y2+dy});
+    abRender(); return;
+  }
+  if(abStart){
+    e.preventDefault();
+    const c=abSvgCoord(e);
+    const last=abDrawings[abDrawings.length-1];
+    if(last){ last.x2=c.x; last.y2=c.y; abRender(); }
+  }
+}
+function abUp(){
+  if(abStart){
+    const last=abDrawings[abDrawings.length-1];
+    // descarta trazos accidentales de longitud casi nula
+    if(last && Math.hypot(last.x2-last.x1,last.y2-last.y1)<8) abDrawings.pop();
+    abStart=null; abRender();
+  }
+  abDrag=null; abDragDraw=null;
+}
+
+/* ══════ FRAMES ══════ */
+function abSnapshot(){
+  return {
+    players: abPlayers.map(p=>({...p})),
+    ball: {...abBall},
+    drawings: abDrawings.map(d=>({...d})),
+    final:false, nota:''
+  };
+}
+function abLoadFrame(i){
+  if(i<0||i>=abFrames.length) return;
+  abCurF=i;
+  const f=abFrames[i];
+  abPlayers=f.players.map(p=>({...p}));
+  abBall={...f.ball};
+  abDrawings=(f.drawings||[]).map(d=>({...d}));
+  abSel=null; abFramesUI(); abRender();
+}
+window.abAddFrame=function(){
+  abFrames.push(abSnapshot());
+  abCurF=abFrames.length-1;
+  abFramesUI();
+  showToast('Frame '+abFrames.length+' añadido','ok');
+};
+window.abUpdFrame=function(){
+  if(abCurF<0){ showToast('No hay frame seleccionado','err'); return; }
+  const prev=abFrames[abCurF];
+  abFrames[abCurF]=Object.assign(abSnapshot(),{final:prev.final,nota:prev.nota});
+  showToast('Frame '+(abCurF+1)+' actualizado','ok');
+};
+window.abDelFrame=function(){
+  if(abCurF<0) return;
+  abFrames.splice(abCurF,1);
+  abCurF=Math.min(abCurF,abFrames.length-1);
+  if(abCurF>=0) abLoadFrame(abCurF); else abFramesUI();
+  showToast('Frame eliminado');
+};
+window.abGoFrame=function(delta){
+  abStopAnim();
+  if(!abFrames.length) return;
+  let i=abCurF<0?0:abCurF+delta;
+  i=Math.max(0,Math.min(abFrames.length-1,i));
+  abLoadFrame(i);
+};
+window.abToggleFinal=function(chk){
+  if(abCurF<0){ chk.checked=false; showToast('Selecciona un frame primero','err'); return; }
+  abFrames.forEach((f,i)=>{ f.final = chk.checked && i===abCurF; });
+  abFramesUI();
+};
+function abFramesUI(){
+  const lbl=document.getElementById('ab-flabel');
+  if(!lbl) return;
+  lbl.textContent = abFrames.length
+    ? (abCurF>=0 ? `Frame ${abCurF+1} / ${abFrames.length}` : `· / ${abFrames.length}`)
+    : 'Sin frames';
+  const has=abFrames.length>=2;
+  ['ab-fprev','ab-fnext','ab-fplay'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.disabled=!has;
+  });
+  const dl=document.getElementById('ab-fdel'); if(dl) dl.disabled=abFrames.length===0;
+  const fin=document.getElementById('ab-ffinal');
+  if(fin) fin.checked = abCurF>=0 && !!abFrames[abCurF] && !!abFrames[abCurF].final;
+  const strip=document.getElementById('ab-fstrip');
+  if(strip){
+    strip.innerHTML = abFrames.map((f,i)=>
+      `<button class="ab-fchip ${i===abCurF?'on':''}" onclick="abJumpFrame(${i})">${i+1}${f.final?' ★':''}</button>`
+    ).join('') || '<span class="ab-hint">Coloca a los jugadores y pulsa “+ Frame” para empezar la secuencia.</span>';
+  }
+}
+window.abJumpFrame=function(i){ abStopAnim(); abLoadFrame(i); };
+
+function abInterp(fa,fb,t){
+  const e=abEase(t);
+  const ps=fa.players.map(p=>{
+    const q=fb.players.find(q2=>q2.id===p.id);
+    return q ? {...p, x:abLerp(p.x,q.x,e), y:abLerp(p.y,q.y,e)} : {...p};
+  });
+  return { players:ps, ball:{ x:abLerp(fa.ball.x,fb.ball.x,e), y:abLerp(fa.ball.y,fb.ball.y,e) } };
+}
+window.abPlay=function(){
+  if(abPlaying){ abStopAnim(); return; }
+  if(abFrames.length<2) return;
+  abPlaying=true;
+  const btn=document.getElementById('ab-fplay');
+  if(btn) btn.textContent='⏹ Parar';
+  abAnimFrom = abCurF>=0 ? abCurF : 0;
+  abAnimT0=null;
+  abRAF=requestAnimationFrame(abStep);
+};
+function abStep(ts){
+  if(!abPlaying) return;
+  if(!abAnimT0) abAnimT0=ts;
+  const t=Math.min((ts-abAnimT0)/abSpeed,1);
+  const next=abAnimFrom+1;
+  if(next>=abFrames.length){
+    // se detiene en el último frame en vez de dar la vuelta
+    abCurF=abFrames.length-1; abStopAnim(); return;
+  }
+  const it=abInterp(abFrames[abAnimFrom],abFrames[next],t);
+  const svg=document.getElementById('ab-pitch');
+  if(svg) abRenderState(svg,it.players,it.ball,abFrames[abAnimFrom].drawings||[],null);
+  if(t>=1){ abAnimFrom=next; abCurF=next; abAnimT0=null; abFramesUI(); }
+  abRAF=requestAnimationFrame(abStep);
+}
+function abStopAnim(){
+  const wasPlaying=abPlaying;
+  abPlaying=false;
+  if(abRAF){ cancelAnimationFrame(abRAF); abRAF=null; }
+  const btn=document.getElementById('ab-fplay');
+  if(btn) btn.textContent='▶ Animar';
+  // Durante la animación se pinta un estado interpolado que no está en
+  // abPlayers. Al parar, se recarga el frame real para que lo que se ve
+  // coincida con lo que se guardaría.
+  if(wasPlaying && abCurF>=0 && abFrames[abCurF]) abLoadFrame(abCurF);
+}
+window.abSetSpeed=function(ms,el){
+  abSpeed=ms;
+  document.querySelectorAll('.ab-spd').forEach(b=>b.classList.remove('on'));
+  if(el) el.classList.add('on');
+};
+
+/* ══════ HERRAMIENTAS ══════ */
+window.abSetTool=function(t,el){
+  abTool=t; abSel=null;
+  document.querySelectorAll('.ab-tool').forEach(b=>b.classList.remove('on'));
+  if(el) el.classList.add('on');
+  abRender();
+};
+window.abSetColor=function(c,el){
+  abColor=c;
+  document.querySelectorAll('.ab-sw').forEach(b=>b.classList.remove('on'));
+  if(el) el.classList.add('on');
+  if(abSel!=null){
+    abDrawings=abDrawings.map(d=>d.id===abSel?{...d,color:c}:d);
+    abRender();
+  }
+};
+window.abDelSel=function(){
+  if(abSel==null){ showToast('Selecciona un dibujo con la herramienta Mover','err'); return; }
+  abDrawings=abDrawings.filter(d=>d.id!==abSel);
+  abSel=null; abRender();
+};
+window.abClearDraw=function(){
+  if(!abDrawings.length) return;
+  if(!confirm('¿Borrar todos los dibujos de este frame?')) return;
+  abDrawings=[]; abSel=null; abRender();
+};
+window.abToggleTeam=function(team,el){
+  if(team==='rcp') abShowRCP=!abShowRCP; else abShowRival=!abShowRival;
+  if(el) el.classList.toggle('off', team==='rcp' ? !abShowRCP : !abShowRival);
+  abRender();
+};
+window.abApplyForm=function(team,fk){
+  if(!AB_FORMS[fk]) return;
+  const pts = team==='rcp' ? AB_FORMS[fk] : abMirror(AB_FORMS[fk]);
+  let i=0;
+  abPlayers=abPlayers.map(p=>{
+    if(p.team!==team) return p;
+    const idx=i++;
+    return {...p, x:pts[idx][0], y:pts[idx][1], short:AB_ROLES[idx]};
+  });
+  abRender();
+};
+function abDblClick(e){
+  const c=abSvgCoord(e);
+  const p=abPlayers.slice().reverse().find(pl=>{
+    if(pl.team==='rcp'&&!abShowRCP) return false;
+    if(pl.team==='riv'&&!abShowRival) return false;
+    return Math.hypot(c.x-abSx(pl.x), c.y-abSy(pl.y))<26;
+  });
+  if(!p) return;
+  const lbl=prompt(`Etiqueta de la posición (${p.team==='rcp'?'Racing':'rival'} · dorsal ${p.num}).\nEjemplos: Saq, Ay, P1, P2, T1, Bloq, Df3, Rechace`, p.short||'');
+  if(lbl===null) return;
+  p.short=lbl.trim().slice(0,8);
+  abRender();
+}
+
+/* ══════ SERIALIZACIÓN ══════ */
+function abSerializeFrames(){
+  const src = abFrames.length ? abFrames : [abSnapshot()];
+  return src.map(f=>({
+    final: !!f.final,
+    nota: f.nota||'',
+    ball: { x:+f.ball.x.toFixed(2), y:+f.ball.y.toFixed(2) },
+    players: f.players.map(p=>({ id:p.id, team:p.team, num:p.num,
+      x:+p.x.toFixed(2), y:+p.y.toFixed(2), short:p.short||'' })),
+    // los dibujos se guardan en % del campo: independientes del tamaño de render
+    drawings: (f.drawings||[]).map(d=>({
+      type:d.type, color:d.color, size:d.size, opacity:d.opacity,
+      x1p:+abPx(d.x1).toFixed(2), y1p:+abPy(d.y1).toFixed(2),
+      x2p:+abPx(d.x2).toFixed(2), y2p:+abPy(d.y2).toFixed(2),
+      ...(d.type==='text'?{text:d.text||'',fontSize:d.fontSize||26}:{})
+    }))
+  }));
+}
+function abDeserializeFrames(fr){
+  return (fr||[]).map(f=>({
+    final: !!f.final,
+    nota: f.nota||'',
+    ball: {...f.ball},
+    players: (f.players||[]).map(p=>({...p})),
+    drawings: (f.drawings||[]).map(d=>({
+      ...d, id:++abSeq,
+      x1:abSx(d.x1p), y1:abSy(d.y1p),
+      x2:abSx(d.x2p!=null?d.x2p:d.x1p), y2:abSy(d.y2p!=null?d.y2p:d.y1p)
+    }))
+  }));
+}
+
+/* ══════ LIBRERÍA (Firestore) ══════ */
+function abStartListener(){
+  if(abUnsub) return;
+  try{
+    abUnsub = onSnapshot(collection(db,'abpJugadas'), snap=>{
+      abJugadas = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      abJugadas.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
+      abRenderLib();
+    }, err=>console.error('[abpJugadas]',err));
+  }catch(e){ console.error('[abpJugadas]',e); }
+}
+function abMiniSvg(j){
+  const f=(j.frames&&j.frames[0])||null;
+  if(!f) return '<div class="ab-mini-empty">sin datos</div>';
+  const dot=(p)=>{
+    const col = p.team==='rcp' ? (p.short==='POR'?'#f59e0b':'#e8192c') : (p.short==='POR'?'#111':'#6b7280');
+    return `<circle cx="${abSx(p.x).toFixed(1)}" cy="${abSy(p.y).toFixed(1)}" r="17" fill="${col}" stroke="#fff" stroke-width="3"/>`;
+  };
+  const line=(d)=>{
+    if(d.type==='text') return '';
+    const x1=abSx(d.x1p),y1=abSy(d.y1p),x2=abSx(d.x2p),y2=abSy(d.y2p);
+    if(d.type==='rect'||d.type==='circle') return '';
+    return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${d.color}" stroke-width="4" opacity=".9"${d.type==='dashed'?' stroke-dasharray="10 7"':''}/>`;
+  };
+  return `<svg viewBox="0 0 680 1050" preserveAspectRatio="xMidYMid meet">
+    <rect width="680" height="1050" fill="#1e7a31"/>
+    <rect x="${AB_FX}" y="${AB_FY}" width="${AB_FW}" height="${AB_FH}" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="3"/>
+    <line x1="${AB_FX}" y1="${AB_CY}" x2="${AB_FX+AB_FW}" y2="${AB_CY}" stroke="rgba(255,255,255,.7)" stroke-width="3"/>
+    <circle cx="${AB_CX}" cy="${AB_CY}" r="${AB_ARC_R}" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="3"/>
+    <rect x="${AB_PA_X}" y="${AB_FY}" width="${AB_PA_W}" height="${AB_PA_H}" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="3"/>
+    <rect x="${AB_PA_X}" y="${AB_FY+AB_FH-AB_PA_H}" width="${AB_PA_W}" height="${AB_PA_H}" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="3"/>
+    ${(f.drawings||[]).map(line).join('')}
+    ${(f.players||[]).map(dot).join('')}
+    <circle cx="${abSx(f.ball.x).toFixed(1)}" cy="${abSy(f.ball.y).toFixed(1)}" r="9" fill="#fff" stroke="#111" stroke-width="2"/>
+  </svg>`;
+}
+function abRenderLib(){
+  const grid=document.getElementById('ab-grid');
+  if(!grid) return;
+  const list=abJugadas.filter(j=>
+    (abFiltroFase==='todas'||j.fase===abFiltroFase) &&
+    (abFiltroTipo==='todos'||j.tipo===abFiltroTipo));
+  const meta=document.getElementById('ab-lib-meta');
+  if(meta) meta.textContent = `${list.length} de ${abJugadas.length} jugadas`;
+  ['nb-abp','nb-abp-m'].forEach(id=>{
+    const b=document.getElementById(id); if(b) b.textContent=abJugadas.length;
+  });
+  if(!list.length){
+    grid.innerHTML=`<div class="ab-empty">
+      <div class="ab-empty-t">${abJugadas.length?'Ningún resultado con estos filtros':'Todavía no hay jugadas guardadas'}</div>
+      <div class="ab-empty-s">Las jugadas se guardan como datos vectoriales: se pueden reproducir, editar y asignar a los convocados desde Día de Partido.</div>
+    </div>`;
+    return;
+  }
+  grid.innerHTML=list.map(j=>`
+    <div class="ab-card">
+      <div class="ab-mini" onclick="abOpenEditor('${j.id}')">${abMiniSvg(j)}</div>
+      <div class="ab-card-b">
+        <div class="ab-card-n">${j.nombre||'(sin nombre)'}</div>
+        <div class="ab-card-tags">
+          <span class="ab-tag ${j.fase==='of'?'of':'def'}">${j.fase==='of'?'Ofensiva':'Defensiva'}</span>
+          <span class="ab-tag">${AB_TIPO_T[j.tipo]||j.tipo||'—'}</span>
+          ${j.saque?`<span class="ab-tag">${j.saque}</span>`:''}
+          <span class="ab-tag mono">${(j.frames||[]).length} fr</span>
+        </div>
+        ${j.senal?`<div class="ab-card-s">Señal: ${j.senal}</div>`:''}
+        <div class="ab-card-f">
+          <span class="ab-card-by">${j.updatedBy||j.createdBy||'—'}</span>
+          <span>
+            <button class="btn btn-ghost btn-sm" onclick="abOpenEditor('${j.id}')">Editar</button>
+            <button class="btn btn-red btn-sm" onclick="abDelete('${j.id}')">🗑</button>
+          </span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+window.abFiltro=function(campo,val){
+  if(campo==='fase') abFiltroFase=val; else abFiltroTipo=val;
+  abRenderLib();
+};
+
+/* ══════ EDITOR: abrir / cerrar / guardar ══════ */
+function abSetMetaFields(j){
+  document.getElementById('ab-m-nombre').value = j?j.nombre||'':'';
+  document.getElementById('ab-m-fase').value   = j?j.fase||'of':'of';
+  document.getElementById('ab-m-tipo').value   = j?j.tipo||'corner':'corner';
+  document.getElementById('ab-m-saque').value  = j?j.saque||'':'';
+  document.getElementById('ab-m-senal').value  = j?j.senal||'':'';
+  document.getElementById('ab-m-comp').value   = j?j.comportamientos||'':'';
+}
+window.abOpenEditor=function(id){
+  abStopAnim();
+  abEditId = id||null;
+  abSel=null; abTool='select';
+  document.querySelectorAll('.ab-tool').forEach(b=>b.classList.toggle('on',b.dataset.tool==='select'));
+  abShowRCP=true; abShowRival=true;
+  document.querySelectorAll('.ab-teamtog').forEach(b=>b.classList.remove('off'));
+  if(id){
+    const j=abJugadas.find(x=>x.id===id);
+    if(!j){ showToast('No encuentro esa jugada','err'); return; }
+    abSetMetaFields(j);
+    abFrames=abDeserializeFrames(j.frames);
+    if(abFrames.length){ abCurF=0; const f=abFrames[0];
+      abPlayers=f.players.map(p=>({...p})); abBall={...f.ball};
+      abDrawings=f.drawings.map(d=>({...d}));
+    }else{
+      abCurF=-1; abPlayers=abBuildPlayers('1-4-4-2'); abBall={x:50,y:50}; abDrawings=[];
+    }
+  }else{
+    abSetMetaFields(null);
+    abFrames=[]; abCurF=-1;
+    abPlayers=abBuildPlayers('1-4-4-2'); abBall={x:50,y:50}; abDrawings=[];
+  }
+  document.getElementById('ab-lib').style.display='none';
+  document.getElementById('ab-edit').style.display='block';
+  document.getElementById('ab-edit-title').textContent = id?'Editar jugada':'Nueva jugada';
+  document.getElementById('page-title').textContent = 'Pizarra ABP · '+(id?'editar':'nueva');
+  abFramesUI(); abRender();
+};
+window.abCloseEditor=function(){
+  abStopAnim();
+  document.getElementById('ab-edit').style.display='none';
+  document.getElementById('ab-lib').style.display='block';
+  document.getElementById('page-title').textContent = PAGE_TITLES['p-abp'];
+  abRenderLib();
+};
+window.abSave=async function(comoNueva){
+  if(!currentUser){ showToast('Selecciona tu usuario primero','err'); openModal('modal-user'); return; }
+  const nombre=document.getElementById('ab-m-nombre').value.trim();
+  if(!nombre){ showToast('Ponle un nombre a la jugada','err'); return; }
+  abStopAnim();
+  // Lo que está en pantalla es el frame seleccionado: se vuelca antes de
+  // serializar para que no se pierdan los últimos retoques sin pulsar
+  // "Actualizar frame".
+  if(abCurF>=0 && abFrames[abCurF]){
+    const prev=abFrames[abCurF];
+    abFrames[abCurF]=Object.assign(abSnapshot(),{final:prev.final,nota:prev.nota});
+  }
+  const payload={
+    nombre,
+    fase: document.getElementById('ab-m-fase').value,
+    tipo: document.getElementById('ab-m-tipo').value,
+    saque: document.getElementById('ab-m-saque').value,
+    senal: document.getElementById('ab-m-senal').value.trim(),
+    comportamientos: document.getElementById('ab-m-comp').value.trim(),
+    frames: abSerializeFrames(),
+    temporada: '2026-27',
+    updatedBy: currentUser,
+    updatedAt: serverTimestamp()
+  };
+  try{
+    if(abEditId && !comoNueva){
+      await updateDoc(doc(db,'abpJugadas',abEditId), payload);
+      showToast('Jugada actualizada','ok');
+    }else{
+      const ref=await addDoc(collection(db,'abpJugadas'),
+        {...payload, createdBy:currentUser, createdAt:serverTimestamp()});
+      abEditId=ref.id;
+      showToast('Jugada guardada','ok');
+    }
+    window.abCloseEditor();
+  }catch(e){
+    console.error('[abSave]',e);
+    showToast('No se pudo guardar — revisa la conexión','err');
+  }
+};
+window.abDelete=async function(id){
+  const j=abJugadas.find(x=>x.id===id);
+  if(!confirm(`¿Eliminar la jugada "${j?j.nombre:''}"? No se puede deshacer.`)) return;
+  try{ await deleteDoc(doc(db,'abpJugadas',id)); showToast('Jugada eliminada'); }
+  catch(e){ console.error('[abDelete]',e); showToast('No se pudo eliminar','err'); }
+};
+
+/* ══════ MONTAJE DE LA UI ══════ */
+function abBuildUI(){
+  const tb=document.getElementById('ab-toolbar');
+  if(tb) tb.innerHTML = AB_TOOLS.map(t=>
+    `<button class="ab-tool ${t.v==='select'?'on':''}" data-tool="${t.v}" title="${t.l}" onclick="abSetTool('${t.v}',this)">${t.t}</button>`
+  ).join('');
+  const sw=document.getElementById('ab-swatches');
+  if(sw) sw.innerHTML = AB_COLORS.map(c=>
+    `<button class="ab-sw ${c===abColor?'on':''}" style="background:${c}" onclick="abSetColor('${c}',this)"></button>`
+  ).join('');
+  const ti=document.getElementById('ab-m-tipo');
+  if(ti) ti.innerHTML = AB_TIPOS.map(t=>`<option value="${t.v}">${t.t}</option>`).join('');
+  const ft=document.getElementById('ab-f-tipo');
+  if(ft) ft.innerHTML = '<option value="todos">Todos los tipos</option>'+
+    AB_TIPOS.map(t=>`<option value="${t.v}">${t.t}</option>`).join('');
+  const fs=document.getElementById('ab-form-rcp');
+  const fs2=document.getElementById('ab-form-riv');
+  const opts=Object.keys(AB_FORMS).map(k=>`<option value="${k}">${k}</option>`).join('');
+  if(fs) fs.innerHTML=opts;
+  if(fs2) fs2.innerHTML=opts;
+  const svg=document.getElementById('ab-pitch');
+  if(svg){
+    svg.addEventListener('mousedown',abDown);
+    svg.addEventListener('touchstart',abDown,{passive:false});
+    svg.addEventListener('dblclick',abDblClick);
+    window.addEventListener('mousemove',abMove);
+    window.addEventListener('touchmove',abMove,{passive:false});
+    window.addEventListener('mouseup',abUp);
+    window.addEventListener('touchend',abUp);
+  }
+  abFramesUI();
+}
+
 /* ── INIT ── */
 document.getElementById('reg-date-lbl').textContent=new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
 document.getElementById('f-fecha').value=new Date().toISOString().slice(0,10);
 updateUserUI();
 if(!currentUser) setTimeout(()=>openModal('modal-user'),500);
 setupCanvasEvents();
+abBuildUI();
 renderTaskForms();
 startListeners();
 loadTags();
