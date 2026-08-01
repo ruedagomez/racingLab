@@ -305,11 +305,11 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
 /* ══ PIZARRA ABP ══ */
 .ab-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
 .ab-bar select{max-width:180px;}
-.ab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;}
+.ab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
 .ab-card{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;overflow:hidden;
   transition:border-color .18s,box-shadow .18s;animation:fadeUp .25s both;}
 .ab-card:hover{border-color:var(--r3);box-shadow:0 3px 12px rgba(0,0,0,.07);}
-.ab-mini{background:#1e7a31;cursor:pointer;aspect-ratio:68/105;overflow:hidden;display:block;}
+.ab-mini{background:#1e7a31;cursor:pointer;aspect-ratio:680/565;overflow:hidden;display:block;}
 .ab-mini svg{width:100%;height:100%;display:block;}
 .ab-mini-empty{color:rgba(255,255,255,.6);font-size:11px;display:flex;align-items:center;justify-content:center;height:100%;}
 .ab-card-b{padding:11px 12px 10px;}
@@ -328,7 +328,7 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
 .ab-empty-t{font-family:'Bebas Neue',sans-serif;font-size:17px;color:var(--mid);letter-spacing:.5px;}
 .ab-empty-s{font-size:12.5px;max-width:520px;margin:8px auto 0;line-height:1.5;}
 /* editor */
-.ab-edit-grid{display:grid;grid-template-columns:minmax(280px,440px) 1fr;gap:18px;align-items:start;}
+.ab-edit-grid{display:grid;grid-template-columns:minmax(300px,560px) 1fr;gap:18px;align-items:start;}
 .ab-pitch-wrap{background:var(--blk);border-radius:8px;padding:10px;position:sticky;top:0;}
 #ab-pitch{width:100%;height:auto;display:block;border-radius:4px;touch-action:none;user-select:none;}
 .ab-panel{display:flex;flex-direction:column;gap:14px;}
@@ -360,7 +360,7 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
 .ab-check input{width:15px;height:15px;accent-color:var(--r);}
 @media(max-width:900px){
   .ab-edit-grid{grid-template-columns:1fr;}
-  .ab-pitch-wrap{position:static;max-width:440px;margin:0 auto;}
+  .ab-pitch-wrap{position:static;max-width:560px;margin:0 auto;}
 }
 </style>
 </head>
@@ -568,7 +568,7 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
 
       <div class="ab-edit-grid">
         <div class="ab-pitch-wrap">
-          <svg id="ab-pitch" viewBox="0 0 680 1050" xmlns="http://www.w3.org/2000/svg"></svg>
+          <svg id="ab-pitch" viewBox="0 0 680 565" xmlns="http://www.w3.org/2000/svg"></svg>
         </div>
 
         <div class="ab-panel">
@@ -619,16 +619,20 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
             </div>
             <div class="ab-row">
               <div class="ab-fld">
-                <label class="ab-lbl">Colocar Racing</label>
-                <select class="form-control" id="ab-form-rcp" onchange="abApplyForm('rcp',this.value)"></select>
+                <label class="ab-lbl">Fichas del Racing</label>
+                <select class="form-control" id="ab-n-rcp" onchange="abSetCount('rcp',this.value)"></select>
               </div>
               <div class="ab-fld">
-                <label class="ab-lbl">Colocar rival</label>
-                <select class="form-control" id="ab-form-riv" onchange="abApplyForm('riv',this.value)"></select>
+                <label class="ab-lbl">Fichas del rival</label>
+                <select class="form-control" id="ab-n-riv" onchange="abSetCount('riv',this.value)"></select>
               </div>
             </div>
             <div class="ab-row">
-              <span class="ab-hint">Arrastra a los jugadores y al balón. <b>Doble clic</b> sobre un jugador para cambiar su etiqueta (Saq, P1, T2, Bloq, Df3…): esas etiquetas son las que se asignarán a los convocados el día del partido.</span>
+              <button class="btn btn-ghost btn-sm" onclick="abFila('rcp')">Alinear Racing</button>
+              <button class="btn btn-ghost btn-sm" onclick="abFila('riv')">Alinear rival</button>
+            </div>
+            <div class="ab-row">
+              <span class="ab-hint">Se trabaja sobre <b>media pista</b>: línea de fondo arriba, medio campo abajo. Arrastra jugadores y balón. <b>Doble clic</b> sobre un jugador para ponerle etiqueta (Saq, P1, T2, Bloq, Df3…): esas etiquetas son las que se asignarán a los convocados el día del partido.</span>
             </div>
           </div>
 
@@ -1734,25 +1738,44 @@ function fmtDate(ds){
    PIZARRA ABP · editor vectorial de jugadas a balón parado
    Guarda JSON en la colección `abpJugadas` (NO imágenes: la jugada se
    reproduce y se reasigna a jugadores desde Día de Partido).
-   Geometría idéntica a la pizarra táctica del club (campo vertical
-   680x1050). Todo prefijado AB_/ab para no chocar con el resto del módulo.
+
+   GEOMETRÍA: MEDIO CAMPO (línea de fondo arriba, línea de medio campo
+   abajo). Las coordenadas de jugadores, balón y dibujos van en % de ESE
+   medio campo: y=0 es la línea de fondo y y=100 la del centro. Al
+   trabajar sobre la mitad, cada metro real ocupa el doble de pantalla y
+   los recorridos de la jugada se dibujan con mucho más detalle.
+   Los documentos llevan `geometria:'medio-campo-v1'` para que quien los
+   lea (Día de Partido, PDF) sepa cómo interpretarlos.
+   Todo prefijado AB_/ab para no chocar con el resto del módulo.
    ══════════════════════════════════════════════════════════════════════ */
 const AB_NS = 'http://www.w3.org/2000/svg';
-const AB_FX=20, AB_FY=20, AB_FW=640, AB_FH=1010, AB_CX=340, AB_CY=525;
-const AB_PA_W=379, AB_PA_H=159, AB_PA_X=151;
-const AB_GA_W=172, AB_GA_H=53, AB_GA_X=254;
+const AB_GEO = 'medio-campo-v1';
+const AB_VBW=680, AB_VBH=565;
+const AB_FX=20, AB_FY=30, AB_FW=640, AB_FH=505;   // 68m x 52,5m
+const AB_CX=AB_FX+AB_FW/2;                         // eje del campo
+const AB_MID=AB_FY+AB_FH;                          // línea de medio campo
+const AB_PA_W=379, AB_PA_H=159;                    // área grande 40,3 x 16,5 m
+const AB_GA_W=172, AB_GA_H=53;                     // área pequeña 18,3 x 5,5 m
+const AB_GW=69;                                    // portería 7,32 m
+const AB_PA_X=AB_CX-AB_PA_W/2;                     // centradas por cálculo:
+const AB_GA_X=AB_CX-AB_GA_W/2;                     // el original las dejaba
+const AB_GX=AB_CX-AB_GW/2;                         // media unidad descentradas
 const AB_PS_D=106, AB_ARC_R=87, AB_ARC_DX=69, AB_CR=10;
-const AB_GW=69, AB_GX=306;
+const AB_PR=17;                                    // radio del jugador
 
-/* Formaciones base (mismas coordenadas que la pizarra táctica) */
-const AB_FORMS = {
-  "1-4-4-2":   [[50,88],[18,74],[37,74],[63,74],[82,74],[12,56],[37,56],[63,56],[88,56],[35,38],[65,38]],
-  "1-4-3-3":   [[50,88],[18,74],[37,74],[63,74],[82,74],[25,57],[50,57],[75,57],[18,36],[50,30],[82,36]],
-  "1-4-2-3-1": [[50,88],[18,74],[37,74],[63,74],[82,74],[35,63],[65,63],[18,48],[50,48],[82,48],[50,30]],
-  "1-3-5-2":   [[50,88],[25,74],[50,74],[75,74],[10,57],[30,57],[50,57],[70,57],[90,57],[35,38],[65,38]],
-  "1-5-3-2":   [[50,88],[10,74],[28,74],[50,74],[72,74],[90,74],[25,57],[50,57],[75,57],[35,38],[65,38]],
-};
-const AB_ROLES = ["POR","LI","DC","DC","LD","MC","MC","MC","MD","DEL","DEL"];
+/* Colocación de partida: dos filas neutras cerca del centro del campo.
+   No se imponen colocaciones tácticas: la jugada la dibuja el cuerpo
+   técnico arrastrando desde aquí. */
+const AB_MAX=11;
+function abFila_(team, n){
+  const y = team==='rcp' ? 88 : 96;
+  const arr=[];
+  for(let i=0;i<n;i++){
+    const x = n===1 ? 50 : 8 + (84*i)/(n-1);
+    arr.push({ id:(team==='rcp'?'h':'a')+i, team, num:i+1, x:+x.toFixed(2), y, short:'' });
+  }
+  return arr;
+}
 
 const AB_TIPOS = [
   {v:'corner',        t:'Córner'},
@@ -1779,7 +1802,6 @@ const abSx = x => AB_FX + (x/100)*AB_FW;          // % → svg
 const abSy = y => AB_FY + (y/100)*AB_FH;
 const abPx = x => (x-AB_FX)/AB_FW*100;            // svg → %
 const abPy = y => (y-AB_FY)/AB_FH*100;
-const abMirror = pts => pts.map(([x,y])=>[x,100-y]);
 const abLerp = (a,b,t) => a+(b-a)*t;
 const abEase = t => t<.5 ? 2*t*t : -1+(4-2*t)*t;
 function abMk(tag,a={}){ const e=document.createElementNS(AB_NS,tag);
@@ -1795,39 +1817,38 @@ let abPlaying=false, abRAF=null, abSpeed=700, abAnimFrom=0, abAnimT0=null;
 let abTool='select', abColor='#facc15', abSize=3, abOpac=.92;
 let abDrag=null, abDragDraw=null, abStart=null, abSel=null;
 let abShowRCP=true, abShowRival=true;
+let abNRcp=AB_MAX, abNRiv=AB_MAX;
 let abFiltroFase='todas', abFiltroTipo='todos';
 
-function abBuildPlayers(form){
-  const home = AB_FORMS[form].map(([x,y],i)=>({
-    id:'h'+i, team:'rcp', num:i+1, x, y, short:AB_ROLES[i]}));
-  const away = abMirror(AB_FORMS[form]).map(([x,y],i)=>({
-    id:'a'+i, team:'riv', num:i+1, x, y, short:AB_ROLES[i]}));
-  return [...home,...away];
+function abBuildPlayers(nRcp,nRiv){
+  return [...abFila_('rcp',nRcp), ...abFila_('riv',nRiv)];
 }
 
-/* ══════ CAMPO ══════ */
+/* ══════ CAMPO (mitad: fondo arriba, centro abajo) ══════ */
 function abDrawField(svg){
   const L='rgba(255,255,255,0.75)', W='2';
-  for(let i=0;i<10;i++) svg.appendChild(abMk('rect',{x:0,y:i*105,width:680,height:105,
+  // franjas de siega
+  for(let i=0;i<6;i++) svg.appendChild(abMk('rect',{x:0,y:i*(AB_VBH/6),width:AB_VBW,height:AB_VBH/6,
     fill:i%2===0?'rgba(0,0,0,0.07)':'transparent'}));
   const r=(x,y,w,h)=>svg.appendChild(abMk('rect',{x,y,width:w,height:h,fill:'none',stroke:L,'stroke-width':W}));
   const c=(cx,cy,r2,f='none')=>svg.appendChild(abMk('circle',{cx,cy,r:r2,fill:f,
     stroke:f==='none'?L:'none','stroke-width':f==='none'?W:0}));
   const p=d=>svg.appendChild(abMk('path',{d,fill:'none',stroke:L,'stroke-width':W}));
+  // perímetro de la media pista
   r(AB_FX,AB_FY,AB_FW,AB_FH);
-  p(`M${AB_FX} ${AB_CY}L${AB_FX+AB_FW} ${AB_CY}`);
-  c(AB_CX,AB_CY,AB_ARC_R); c(AB_CX,AB_CY,4,L);
-  p(`M${AB_FX} ${AB_FY+AB_CR} A${AB_CR} ${AB_CR} 0 0 1 ${AB_FX+AB_CR} ${AB_FY}`);
-  p(`M${AB_FX+AB_FW-AB_CR} ${AB_FY} A${AB_CR} ${AB_CR} 0 0 1 ${AB_FX+AB_FW} ${AB_FY+AB_CR}`);
-  p(`M${AB_FX} ${AB_FY+AB_FH-AB_CR} A${AB_CR} ${AB_CR} 0 0 0 ${AB_FX+AB_CR} ${AB_FY+AB_FH}`);
-  p(`M${AB_FX+AB_FW-AB_CR} ${AB_FY+AB_FH} A${AB_CR} ${AB_CR} 0 0 0 ${AB_FX+AB_FW} ${AB_FY+AB_FH-AB_CR}`);
-  r(AB_PA_X,AB_FY,AB_PA_W,AB_PA_H); r(AB_GA_X,AB_FY,AB_GA_W,AB_GA_H); r(AB_GX,AB_FY-20,AB_GW,20);
+  // portería y áreas
+  r(AB_GX,AB_FY-20,AB_GW,20);
+  r(AB_PA_X,AB_FY,AB_PA_W,AB_PA_H);
+  r(AB_GA_X,AB_FY,AB_GA_W,AB_GA_H);
   c(AB_CX,AB_FY+AB_PS_D,4,L);
   p(`M${AB_CX-AB_ARC_DX} ${AB_FY+AB_PA_H} A${AB_ARC_R} ${AB_ARC_R} 0 0 0 ${AB_CX+AB_ARC_DX} ${AB_FY+AB_PA_H}`);
-  r(AB_PA_X,AB_FY+AB_FH-AB_PA_H,AB_PA_W,AB_PA_H);
-  r(AB_GA_X,AB_FY+AB_FH-AB_GA_H,AB_GA_W,AB_GA_H); r(AB_GX,AB_FY+AB_FH,AB_GW,20);
-  c(AB_CX,AB_FY+AB_FH-AB_PS_D,4,L);
-  p(`M${AB_CX-AB_ARC_DX} ${AB_FY+AB_FH-AB_PA_H} A${AB_ARC_R} ${AB_ARC_R} 0 0 1 ${AB_CX+AB_ARC_DX} ${AB_FY+AB_FH-AB_PA_H}`);
+  // esquinas de la línea de fondo
+  p(`M${AB_FX} ${AB_FY+AB_CR} A${AB_CR} ${AB_CR} 0 0 1 ${AB_FX+AB_CR} ${AB_FY}`);
+  p(`M${AB_FX+AB_FW-AB_CR} ${AB_FY} A${AB_CR} ${AB_CR} 0 0 1 ${AB_FX+AB_FW} ${AB_FY+AB_CR}`);
+  // línea y semicírculo de medio campo
+  p(`M${AB_FX} ${AB_MID}L${AB_FX+AB_FW} ${AB_MID}`);
+  p(`M${AB_CX-AB_ARC_R} ${AB_MID} A${AB_ARC_R} ${AB_ARC_R} 0 0 1 ${AB_CX+AB_ARC_R} ${AB_MID}`);
+  c(AB_CX,AB_MID,4,L);
 }
 
 /* ══════ DIBUJOS ══════ */
@@ -1838,7 +1859,7 @@ function abDistSeg(px,py,x1,y1,x2,y2){
   return Math.hypot(px-(x1+t*dx), py-(y1+t*dy));
 }
 function abHitDraw(d,px,py){
-  const TH=18;
+  const TH=14;
   if(d.type==='arrow'||d.type==='line'||d.type==='dashed') return abDistSeg(px,py,d.x1,d.y1,d.x2,d.y2)<TH;
   if(d.type==='rect') return px>=Math.min(d.x1,d.x2)-TH&&px<=Math.max(d.x1,d.x2)+TH&&
                              py>=Math.min(d.y1,d.y2)-TH&&py<=Math.max(d.y1,d.y2)+TH;
@@ -1848,7 +1869,7 @@ function abHitDraw(d,px,py){
     return ((px-cx)/rx)**2+((py-cy)/ry)**2<=1;
   }
   if(d.type==='text'){
-    const fs=d.fontSize||26, w=(d.text||'').length*fs*.6+TH;
+    const fs=d.fontSize||20, w=(d.text||'').length*fs*.6+TH;
     return px>=d.x1-TH&&px<=d.x1+w&&py>=d.y1-fs-TH&&py<=d.y1+TH;
   }
   return false;
@@ -1880,7 +1901,7 @@ function abDrawEl(svg,d,selId){
     e=abMk('ellipse',{cx:(d.x1+d.x2)/2,cy:(d.y1+d.y2)/2,
       rx:Math.max(1,Math.abs(d.x2-d.x1)/2),ry:Math.max(1,Math.abs(d.y2-d.y1)/2),...base});
   }else if(d.type==='text'){
-    e=abMk('text',{x:d.x1,y:d.y1,fill:d.color,opacity:d.opacity,'font-size':d.fontSize||26,
+    e=abMk('text',{x:d.x1,y:d.y1,fill:d.color,opacity:d.opacity,'font-size':d.fontSize||20,
       'font-family':'Barlow Condensed, sans-serif','font-weight':'700','data-did':d.id});
     e.textContent=d.text||'';
     if(d.id===selId) e.setAttribute('fill','#60a5fa');
@@ -1896,29 +1917,30 @@ function abDrawEl(svg,d,selId){
 /* ══════ RENDER ══════ */
 function abRenderState(svg, ps, bl, dws, selId){
   svg.innerHTML='';
-  svg.appendChild(abMk('rect',{width:680,height:1050,fill:'#1e7a31'}));
+  svg.appendChild(abMk('rect',{width:AB_VBW,height:AB_VBH,fill:'#1e7a31'}));
   abDrawField(svg);
   ps.forEach(p=>{
     if(p.team==='rcp' && !abShowRCP) return;
     if(p.team==='riv' && !abShowRival) return;
     const g=abMk('g',{transform:`translate(${abSx(p.x)},${abSy(p.y)})`,'data-pid':p.id});
-    const por = p.short==='POR';
-    const col = p.team==='rcp' ? (por?'#f59e0b':'#e8192c') : (por?'#111111':'#6b7280');
+    const col = p.team==='rcp' ? '#e8192c' : '#6b7280';
     const stk = p.team==='rcp' ? '#ffffff' : '#1f2937';
-    g.appendChild(abMk('circle',{r:22,fill:col,stroke:stk,'stroke-width':'2.5'}));
-    const t=abMk('text',{y:7,'text-anchor':'middle',fill:'#fff','font-size':'16',
+    g.appendChild(abMk('circle',{r:AB_PR,fill:col,stroke:stk,'stroke-width':'2.5'}));
+    const t=abMk('text',{y:5,'text-anchor':'middle',fill:'#fff','font-size':'14',
       'font-weight':'bold','font-family':'monospace'});
     t.textContent=p.num; g.appendChild(t);
-    const lb=p.short||'', lw=Math.max(lb.length*5.6+10,30);
-    g.appendChild(abMk('rect',{x:-lw/2,y:25,width:lw,height:14,rx:3,fill:'rgba(0,0,0,0.78)'}));
-    const lt=abMk('text',{y:35,'text-anchor':'middle',fill:'#fff','font-size':'9',
-      'font-family':'sans-serif'});
-    lt.textContent=lb; g.appendChild(lt);
+    if(p.short){
+      const lw=Math.max(p.short.length*5.4+9,26);
+      g.appendChild(abMk('rect',{x:-lw/2,y:AB_PR+2,width:lw,height:13,rx:3,fill:'rgba(0,0,0,0.8)'}));
+      const lt=abMk('text',{y:AB_PR+11.5,'text-anchor':'middle',fill:'#fff','font-size':'8.5',
+        'font-family':'sans-serif','font-weight':'600'});
+      lt.textContent=p.short; g.appendChild(lt);
+    }
     svg.appendChild(g);
   });
   const bg=abMk('g',{transform:`translate(${abSx(bl.x)},${abSy(bl.y)})`,'data-pid':'__ball'});
-  bg.appendChild(abMk('circle',{r:11,fill:'#ffffff',stroke:'#111','stroke-width':'2'}));
-  bg.appendChild(abMk('circle',{r:4,fill:'#111'}));
+  bg.appendChild(abMk('circle',{r:9,fill:'#ffffff',stroke:'#111','stroke-width':'2'}));
+  bg.appendChild(abMk('circle',{r:3.5,fill:'#111'}));
   svg.appendChild(bg);
   const dl=abMk('g');
   (dws||[]).forEach(d=>{ const el=abDrawEl(svg,d,selId); if(el) dl.appendChild(el); });
@@ -1954,10 +1976,10 @@ function abDown(e){
     const hitPlayer = abPlayers.slice().reverse().find(p=>{
       if(p.team==='rcp'&&!abShowRCP) return false;
       if(p.team==='riv'&&!abShowRival) return false;
-      return Math.hypot(c.x-abSx(p.x), c.y-abSy(p.y))<26;
+      return Math.hypot(c.x-abSx(p.x), c.y-abSy(p.y))<AB_PR+5;
     });
     if(hitPlayer){ abDrag={type:'player',id:hitPlayer.id}; abSel=null; e.preventDefault(); abRender(); return; }
-    if(Math.hypot(c.x-abSx(abBall.x), c.y-abSy(abBall.y))<24){
+    if(Math.hypot(c.x-abSx(abBall.x), c.y-abSy(abBall.y))<16){
       abDrag={type:'ball'}; abSel=null; e.preventDefault(); abRender(); return; }
     // 2) dibujo
     const hitD=[...abDrawings].reverse().find(d=>abHitDraw(d,c.x,c.y));
@@ -1973,7 +1995,7 @@ function abDown(e){
     const txt=prompt('Texto a mostrar en el campo:');
     if(txt && txt.trim()){
       abDrawings.push({id:++abSeq,type:'text',x1:c.x,y1:c.y,x2:c.x,y2:c.y,
-        color:abColor,size:abSize,opacity:abOpac,text:txt.trim(),fontSize:26});
+        color:abColor,size:abSize,opacity:abOpac,text:txt.trim(),fontSize:20});
       abRender();
     }
     return;
@@ -2011,7 +2033,7 @@ function abUp(){
   if(abStart){
     const last=abDrawings[abDrawings.length-1];
     // descarta trazos accidentales de longitud casi nula
-    if(last && Math.hypot(last.x2-last.x1,last.y2-last.y1)<8) abDrawings.pop();
+    if(last && Math.hypot(last.x2-last.x1,last.y2-last.y1)<6) abDrawings.pop();
     abStart=null; abRender();
   }
   abDrag=null; abDragDraw=null;
@@ -2169,15 +2191,29 @@ window.abToggleTeam=function(team,el){
   if(el) el.classList.toggle('off', team==='rcp' ? !abShowRCP : !abShowRival);
   abRender();
 };
-window.abApplyForm=function(team,fk){
-  if(!AB_FORMS[fk]) return;
-  const pts = team==='rcp' ? AB_FORMS[fk] : abMirror(AB_FORMS[fk]);
-  let i=0;
-  abPlayers=abPlayers.map(p=>{
+window.abFila=function(team){
+  const n = team==='rcp' ? abNRcp : abNRiv;
+  const fila = abFila_(team,n);
+  abPlayers = abPlayers.map(p=>{
     if(p.team!==team) return p;
-    const idx=i++;
-    return {...p, x:pts[idx][0], y:pts[idx][1], short:AB_ROLES[idx]};
+    const f=fila.find(x=>x.id===p.id);
+    return f ? {...p, x:f.x, y:f.y} : p;
   });
+  abRender();
+};
+window.abSetCount=function(team,n){
+  n=Math.max(0,Math.min(AB_MAX,parseInt(n)||0));
+  const otros = abPlayers.filter(p=>p.team!==team);
+  const actuales = abPlayers.filter(p=>p.team===team);
+  let nuevos;
+  if(n<=actuales.length){
+    nuevos = actuales.slice(0,n);              // se quitan por el final
+  }else{
+    const fila = abFila_(team,AB_MAX);         // se añaden en la fila neutra
+    nuevos = [...actuales, ...fila.slice(actuales.length,n)];
+  }
+  if(team==='rcp'){ abNRcp=n; abPlayers=[...nuevos,...otros]; }
+  else            { abNRiv=n; abPlayers=[...otros,...nuevos]; }
   abRender();
 };
 function abDblClick(e){
@@ -2185,7 +2221,7 @@ function abDblClick(e){
   const p=abPlayers.slice().reverse().find(pl=>{
     if(pl.team==='rcp'&&!abShowRCP) return false;
     if(pl.team==='riv'&&!abShowRival) return false;
-    return Math.hypot(c.x-abSx(pl.x), c.y-abSy(pl.y))<26;
+    return Math.hypot(c.x-abSx(pl.x), c.y-abSy(pl.y))<AB_PR+5;
   });
   if(!p) return;
   const lbl=prompt(`Etiqueta de la posición (${p.team==='rcp'?'Racing':'rival'} · dorsal ${p.num}).\nEjemplos: Saq, Ay, P1, P2, T1, Bloq, Df3, Rechace`, p.short||'');
@@ -2208,7 +2244,7 @@ function abSerializeFrames(){
       type:d.type, color:d.color, size:d.size, opacity:d.opacity,
       x1p:+abPx(d.x1).toFixed(2), y1p:+abPy(d.y1).toFixed(2),
       x2p:+abPx(d.x2).toFixed(2), y2p:+abPy(d.y2).toFixed(2),
-      ...(d.type==='text'?{text:d.text||'',fontSize:d.fontSize||26}:{})
+      ...(d.type==='text'?{text:d.text||'',fontSize:d.fontSize||20}:{})
     }))
   }));
 }
@@ -2240,26 +2276,23 @@ function abStartListener(){
 function abMiniSvg(j){
   const f=(j.frames&&j.frames[0])||null;
   if(!f) return '<div class="ab-mini-empty">sin datos</div>';
-  const dot=(p)=>{
-    const col = p.team==='rcp' ? (p.short==='POR'?'#f59e0b':'#e8192c') : (p.short==='POR'?'#111':'#6b7280');
-    return `<circle cx="${abSx(p.x).toFixed(1)}" cy="${abSy(p.y).toFixed(1)}" r="17" fill="${col}" stroke="#fff" stroke-width="3"/>`;
+  const S='rgba(255,255,255,.7)';
+  const dot=p=>`<circle cx="${abSx(p.x).toFixed(1)}" cy="${abSy(p.y).toFixed(1)}" r="13" fill="${p.team==='rcp'?'#e8192c':'#6b7280'}" stroke="#fff" stroke-width="2.5"/>`;
+  const line=d=>{
+    if(d.type==='text'||d.type==='rect'||d.type==='circle') return '';
+    return `<line x1="${abSx(d.x1p).toFixed(1)}" y1="${abSy(d.y1p).toFixed(1)}" x2="${abSx(d.x2p).toFixed(1)}" y2="${abSy(d.y2p).toFixed(1)}" stroke="${d.color}" stroke-width="3.5" opacity=".9"${d.type==='dashed'?' stroke-dasharray="9 6"':''}/>`;
   };
-  const line=(d)=>{
-    if(d.type==='text') return '';
-    const x1=abSx(d.x1p),y1=abSy(d.y1p),x2=abSx(d.x2p),y2=abSy(d.y2p);
-    if(d.type==='rect'||d.type==='circle') return '';
-    return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${d.color}" stroke-width="4" opacity=".9"${d.type==='dashed'?' stroke-dasharray="10 7"':''}/>`;
-  };
-  return `<svg viewBox="0 0 680 1050" preserveAspectRatio="xMidYMid meet">
-    <rect width="680" height="1050" fill="#1e7a31"/>
-    <rect x="${AB_FX}" y="${AB_FY}" width="${AB_FW}" height="${AB_FH}" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="3"/>
-    <line x1="${AB_FX}" y1="${AB_CY}" x2="${AB_FX+AB_FW}" y2="${AB_CY}" stroke="rgba(255,255,255,.7)" stroke-width="3"/>
-    <circle cx="${AB_CX}" cy="${AB_CY}" r="${AB_ARC_R}" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="3"/>
-    <rect x="${AB_PA_X}" y="${AB_FY}" width="${AB_PA_W}" height="${AB_PA_H}" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="3"/>
-    <rect x="${AB_PA_X}" y="${AB_FY+AB_FH-AB_PA_H}" width="${AB_PA_W}" height="${AB_PA_H}" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="3"/>
+  return `<svg viewBox="0 0 ${AB_VBW} ${AB_VBH}" preserveAspectRatio="xMidYMid meet">
+    <rect width="${AB_VBW}" height="${AB_VBH}" fill="#1e7a31"/>
+    <rect x="${AB_FX}" y="${AB_FY}" width="${AB_FW}" height="${AB_FH}" fill="none" stroke="${S}" stroke-width="2.5"/>
+    <rect x="${AB_GX}" y="${AB_FY-20}" width="${AB_GW}" height="20" fill="none" stroke="${S}" stroke-width="2.5"/>
+    <rect x="${AB_PA_X}" y="${AB_FY}" width="${AB_PA_W}" height="${AB_PA_H}" fill="none" stroke="${S}" stroke-width="2.5"/>
+    <rect x="${AB_GA_X}" y="${AB_FY}" width="${AB_GA_W}" height="${AB_GA_H}" fill="none" stroke="${S}" stroke-width="2.5"/>
+    <path d="M${AB_CX-AB_ARC_DX} ${AB_FY+AB_PA_H} A${AB_ARC_R} ${AB_ARC_R} 0 0 0 ${AB_CX+AB_ARC_DX} ${AB_FY+AB_PA_H}" fill="none" stroke="${S}" stroke-width="2.5"/>
+    <path d="M${AB_CX-AB_ARC_R} ${AB_MID} A${AB_ARC_R} ${AB_ARC_R} 0 0 1 ${AB_CX+AB_ARC_R} ${AB_MID}" fill="none" stroke="${S}" stroke-width="2.5"/>
     ${(f.drawings||[]).map(line).join('')}
     ${(f.players||[]).map(dot).join('')}
-    <circle cx="${abSx(f.ball.x).toFixed(1)}" cy="${abSy(f.ball.y).toFixed(1)}" r="9" fill="#fff" stroke="#111" stroke-width="2"/>
+    <circle cx="${abSx(f.ball.x).toFixed(1)}" cy="${abSy(f.ball.y).toFixed(1)}" r="8" fill="#fff" stroke="#111" stroke-width="2"/>
   </svg>`;
 }
 function abRenderLib(){
@@ -2331,13 +2364,16 @@ window.abOpenEditor=function(id){
     if(abFrames.length){ abCurF=0; const f=abFrames[0];
       abPlayers=f.players.map(p=>({...p})); abBall={...f.ball};
       abDrawings=f.drawings.map(d=>({...d}));
+      abNRcp=abPlayers.filter(p=>p.team==='rcp').length;
+      abNRiv=abPlayers.filter(p=>p.team==='riv').length;
     }else{
-      abCurF=-1; abPlayers=abBuildPlayers('1-4-4-2'); abBall={x:50,y:50}; abDrawings=[];
+      abCurF=-1; abNRcp=AB_MAX; abNRiv=AB_MAX;
+      abPlayers=abBuildPlayers(abNRcp,abNRiv); abBall={x:50,y:40}; abDrawings=[];
     }
   }else{
     abSetMetaFields(null);
-    abFrames=[]; abCurF=-1;
-    abPlayers=abBuildPlayers('1-4-4-2'); abBall={x:50,y:50}; abDrawings=[];
+    abFrames=[]; abCurF=-1; abNRcp=AB_MAX; abNRiv=AB_MAX;
+    abPlayers=abBuildPlayers(abNRcp,abNRiv); abBall={x:50,y:40}; abDrawings=[];
   }
   document.getElementById('ab-lib').style.display='none';
   document.getElementById('ab-edit').style.display='block';
@@ -2372,6 +2408,7 @@ window.abSave=async function(comoNueva){
     senal: document.getElementById('ab-m-senal').value.trim(),
     comportamientos: document.getElementById('ab-m-comp').value.trim(),
     frames: abSerializeFrames(),
+    geometria: AB_GEO,
     temporada: '2026-27',
     updatedBy: currentUser,
     updatedAt: serverTimestamp()
@@ -2414,11 +2451,10 @@ function abBuildUI(){
   const ft=document.getElementById('ab-f-tipo');
   if(ft) ft.innerHTML = '<option value="todos">Todos los tipos</option>'+
     AB_TIPOS.map(t=>`<option value="${t.v}">${t.t}</option>`).join('');
-  const fs=document.getElementById('ab-form-rcp');
-  const fs2=document.getElementById('ab-form-riv');
-  const opts=Object.keys(AB_FORMS).map(k=>`<option value="${k}">${k}</option>`).join('');
-  if(fs) fs.innerHTML=opts;
-  if(fs2) fs2.innerHTML=opts;
+  const nOpts=n=>Array.from({length:AB_MAX+1},(_,i)=>
+    `<option value="${i}"${i===AB_MAX?' selected':''}>${i}</option>`).join('');
+  const nr=document.getElementById('ab-n-rcp'); if(nr) nr.innerHTML=nOpts();
+  const nv=document.getElementById('ab-n-riv'); if(nv) nv.innerHTML=nOpts();
   const svg=document.getElementById('ab-pitch');
   if(svg){
     svg.addEventListener('mousedown',abDown);
