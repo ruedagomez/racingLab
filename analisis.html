@@ -407,7 +407,7 @@ const CLUBS = [
   { id:'pozoblanco',   lpId:'21',    name:'CD Pozoblanco',        short:'POZ', city:'Pozoblanco',                stadium:'Municipal Pozoblanco' },
   { id:'ceuta-b',      lpId:'13159', name:'AD Ceuta FC B',        short:'CEU', city:'Ceuta',                     stadium:'José Martínez Pirri' },
   { id:'bollullos',    lpId:'582',   name:'Bollullos CF',         short:'BCF', city:'Bollullos Par del Condado', stadium:'Eloy Ávila Cano' },
-  { id:'puente-genil', lpId:'2224',  name:'Salerm Puente Genil',  short:'SPG', city:'Puente Genil',              stadium:'Manuel Polinario' },
+  { id:'sevilla-c',    lpId:'545',   name:'Sevilla FC C',         short:'SEV', city:'Sevilla',                   stadium:'C.D. José Ramón Cisneros Palacios' },
   { id:'dos-hermanas', lpId:'34672', name:'Dos Hermanas CF 1971', short:'DH71',city:'Dos Hermanas',              stadium:'Miguel Román' },
   { id:'egabrense',    lpId:'23',    name:'Egabrense',            short:'EGA', city:'Cabra',                     stadium:'Antonio Povedano' },
   { id:'linense',      lpId:'580',   name:'RB Linense',           short:'RBL', city:'La Línea de la Concepción', stadium:'Ciudad de La Línea' },
@@ -543,36 +543,50 @@ const CAL_OFICIAL_IDA = [
   ['cordoba-b','casa'],     // J12 22/11 RCP - Córdoba (filial)
   ['ceuta-b','fuera'],      // J13 29/11 Ceuta (filial) - RCP
   ['onubense','casa'],      // J14 06/12 RCP - Atlético Onubense
-  ['puente-genil','casa'],  // J15 08/12 RCP - Salerm Puente Genil (MARTES)
+  ['sevilla-c','casa'],     // J15 08/12 RCP - Sevilla FC C (MARTES)
   ['bollullos','fuera'],    // J16 13/12 Bollullos - RCP
   ['betis-c','casa'],       // J17 20/12 RCP - Betis (filial)
 ];
+/* Versión del calendario oficial embebido. Subir este número cada vez que
+   cambie un rival o una condición obliga a resembrar el documento de
+   Firestore, que de otro modo se quedaría con los datos antiguos.
+   v1 → calendario oficial RFAF 26/27
+   v2 → Sevilla FC C ocupa la plaza del Salerm Puente Genil (ascendido a
+        2ª Federación por la vacante del CD Unión Malacitano). Confirmado
+        en el calendario oficial: J15 Racing Club Portuense - Sevilla FC C. */
+const CAL_VERSION = 2;
 function defaultCalendario(){
   const jornadas = CAL_OFICIAL_IDA.map(([clubId,condicion],i)=>({ n:i+1, clubId, condicion }));
   for(let n=18;n<=34;n++){
     const ida = jornadas[n-18];
     jornadas.push({ n, clubId:ida.clubId, condicion: ida.condicion==='casa'?'fuera':'casa' });
   }
-  return { jornadas, provisional:false, fuente:'Calendario oficial RFAF 3ª Federación G.10 26/27' };
+  return { jornadas, provisional:false, version:CAL_VERSION,
+    fuente:'Calendario oficial RFAF 3ª Federación G.10 26/27' };
 }
 async function loadCalendario(){
   try{
     const snap = await getDoc(doc(db,'analisisCalendario',TEMPORADA));
-    if(snap.exists() && !snap.data().provisional){
-      calendario = snap.data();
+    const d = snap.exists() ? snap.data() : null;
+    if(d && !d.provisional && (d.version||1) >= CAL_VERSION){
+      calendario = d;
     } else {
-      /* Doc inexistente O aún marcado como provisional → se sustituye por el
-         calendario oficial RFAF de una sola vez. Si Carlos ya lo hubiera
-         corregido a mano Y confirmado como oficial, se respeta el suyo. */
-      const migrando = snap.exists();
+      /* Doc inexistente, aún provisional, o de una versión anterior a la
+         actual → se sustituye por el calendario oficial embebido. Las
+         ediciones manuales posteriores quedan estampadas con la versión
+         vigente (ver saveCalendario) y ya no se pisan. */
+      const motivo = !d ? 'inexistente' : (d.provisional ? 'provisional' : 'versión '+(d.version||1));
       calendario = defaultCalendario();
       await setDoc(doc(db,'analisisCalendario',TEMPORADA), calendario);
-      if(migrando) console.log('[Calendario] provisional sustituido por el oficial RFAF');
+      console.log('[Calendario] resembrado con el oficial RFAF v'+CAL_VERSION+' (doc '+motivo+')');
     }
   }catch(e){ console.error('[Calendario]', e); calendario = defaultCalendario(); }
 }
 async function saveCalendario(){
-  try{ await setDoc(doc(db,'analisisCalendario',TEMPORADA), calendario); }
+  try{
+    calendario.version = CAL_VERSION;
+    await setDoc(doc(db,'analisisCalendario',TEMPORADA), calendario);
+  }
   catch(e){ console.error('[Calendario save]', e); toast('Error guardando calendario'); }
 }
 window.toggleCalEdit = function(){
