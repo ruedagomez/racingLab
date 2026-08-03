@@ -203,7 +203,7 @@ const CLUBS = [
   { id:'pozoblanco',   lpId:'21',    name:'CD Pozoblanco',        city:'Pozoblanco',                stadium:'Municipal Pozoblanco' },
   { id:'ceuta-b',      lpId:'13159', name:'AD Ceuta FC B',        city:'Ceuta',                     stadium:'José Martínez Pirri' },
   { id:'bollullos',    lpId:'582',   name:'Bollullos CF',         city:'Bollullos Par del Condado', stadium:'Eloy Ávila Cano' },
-  { id:'puente-genil', lpId:'2224',  name:'Salerm Puente Genil',  city:'Puente Genil',              stadium:'Manuel Polinario' },
+  { id:'sevilla-c',    lpId:'545',   name:'Sevilla FC C',         city:'Sevilla',                   stadium:'C.D. José Ramón Cisneros Palacios' },
   { id:'dos-hermanas', lpId:'34672', name:'Dos Hermanas CF 1971', city:'Dos Hermanas',              stadium:'Miguel Román' },
   { id:'egabrense',    lpId:'23',    name:'Egabrense',            city:'Cabra',                     stadium:'Antonio Povedano' },
   { id:'linense',      lpId:'580',   name:'RB Linense',           city:'La Línea de la Concepción', stadium:'Ciudad de La Línea' },
@@ -231,14 +231,18 @@ const CAL_OFICIAL_IDA = [
   ['xerez-dfc','fuera'],   ['san-roque','casa'],   ['egabrense','fuera'],  ['chiclana','casa'],
   ['tomares','fuera'],     ['dos-hermanas','casa'],['conil','fuera'],      ['pozoblanco','casa'],
   ['utrera','fuera'],      ['cadiz-b','casa'],     ['linense','fuera'],    ['cordoba-b','casa'],
-  ['ceuta-b','fuera'],     ['onubense','casa'],    ['puente-genil','casa'],['bollullos','fuera'],
+  ['ceuta-b','fuera'],     ['onubense','casa'],    ['sevilla-c','casa'],   ['bollullos','fuera'],
   ['betis-c','casa'],
 ];
+/* Misma versión que analisis.html: si el doc de Firestore es anterior,
+   se ignora y se usa el calendario oficial embebido, para no mostrar un
+   rival caducado mientras nadie abre el módulo Análisis. */
+const CAL_VERSION = 2;
 function calendarioOficial(){
   const ida = CAL_OFICIAL_IDA.map(([clubId,condicion],i)=>({ n:i+1, clubId, condicion }));
   const vuelta = CAL_OFICIAL_IDA.map(([clubId,condicion],i)=>({
     n:i+18, clubId, condicion: condicion==='casa'?'fuera':'casa' }));
-  return { jornadas:[...ida,...vuelta], provisional:false };
+  return { jornadas:[...ida,...vuelta], provisional:false, version:CAL_VERSION };
 }
 
 const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -298,12 +302,13 @@ function rcpShieldUrl(){
 async function loadCalendario(){
   try{
     const snap = await getDoc(doc(db,'analisisCalendario',TEMPORADA));
-    if(snap.exists() && !snap.data().provisional){
-      calendario = snap.data();
+    const d = snap.exists() ? snap.data() : null;
+    if(d && !d.provisional && (d.version||1) >= CAL_VERSION){
+      calendario = d;
       return;
     }
-    // Doc inexistente o aún provisional → oficial embebido (solo lectura;
-    // la migración del doc la hace analisis.html al abrirse).
+    // Doc inexistente, provisional o de una versión anterior a la actual →
+    // oficial embebido (solo lectura; la resiembra la hace analisis.html).
     calendario = calendarioOficial();
   }catch(e){
     console.error('[Calendario]', e);
