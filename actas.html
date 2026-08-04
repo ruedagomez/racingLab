@@ -248,8 +248,26 @@ function renderJornada(){
   }).join('');
 }
 
+/* clubShields guarda cada escudo con doc id = lpId (lo escribe tercera.html
+   al importarlos de lapreferente y subirlos a Cloudinary), pero las actas
+   identifican a los equipos por su clubId en slug. Sin esta traducción,
+   SHIELDS[clubId] no encontraba nunca nada y no se veía ningún escudo.
+   Los alias del Racing cubren el clubId que asigne el pipeline, que no
+   está fijado en ningún módulo web. */
+const LP_BY_CLUB = {
+  'racing':'161', 'racing-portuense':'161', 'rcp':'161', 'portuense':'161',
+  'san-roque':'181',    'xerez-dfc':'12717', 'onubense':'362',   'cadiz-b':'163',
+  'pozoblanco':'21',    'ceuta-b':'13159',   'bollullos':'582',  'sevilla-c':'545',
+  'dos-hermanas':'34672','egabrense':'23',   'linense':'580',    'tomares':'199',
+  'utrera':'201',       'chiclana':'170',    'conil':'313',      'cordoba-b':'472',
+  'betis-c':'517',
+};
+function shieldUrlOf(clubId){
+  if(!clubId) return null;
+  return SHIELDS[LP_BY_CLUB[clubId]] || SHIELDS[clubId] || null;
+}
 function shieldOrPh(clubId){
-  const url = SHIELDS[clubId];
+  const url = shieldUrlOf(clubId);
   return url ? `<img class="mshield" src="${url}" alt=""/>` : `<div class="mshield-ph"></div>`;
 }
 
@@ -263,9 +281,9 @@ window.abrirDetalle = async function(codActa){
       <button class="dh-close" onclick="cerrarDetalle()">✕</button>
     </div>
     <div class="detail-teams">
-      <div class="dt-team">${SHIELDS[a.equipo_local]?`<img src="${SHIELDS[a.equipo_local]}"/>`:''}<div class="dtn">${a.nombre_local||nombreProvisional(a.equipo_local)}</div></div>
+      <div class="dt-team">${shieldUrlOf(a.equipo_local)?`<img src="${shieldUrlOf(a.equipo_local)}"/>`:''}<div class="dtn">${a.nombre_local||nombreProvisional(a.equipo_local)}</div></div>
       <div class="dt-score">${a.goles_local} <span style="color:var(--faint);font-size:20px;">–</span> ${a.goles_visitante}</div>
-      <div class="dt-team">${SHIELDS[a.equipo_visitante]?`<img src="${SHIELDS[a.equipo_visitante]}"/>`:''}<div class="dtn">${a.nombre_visitante||nombreProvisional(a.equipo_visitante)}</div></div>
+      <div class="dt-team">${shieldUrlOf(a.equipo_visitante)?`<img src="${shieldUrlOf(a.equipo_visitante)}"/>`:''}<div class="dtn">${a.nombre_visitante||nombreProvisional(a.equipo_visitante)}</div></div>
     </div>
     <div class="detail-body"><div class="spinner"></div></div>`;
   document.getElementById('detail-bg').classList.add('open');
