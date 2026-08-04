@@ -288,15 +288,14 @@ async function loadShields(){
     snap.docs.forEach(d=>{ SHIELDS[d.id]=d.data().shieldUrl; });
   }catch(e){ console.error('[Shields]', e); }
 }
+/* La clave de clubShields es el lpId: tercera.html guarda cada escudo con
+   doc id = lpId al importarlos de lapreferente y subirlos a Cloudinary. */
+const LP_RACING = '161';
 function shieldUrl(club){
-  if(!club) return null;
-  return SHIELDS[club.lpId] || SHIELDS[club.id] || null;
+  return club ? (SHIELDS[club.lpId] || null) : null;
 }
 function rcpShieldUrl(){
-  // El id propio del RCP en clubShields no está fijado en los módulos web:
-  // se busca por heurística sin inventar un id concreto.
-  const k = Object.keys(SHIELDS).find(k=>/racing|portuense|rcp/i.test(k));
-  return k ? SHIELDS[k] : null;
+  return SHIELDS[LP_RACING] || null;
 }
 
 async function loadCalendario(){
