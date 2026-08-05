@@ -521,7 +521,50 @@ function syncToPerf(){
     localStorage.setItem('rl_perf_v2',JSON.stringify(perf));
   }catch(e){}
 }
-function getPerfData(){ try{const s=localStorage.getItem('rl_perf_v2');return s?JSON.parse(s):{injuries:[],tests:[]};}catch(e){return{injuries:[],tests:[]};} }
+/* ── ESTADO FÍSICO — Firestore en vivo, mismas colecciones que performance.html.
+   Antes salía de 'rl_perf_v2' en localStorage, y performance.html hace tiempo
+   que escribe lesiones y tests en Firestore ('injuries', 'physicalTests',
+   'playerStatus'): los KPI de Disponibles/Lesionados contaban sobre una copia
+   local que ya no actualizaba nadie, así que daban distinto en cada navegador
+   y normalmente marcaban a todo el mundo como disponible.
+   El estado que manda es 'playerStatus' (fit | caution | injury), que es lo que
+   mantiene el preparador físico; 'injuries' se conserva para el detalle. ── */
+let PERF_CACHE = { injuries: [], tests: [], status: {} };
+function getPerfData(){ return PERF_CACHE; }
+function estadoDe(pid){
+  const st = PERF_CACHE.status[pid];
+  if(st) return st;
+  // Sin registro en playerStatus se deduce de una lesión abierta
+  return (PERF_CACHE.injuries||[]).some(i=>i.pid===pid && i.active) ? 'injury' : 'fit';
+}
+const EST_LABEL = {fit:'Disponible', caution:'Precaución', injury:'Lesionado'};
+const EST_PILL  = {fit:'pill-green', caution:'pill-amber', injury:'pill-red'};
+
+async function initPerfSync(){
+  await firebaseReady;
+  FS.onSnapshot(FS.collection(db,'injuries'), snap=>{
+    PERF_CACHE.injuries = snap.docs.map(d=>({id:d.id,...d.data()}));
+    refreshAfterAttChange();
+  }, err=>console.error('[injuries]', err));
+  FS.onSnapshot(FS.collection(db,'physicalTests'), snap=>{
+    PERF_CACHE.tests = snap.docs.map(d=>({id:d.id,...d.data()}));
+    refreshAfterAttChange();
+  }, err=>console.error('[physicalTests]', err));
+  FS.onSnapshot(FS.collection(db,'playerStatus'), snap=>{
+    const s={}; snap.docs.forEach(d=>{ s[d.id]=d.data().status; });
+    PERF_CACHE.status = s;
+    refreshAfterAttChange();
+  }, err=>console.error('[playerStatus]', err));
+}
+
+/* Un retraso ES asistencia. Solo ausencia y justificada cuentan como no
+   asistir, así que el porcentaje se calcula sobre 'status' y no sobre el
+   flag 'present', que marcaba como ausente a quien llegó tarde. */
+const STATUS_ASISTE = ['presente','retraso'];
+function asistio(r){
+  if(!r) return false;
+  return r.status ? STATUS_ASISTE.includes(r.status) : !!r.present;
+}
 
 /* ── ASISTENCIA/MULTAS — Firestore en vivo, misma colección que asistencia.html.
    Antes leía 'rl_att_v1' de localStorage, una clave que dejó de tener quien la
@@ -578,15 +621,15 @@ function renderSquad(filter){
   const active = PLAYERS.filter(p=>p.active);
   const tot = active.length;
   const perf = getPerfData();
-  const fit = active.filter(p=>{
-    const inj = (perf.injuries||[]).find(i=>i.pid===p.id&&i.active);
-    return !inj;
-  }).length;
+  const fit     = active.filter(p=>estadoDe(p.id)==='fit').length;
+  const caution = active.filter(p=>estadoDe(p.id)==='caution').length;
+  const injured = active.filter(p=>estadoDe(p.id)==='injury').length;
 
   document.getElementById('squad-kpis').innerHTML=`
     <div class="kpi"><div class="kv">${tot}</div><div class="kl">Jugadores</div></div>
     <div class="kpi"><div class="kv green">${fit}</div><div class="kl">Disponibles</div></div>
-    <div class="kpi"><div class="kv red">${tot-fit}</div><div class="kl">Lesionados/baja</div></div>
+    <div class="kpi"><div class="kv amber">${caution}</div><div class="kl">Precaución</div></div>
+    <div class="kpi"><div class="kv red">${injured}</div><div class="kl">Lesionados</div></div>
     <div class="kpi"><div class="kv">${active.filter(p=>p.pos==='POR').length}</div><div class="kl">Porteros</div></div>
     <div class="kpi"><div class="kv">${active.filter(p=>p.pos==='DEF').length}</div><div class="kl">Defensas</div></div>
     <div class="kpi"><div class="kv">${active.filter(p=>p.pos==='MED').length}</div><div class="kl">Centrocampistas</div></div>
@@ -623,13 +666,13 @@ function filterSquad(f,el){
 }
 
 function playerCardHtml(p,perf){
-  const inj = (perf.injuries||[]).find(i=>i.pid===p.id&&i.active);
-  const statusCls = inj ? 'pill-red' : 'pill-green';
-  const statusLbl = inj ? 'Lesionado' : 'Disponible';
+  const est = estadoDe(p.id);
+  const statusCls = EST_PILL[est] || 'pill-green';
+  const statusLbl = EST_LABEL[est] || 'Disponible';
   const lastTest = (perf.tests||[]).filter(t=>t.pid===p.id).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
   const attData = getAttData();
   const sessions = (attData.attendance||[]).length;
-  const present = (attData.attendance||[]).filter(s=>s.results.find(r=>r.playerId===p.id&&r.present)).length;
+  const present = (attData.attendance||[]).filter(s=>asistio((s.results||[]).find(r=>r.playerId===p.id))).length;
   const attPct = sessions ? Math.round(present/sessions*100) : null;
 
   return `<div class="player-card" data-d="${p.d||''}" onclick="openProfile('${p.id}')">
@@ -680,7 +723,9 @@ function renderStats(){
   const ages = active.filter(p=>p.age>0).map(p=>p.age);
   const avgAge = ages.length ? (ages.reduce((a,b)=>a+b,0)/ages.length).toFixed(1) : '—';
   const perf = getPerfData();
-  const inj = (perf.injuries||[]).filter(i=>i.active).length;
+  // Mismo criterio que los KPI de la plantilla, para que los dos sitios
+  // no puedan dar cifras distintas de lesionados.
+  const inj = active.filter(p=>estadoDe(p.id)==='injury').length;
   const tests = (perf.tests||[]).length;
   document.getElementById('stats-cards').innerHTML = `
     <div class="card">
@@ -902,8 +947,14 @@ function renderComposicionCard(p){
 function renderProfileAtt(p,att){
   const sessions = (att.attendance||[]);
   const total = sessions.length;
-  const present = sessions.filter(s=>s.results.find(r=>r.playerId===p.id&&r.present)).length;
+  const reg = pid => s => (s.results||[]).find(r=>r.playerId===pid);
+  const present = sessions.filter(s=>asistio(reg(p.id)(s))).length;
   const absent = total - present;
+  const cuenta = st => sessions.filter(s=>{
+    const r = reg(p.id)(s); if(!r) return false;
+    return (r.status || (r.present?'presente':'ausencia')) === st;
+  }).length;
+  const nRetraso = cuenta('retraso'), nJustif = cuenta('justificada');
   const pct = total ? Math.round(present/total*100) : 0;
   const pctCls = pct>=85?'green':pct>=70?'amber':'red';
 
@@ -915,8 +966,9 @@ function renderProfileAtt(p,att){
         <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:var(--${pctCls==='green'?'fit':pctCls==='amber'?'warn':'inj'})"></div></div>
         <div style="display:flex;gap:20px;margin-top:16px;">
           ${statMini('Sesiones',total)}
-          ${statMini('Presente',present)}
-          ${statMini('Ausente',absent)}
+          ${statMini('Asistió',present)}
+          ${statMini('Retrasos',nRetraso)}
+          ${statMini('Faltó',absent)}
         </div>
         <a class="module-link" href="asistencia.html">
           <span class="module-link-txt">Ver en Asistencia & Multas</span>
@@ -926,11 +978,14 @@ function renderProfileAtt(p,att){
       <div class="card">
         <div class="card-title">Últimas sesiones</div>
         ${total?sessions.slice(-8).reverse().map(s=>{
-          const r = s.results.find(r=>r.playerId===p.id);
-          const was = r?r.present:null;
+          const r = (s.results||[]).find(r=>r.playerId===p.id);
+          const st = r ? (r.status || (r.present?'presente':'ausencia')) : null;
+          const PILL = {presente:['pill-green','Presente'], retraso:['pill-amber','Retraso'],
+                        justificada:['pill-gray','Justificada'], ausencia:['pill-red','Ausencia']};
+          const [cls,lbl] = st ? (PILL[st]||['pill-gray',st]) : ['pill-gray','Sin dato'];
           return `<div class="stat-row">
             <div class="stat-lbl" style="font-family:'JetBrains Mono',monospace;font-size:11px">${s.date}</div>
-            ${was===null?'<span class="pill pill-gray">Sin dato</span>':was?'<span class="pill pill-green">Presente</span>':'<span class="pill pill-red">Ausente</span>'}
+            <span class="pill ${cls}">${lbl}</span>
           </div>`;
         }).join(''):'<div style="font-size:12px;color:var(--faint)">Sin sesiones registradas</div>'}
       </div>
@@ -1104,6 +1159,7 @@ function showToast(msg,type='ok'){
 updateDemOptions();
 initPlayersSync();
 initAttSync();
+initPerfSync();
 </script>
 </body>
 </html>
