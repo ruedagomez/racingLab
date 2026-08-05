@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Análisis · Racing Lab</title>
+<title>Asistencia & Multas · Racing Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700;800;900&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -16,1544 +16,1483 @@
   --fit:#15803d;--fit-bg:#f0fdf4;
   --warn:#c2410c;--warn-bg:#fff7ed;
   --inj:#dc2626;--inj-bg:#fef2f2;
-  /* paleta informe (analisis-rival) */
-  --i-bg:#f4f4f2;--i-bg2:#ebebe8;--i-card:#ffffff;--i-card2:#f9f8f6;
-  --i-border:#e4e2de;--i-border2:#d0cec9;
-  --i-red:#d01020;--i-blue:#1452cc;--i-green:#0a8a55;--i-amber:#c47b00;
-  --i-text:#111118;--i-muted:#7a7872;--i-muted2:#4a4845;
-  --i-sidebar:230px;
-  --shadow-sm:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.05);
-  --shadow-md:0 4px 16px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.05);
+  --sidebar:240px;
 }
-html,body{min-height:100%;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--txt);}
+html,body{height:100%;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--txt);}
 button{font-family:inherit;cursor:pointer;border:none;outline:none;}
 input,select,textarea{font-family:inherit;outline:none;}
-img,svg,video{max-width:100%;}
-::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes dot{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 
-/* ══ SHELL ══ */
-.topbar{position:sticky;top:0;z-index:50;background:var(--wh);border-bottom:1px solid var(--bdr);padding:0 22px;height:58px;display:flex;align-items:center;gap:16px;}
-.topbar .back{display:flex;align-items:center;gap:7px;color:var(--mid);text-decoration:none;font-size:12.5px;font-weight:500;}
-.topbar .back:hover{color:var(--txt);}
-.topbar h1{font-family:'Bebas Neue',cursive;font-size:24px;letter-spacing:1.5px;font-weight:400;}
-.topbar h1 span{color:var(--r);}
-.topbar .spacer{flex:1;}
-.mode-chip{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;padding:6px 13px;border-radius:20px;border:1px solid var(--bdr);background:var(--bg);color:var(--mid);}
-.mode-chip.on{background:var(--fit-bg);border-color:#bbe7c9;color:var(--fit);}
-.mode-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--faint);}
-.mode-chip.on .dot{background:var(--fit);animation:fadeIn .3s;}
-.btn{border-radius:7px;font-weight:600;font-size:12.5px;padding:8px 16px;transition:.15s;display:inline-flex;align-items:center;gap:6px;}
-.btn-primary{background:var(--r);color:#fff;}
-.btn-primary:hover{background:#c8101f;}
-.btn-ghost{background:transparent;color:var(--mid);border:1px solid var(--bdr);}
-.btn-ghost:hover{color:var(--txt);border-color:var(--faint);}
-.btn-sm{padding:5px 11px;font-size:11.5px;}
-.btn-danger{background:var(--inj-bg);color:var(--inj);border:1px solid #fecaca;}
-.btn-danger:hover{background:#fee2e2;}
-.btn:disabled{opacity:.45;cursor:not-allowed;}
+.app{display:flex;height:100vh;overflow:hidden;}
 
-.wrap{max-width:1180px;margin:0 auto;padding:26px 22px 80px;}
-.banner{display:flex;align-items:center;gap:10px;background:var(--warn-bg);border:1px solid #fed7aa;color:var(--warn);font-size:12px;font-weight:500;padding:10px 15px;border-radius:8px;margin-bottom:20px;}
-.pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
-.pagehead .pt{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;letter-spacing:.3px;}
-.pagehead .ps{font-size:12px;color:var(--mid);margin-top:2px;}
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--blk);display:flex;flex-direction:column;position:relative;z-index:10;border-right:3px solid var(--r);}
+.sidebar::after{content:'';position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,rgba(255,255,255,.03) 1px,transparent 1px);background-size:22px 22px;}
+.sb-brand{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.07);position:relative;z-index:1;}
+.sb-back{display:flex;align-items:center;gap:6px;margin-bottom:16px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.14em;color:rgba(255,255,255,.28);text-transform:uppercase;cursor:pointer;background:none;border:none;padding:0;transition:color .2s;}
+.sb-back:hover{color:var(--r);}
+.sb-back svg{width:10px;height:10px;stroke:currentColor;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.sb-name{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--wh);letter-spacing:.5px;line-height:1;}
+.sb-name span{color:var(--r);}
+.sb-sub{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;color:rgba(255,255,255,.25);text-transform:uppercase;margin-top:4px;}
+.sb-nav{flex:1;padding:12px 10px;overflow-y:auto;position:relative;z-index:1;}
+.sb-section{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.2em;color:rgba(255,255,255,.2);text-transform:uppercase;padding:14px 10px 5px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:4px;cursor:pointer;transition:all .18s;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.04em;color:rgba(255,255,255,.4);margin-bottom:1px;border-left:2px solid transparent;}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.8);}
+.nav-item.active{background:rgba(232,25,44,.12);color:var(--wh);border-left-color:var(--r);}
+.nav-icon{width:18px;text-align:center;font-size:13px;flex-shrink:0;}
+.nav-badge{margin-left:auto;font-size:9px;background:var(--r);color:var(--wh);padding:2px 6px;border-radius:10px;font-weight:700;}
+.sb-foot{padding:14px 18px;border-top:1px solid rgba(255,255,255,.07);position:relative;z-index:1;}
+.sb-foot-txt{font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.2);}
 
-/* ══ CALENDARIO ══ */
-.jgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px;}
-.jcard{background:var(--wh);border:1px solid var(--bdr);border-radius:10px;padding:14px 16px;animation:fadeUp .35s both;display:flex;flex-direction:column;gap:10px;transition:.15s;}
-.jcard:hover{border-color:var(--faint);box-shadow:var(--shadow-sm);}
-.jcard.pasada{opacity:.62;}
-.jc-top{display:flex;align-items:center;gap:10px;}
-.jc-num{font-family:'Bebas Neue',cursive;font-size:21px;color:var(--r);min-width:34px;line-height:1;}
-.jc-date{font-size:11px;color:var(--mid);font-family:'JetBrains Mono',monospace;}
-.jc-cond{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:4px;}
-.jc-cond.casa{background:var(--r2);color:var(--r);}
-.jc-cond.fuera{background:#eef2ff;color:#4338ca;}
-.jc-rival{display:flex;align-items:center;gap:10px;}
-.jc-shield{width:34px;height:34px;border-radius:50%;object-fit:contain;background:var(--bg);border:1px solid var(--bdr);padding:2px;flex-shrink:0;}
-.jc-shield-ph{width:34px;height:34px;border-radius:50%;background:var(--bg);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:12px;color:var(--faint);flex-shrink:0;}
-.jc-name{font-weight:600;font-size:13.5px;line-height:1.2;}
-.jc-city{font-size:10.5px;color:var(--mid);}
-.jc-foot{display:flex;align-items:center;gap:8px;border-top:1px solid var(--bg);padding-top:10px;margin-top:auto;}
-.jc-estado{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 9px;border-radius:4px;}
-.jc-estado.none{background:var(--bg);color:var(--faint);}
-.jc-estado.borrador{background:var(--warn-bg);color:var(--warn);}
-.jc-estado.publicado{background:var(--fit-bg);color:var(--fit);}
-.jc-actions{margin-left:auto;display:flex;gap:6px;}
-.jc-edit-row{display:flex;gap:8px;align-items:center;}
-.jc-edit-row select{flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--wh);}
+/* MAIN */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+.topbar{height:58px;background:var(--wh);border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;padding:0 36px;flex-shrink:0;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.topbar-title{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;letter-spacing:.1em;color:var(--txt);text-transform:uppercase;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--fit);animation:dot 2s infinite;flex-shrink:0;}
+.sync-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mid);}
+.sync-row{display:flex;align-items:center;gap:6px;}
 
-/* ══ EDITOR ══ */
-.ed-meta{background:var(--wh);border:1px solid var(--bdr);border-radius:10px;padding:18px 20px;margin-bottom:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;}
-.ed-field label{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--mid);margin-bottom:5px;}
-.ed-field input,.ed-field select{width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--bdr);border-radius:7px;background:var(--wh);}
-.ed-field input:focus,.ed-field select:focus{border-color:var(--r3);}
-.ed-block{background:var(--wh);border:1px solid var(--bdr);border-radius:10px;padding:18px 20px;margin-bottom:14px;animation:fadeUp .3s both;}
-.ed-block-title{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:4px;}
-.ed-block-title::before{content:'';display:block;width:3px;height:16px;background:var(--r);border-radius:2px;}
-.ed-hint{font-size:11px;color:var(--faint);margin-bottom:9px;}
-.ed-block textarea{width:100%;font-size:13px;line-height:1.6;padding:10px 12px;border:1px solid var(--bdr);border-radius:7px;resize:vertical;min-height:90px;background:var(--wh);}
-.ed-block textarea:focus{border-color:var(--r3);}
-.clip-list{display:flex;flex-direction:column;gap:6px;margin-top:12px;}
-.clip-row{display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--bdr);border-radius:7px;padding:7px 11px;font-size:12px;}
-.clip-row .cl-lab{font-weight:600;}
-.clip-row .cl-url{color:var(--mid);font-size:10.5px;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
-.clip-row .cl-del{color:var(--inj);background:none;font-size:14px;padding:2px 6px;}
-.clip-add{display:grid;grid-template-columns:1fr 1.6fr 1.6fr auto;gap:7px;margin-top:9px;}
-.clip-add input{font-size:12px;padding:7px 9px;border:1px solid var(--bdr);border-radius:6px;}
-.plan-ed-row{display:grid;grid-template-columns:150px 110px 1fr auto;gap:8px;margin-bottom:7px;}
-.plan-ed-row input,.plan-ed-row select{font-size:12px;padding:7px 9px;border:1px solid var(--bdr);border-radius:6px;background:var(--wh);}
-.ed-savebar{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:18px 0 8px;display:flex;gap:10px;justify-content:flex-end;}
+/* PAGES */
+.page{display:none;padding:32px 36px 48px;animation:fadeUp .3s ease;}
+.page.active{display:block;}
 
-/* ══ INFORME (estilo analisis-rival) ══ */
-#view-informe{display:none;position:fixed;inset:0;z-index:200;background:var(--i-bg);overflow:hidden;font-family:'Outfit',sans-serif;color:var(--i-text);font-size:13.5px;line-height:1.55;}
-.inf-layout{display:flex;height:100%;}
-.inf-sidebar{width:var(--i-sidebar);flex-shrink:0;background:#101014;display:flex;flex-direction:column;padding:22px 0 14px;overflow-y:auto;}
-.inf-sb-header{padding:0 20px 18px;border-bottom:1px solid rgba(255,255,255,.08);}
-.inf-sb-badge{display:inline-flex;align-items:center;gap:7px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#f3b3ba;background:rgba(232,25,44,.16);padding:4px 10px;border-radius:20px;margin-bottom:10px;}
-.inf-sb-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--r);}
-.inf-sb-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#fff;line-height:1.15;}
-.inf-sb-sub{font-size:11px;color:rgba(255,255,255,.45);margin-top:4px;}
-.inf-sb-nav{display:flex;flex-direction:column;padding-top:12px;flex:1;}
-.inf-sb-nav a{display:flex;align-items:center;gap:10px;padding:10px 20px;text-decoration:none;color:rgba(255,255,255,.5);font-size:12.5px;font-weight:500;border-left:2px solid transparent;transition:.18s;}
-.inf-sb-nav a:hover{color:#fff;background:rgba(255,255,255,.04);}
-.inf-sb-nav a.active{color:#fff;border-left-color:var(--r);background:rgba(232,25,44,.08);}
-.inf-sb-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,.3);}
-.inf-sb-footer{padding:14px 20px 0;border-top:1px solid rgba(255,255,255,.08);font-size:10.5px;color:rgba(255,255,255,.35);line-height:1.5;}
-.inf-sb-footer strong{display:block;color:rgba(255,255,255,.6);}
-.inf-main{flex:1;overflow-y:auto;scroll-behavior:smooth;}
-.inf-section{padding:44px 48px;max-width:1050px;}
-.sec-label{font-family:'Barlow Condensed',sans-serif;font-size:13.5px;font-weight:800;letter-spacing:3.5px;text-transform:uppercase;color:var(--i-red);margin-bottom:6px;display:flex;align-items:center;gap:8px;}
-.sec-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--i-border2) 0%,transparent 100%);max-width:200px;}
-.sec-title{font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:900;margin-bottom:22px;letter-spacing:.3px;line-height:1.1;}
-.subsection-title{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;margin-bottom:14px;margin-top:6px;display:flex;align-items:center;gap:8px;letter-spacing:.3px;}
-.subsection-title::before{content:'';display:block;width:3px;height:18px;background:var(--i-red);border-radius:2px;flex-shrink:0;}
-.icard{background:var(--i-card);border:1px solid var(--i-border);border-radius:12px;padding:18px 20px;min-width:0;overflow:hidden;box-shadow:var(--shadow-sm);}
-.icard ul{font-size:12.5px;color:var(--i-muted2);padding-left:16px;line-height:1.65;}
-.icard ul li{margin-bottom:4px;}
-.ig2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
-.inf-cover{min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:60px 48px;position:relative;background:radial-gradient(1000px 500px at 80% 10%,rgba(232,25,44,.06),transparent 60%),var(--i-bg);}
-.inf-cover .cv-shield{width:110px;height:110px;object-fit:contain;margin-bottom:24px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.15));}
-.inf-cover .cv-kicker{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:var(--i-red);margin-bottom:10px;}
-.inf-cover h1{font-family:'Barlow Condensed',sans-serif;font-size:58px;font-weight:900;line-height:1.02;letter-spacing:.5px;margin-bottom:14px;}
-.inf-cover .cv-meta{display:flex;gap:12px;flex-wrap:wrap;}
-.inf-cover .cv-chip{font-size:11.5px;font-weight:600;padding:6px 14px;border-radius:20px;background:var(--i-card);border:1px solid var(--i-border);color:var(--i-muted2);box-shadow:var(--shadow-sm);}
-.video-section{margin-top:14px;}
-.video-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--i-muted);margin-bottom:8px;}
-.video-grid{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;}
-.video-grid.v1{grid-template-columns:minmax(0,1fr);}
-.video-placeholder{position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;cursor:pointer;border:1px solid var(--i-border2);background:#0a0d13 center/cover no-repeat;transition:opacity .2s;display:block;max-width:100%;min-width:0;}
-.vp-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.1) 0%,rgba(0,0,0,.55) 100%);opacity:.7;transition:.2s;}
-.video-placeholder:hover .vp-overlay{opacity:.45;}
-.video-placeholder:hover .vp-play{transform:translate(-50%,-50%) scale(1.08);}
-.vp-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:rgba(232,25,44,.9);display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(232,25,44,.5);transition:.2s;z-index:2;flex-shrink:0;}
-.vp-play svg{width:16px;height:16px;fill:#fff;margin-left:3px;}
-.vp-label{position:absolute;bottom:8px;left:10px;right:10px;font-size:10px;font-weight:600;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8);z-index:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.vp-tag{position:absolute;top:8px;left:8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:3px;background:rgba(232,25,44,.8);color:#fff;z-index:2;}
-.plan-item{padding:13px 15px;border-radius:10px;border:1px solid var(--i-border);background:var(--i-card);box-shadow:var(--shadow-sm);}
-.plan-item.danger{background:rgba(208,16,32,.04);border-color:rgba(208,16,32,.2);}
-.plan-item.chance{background:rgba(10,138,85,.04);border-color:rgba(10,138,85,.2);}
-.plan-time{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;margin-bottom:4px;color:var(--i-muted2);}
-.plan-item.danger .plan-time{color:var(--i-red);}
-.plan-item.chance .plan-time{color:var(--i-green);}
-.plan-text{font-size:11.5px;color:var(--i-muted2);line-height:1.4;}
-.inf-close{position:fixed;top:14px;right:16px;z-index:220;background:rgba(0,0,0,.55);color:#fff;border-radius:8px;padding:8px 15px;font-size:12px;font-weight:600;backdrop-filter:blur(4px);}
-.pipe-note{display:flex;gap:10px;align-items:flex-start;background:var(--i-card2);border:1px dashed var(--i-border2);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--i-muted);}
+/* UTILS */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid var(--bdr);flex-wrap:wrap;gap:10px;}
+.st{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;letter-spacing:.1em;color:var(--txt);text-transform:uppercase;}
+.sc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);}
+.card{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;padding:20px;}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:14px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:24px;}
+.kpi{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;padding:16px;border-left:3px solid transparent;transition:border-color .2s;}
+.kpi:hover{border-left-color:var(--r);}
+.kv{font-family:'Bebas Neue',sans-serif;font-size:40px;color:var(--txt);line-height:1;}
+.kv.red{color:var(--r);}.kv.green{color:var(--fit);}.kv.amber{color:var(--warn);}
+.kl{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);margin-top:3px;}
 
-/* ══ TABLAS INFORME ══ */
-.tbl{width:100%;border-collapse:collapse;font-size:12px;}
-.tbl th{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--i-muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--i-border);}
-.tbl td{padding:7px 8px;border-bottom:1px solid var(--i-bg2);color:var(--i-muted2);}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;transition:all .18s;cursor:pointer;border:none;}
+.btn-primary{background:var(--r);color:var(--wh);}
+.btn-primary:hover{background:#c8151f;box-shadow:0 4px 12px var(--r3);}
+.btn-ghost{background:transparent;border:1.5px solid var(--bdr);color:var(--mid);}
+.btn-ghost:hover{border-color:var(--r);color:var(--r);}
+.btn-green{background:var(--fit);color:var(--wh);}
+.btn-green:hover{background:#126a34;}
+.btn-danger{background:transparent;border:1.5px solid rgba(220,38,38,.25);color:var(--inj);}
+.btn-danger:hover{background:var(--inj-bg);}
+.btn-sm{padding:4px 10px;font-size:11px;}
+
+/* PILLS */
+.pill{display:inline-flex;align-items:center;gap:4px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;padding:3px 8px;border-radius:2px;text-transform:uppercase;}
+.pill-green{background:var(--fit-bg);color:var(--fit);}
+.pill-red{background:var(--inj-bg);color:var(--inj);}
+.pill-amber{background:var(--warn-bg);color:var(--warn);}
+.pill-gray{background:#f5f5f5;color:var(--mid);}
+
+/* FILTER TABS */
+.ftabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;}
+.ftab{padding:5px 12px;border-radius:3px;border:1.5px solid var(--bdr);background:transparent;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);cursor:pointer;transition:all .18s;}
+.ftab:hover{border-color:var(--r);color:var(--r);}
+.ftab.active{background:var(--r);border-color:var(--r);color:var(--wh);}
+
+/* SETUP */
+.canvas-area{position:relative;display:inline-block;border:2px dashed var(--bdr);border-radius:6px;overflow:hidden;cursor:crosshair;max-width:100%;}
+.canvas-area.has-image{border-color:var(--r);}
+#zone-canvas{display:block;max-width:100%;max-height:65vh;}
+.upload-placeholder{width:320px;height:440px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer;background:var(--bg);}
+.upload-placeholder svg{opacity:.2;width:44px;height:44px;}
+.upload-placeholder p{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);}
+.zone-layout{display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start;}
+.zone-sidebar{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;padding:16px;position:sticky;top:10px;}
+.zone-sb-title{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:12px;}
+.drawing-info{font-size:12px;color:var(--mid);padding:8px 10px;background:var(--bg);border-radius:4px;margin-bottom:10px;line-height:1.5;}
+.zone-list{display:flex;flex-direction:column;gap:5px;max-height:380px;overflow-y:auto;}
+.zone-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg);border-radius:4px;border:1px solid var(--bdr);}
+.zone-dot{width:10px;height:10px;border-radius:3px;background:var(--r);flex-shrink:0;}
+.zone-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);width:16px;flex-shrink:0;}
+.zone-name{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--txt);flex:1;}
+.zone-del{background:none;border:none;color:var(--faint);cursor:pointer;font-size:16px;line-height:1;padding:0 2px;transition:color .18s;}
+.zone-del:hover{color:var(--inj);}
+
+/* REGISTER */
+.att-upload-area{border:2px dashed var(--bdr);border-radius:6px;padding:48px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:var(--wh);}
+.att-upload-area:hover{border-color:var(--r);background:var(--r2);}
+.att-two-col{display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start;}
+.att-img-preview{border-radius:6px;overflow:hidden;border:1px solid var(--bdr);}
+.att-img-preview img{width:100%;height:auto;display:block;}
+.att-result-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:4px;margin-bottom:6px;border:1px solid var(--bdr);background:var(--wh);transition:background .2s;}
+.att-result-row.present{border-color:rgba(21,128,61,.3);background:var(--fit-bg);}
+.att-result-row.absent{border-color:rgba(220,38,38,.2);background:var(--inj-bg);}
+.att-pname{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--txt);}
+.att-toggle{display:flex;border:1.5px solid var(--bdr);border-radius:4px;overflow:hidden;}
+.att-toggle button{padding:4px 10px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:transparent;color:var(--mid);border:none;cursor:pointer;transition:all .15s;}
+.att-toggle button.on-p{background:var(--fit);color:var(--wh);}
+.att-toggle button.on-a{background:var(--inj);color:var(--wh);}
+
+/* Lista táctil de 4 estados + multa condicional */
+.att-row2{border:1px solid var(--bdr);border-radius:6px;margin-bottom:8px;overflow:hidden;background:var(--wh);transition:border-color .2s;}
+.att-row2-head{display:flex;align-items:center;gap:10px;padding:9px 12px;}
+.att-row2-num{font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--faint);width:20px;flex-shrink:0;text-align:right;}
+.att-row2-name{flex:1;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--txt);}
+.status-seg{display:flex;border:1.5px solid var(--bdr);border-radius:4px;overflow:hidden;flex-shrink:0;}
+.status-seg button{padding:5px 8px;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:transparent;color:var(--mid);border:none;cursor:pointer;transition:all .15s;border-right:1px solid var(--bdr);white-space:nowrap;}
+.status-seg button:last-child{border-right:none;}
+.status-seg button.sel-presente{background:var(--fit);color:var(--wh);}
+.status-seg button.sel-retraso{background:#d97706;color:var(--wh);}
+.status-seg button.sel-ausencia{background:var(--inj);color:var(--wh);}
+.status-seg button.sel-justificada{background:#6b7280;color:var(--wh);}
+.att-row2.st-presente{border-color:rgba(21,128,61,.3);}
+.att-row2.st-retraso{border-color:rgba(217,119,6,.35);}
+.att-row2.st-ausencia{border-color:rgba(220,38,38,.3);}
+.att-row2.st-justificada{border-color:rgba(107,114,128,.35);}
+.att-row2-fine{display:none;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--bdr);background:var(--bg);}
+.att-row2-fine.show{display:flex;}
+.fine-check-lbl{display:flex;align-items:center;gap:5px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mid);cursor:pointer;flex-shrink:0;}
+.fine-check-lbl input{accent-color:var(--r);width:14px;height:14px;}
+.fine-type-sel{flex:1;font-family:'Barlow',sans-serif;font-size:11px;padding:4px 6px;border:1.5px solid var(--bdr);border-radius:3px;background:var(--wh);color:var(--txt);}
+.fine-type-sel:disabled{opacity:.4;}
+.processing-overlay{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:56px;background:var(--wh);border:1px solid var(--bdr);border-radius:6px;}
+.spinner{width:32px;height:32px;border:3px solid var(--bdr);border-top-color:var(--r);border-radius:50%;animation:spin .7s linear infinite;}
+.proc-msg{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.08em;color:var(--mid);text-transform:uppercase;}
+
+/* HISTORY */
+.hist-session{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;margin-bottom:10px;overflow:hidden;}
+.hist-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;transition:background .18s;}
+.hist-head:hover{background:var(--bg);}
+.hist-date{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--txt);}
+.hist-body{padding:0 18px 16px;}
+.hist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;margin-top:12px;}
+.hist-player{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;}
+.hist-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.hist-photo{margin-top:10px;}
+.hist-photo img{width:100%;max-width:320px;border-radius:4px;border:1px solid var(--bdr);cursor:pointer;}
+
+/* Catálogo: cabeceras de categoría e importes */
+.ft-cat-row td{background:var(--bg);font-family:'Barlow Condensed',sans-serif;font-size:10px;
+  font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--mid);
+  padding:9px 12px !important;border-bottom:1px solid var(--bdr);}
+.ft-cat-row td span{float:right;font-weight:600;letter-spacing:.1em;color:var(--faint);}
+.ft-amount{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--r);white-space:nowrap;}
+.ft-amount.todef{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--mid);}
+
+/* FINES */
+.tbl-wrap{overflow-x:auto;}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.tbl th{padding:9px 12px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);border-bottom:1.5px solid var(--bdr);background:var(--wh);}
+.tbl td{padding:9px 12px;border-bottom:1px solid rgba(226,226,226,.6);}
 .tbl tr:last-child td{border-bottom:none;}
-.tbl .num{text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;}
-.tbl tr.hl-rival td{background:rgba(20,82,204,.06);font-weight:600;color:var(--i-text);}
-.tbl tr.hl-racing td{background:var(--i-red);color:#fff;font-weight:600;}
-.tbl tr.hl-racing td .pos-b{background:rgba(255,255,255,.2);color:#fff;}
-.pos-b{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:5px;background:var(--i-bg2);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;color:var(--i-text);}
-.risk-b{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:4px;background:rgba(196,123,0,.14);color:var(--i-amber);}
-/* ══ RACHA ══ */
-.form-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--i-bg2);font-size:12px;}
-.form-row:last-child{border-bottom:none;}
-.form-j{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--i-muted);min-width:34px;}
-.form-badge{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;color:#fff;flex-shrink:0;}
-.form-badge.V{background:var(--i-green);}.form-badge.E{background:var(--i-amber);}.form-badge.D{background:var(--i-red);}
-.form-score{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:12px;min-width:36px;}
-.form-rival{flex:1;color:var(--i-muted2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.form-cond{font-size:9px;font-weight:700;text-transform:uppercase;color:var(--i-muted);letter-spacing:.5px;}
-/* ══ GOLES POR TRAMOS ══ */
-.tramo-wrap{display:flex;gap:28px;}
-.tramo-col{flex:1;min-width:0;}
-.tramo-head{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--i-muted2);margin-bottom:10px;}
-.tramo-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
-.tramo-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--i-muted);width:52px;flex-shrink:0;}
-.tramo-bars{flex:1;display:flex;gap:3px;height:22px;min-width:0;overflow:hidden;}
-.tbar{display:flex;align-items:center;border-radius:4px;min-width:20px;transition:width .4s;}
-.tbar span{font-size:10px;font-weight:700;color:#fff;padding:0 6px;}
-.tbar.gf{background:var(--i-green);}
-.tbar.gc{background:var(--i-red);}
-.tramo-totals{display:flex;gap:14px;margin-top:8px;font-size:11.5px;font-weight:600;}
-.tramo-totals .gf-l{color:var(--i-green);}.tramo-totals .gc-l{color:var(--i-red);}
-.tramo-legend{display:flex;gap:16px;margin-top:12px;padding-top:10px;border-top:1px solid var(--i-border);font-size:10.5px;color:var(--i-muted);}
-.tramo-legend span{display:flex;align-items:center;gap:5px;}
-.tramo-legend i{width:10px;height:10px;border-radius:3px;display:inline-block;}
-.leg-gf{background:var(--i-green);}.leg-gc{background:var(--i-red);}
-/* ══ RANKINGS ══ */
-.rank-row{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--i-bg2);}
-.rank-row:last-child{border-bottom:none;}
-.rank-met{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--i-muted);text-align:center;min-width:120px;}
-.rank-v{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;}
-.rank-v.left{text-align:right;color:var(--i-text);}
-.rank-v.right{text-align:left;color:var(--i-red);}
-.rank-head{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin-bottom:8px;padding-bottom:10px;border-bottom:1px solid var(--i-border);}
-.rank-head .rh{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;}
-/* ══ CONVOCATORIAS ══ */
-.lu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
-.lu-card{background:var(--i-card);border:1px solid var(--i-border);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow-sm);min-width:0;}
-.lu-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--i-bg2);}
-.lu-badge{width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11px;color:#fff;flex-shrink:0;}
-.lu-title{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;color:var(--i-text);letter-spacing:.3px;}
-.lu-player{display:flex;align-items:center;gap:7px;padding:2.5px 0;font-size:11px;color:var(--i-muted);}
-.lu-player.titl{color:var(--i-muted2);font-weight:500;}
-.lu-dorsal{font-family:'JetBrains Mono',monospace;font-size:9.5px;min-width:18px;text-align:right;color:var(--i-muted);}
-.lu-player-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.lu-sep{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--i-muted);margin:7px 0 4px;padding-top:6px;border-top:1px dashed var(--i-border);}
-.sub-min{display:inline-flex;align-items:center;gap:3px;font-family:'JetBrains Mono',monospace;font-size:9px;}
-.sub-min svg{width:9px;height:9px;}
-.sub-min.out{color:var(--i-red);}.sub-min.in{color:var(--i-green);}
-/* ══ CAMPOGRAMAS ══ */
-.pitch-wrap{display:flex;gap:20px;margin-bottom:20px;flex-wrap:wrap;}
-.pitch-card{flex:1;text-align:center;min-width:210px;}
-.pitch-label{font-size:12px;font-weight:600;margin-bottom:8px;color:var(--i-muted2);}
-.pitch-svg{width:100%;max-width:min(260px,45vw);height:auto;}
-/* ══ ÁRBITRO ══ */
-.ref-role{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--i-muted);margin-bottom:3px;}
-.ref-main{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;line-height:1.1;}
-.ref-assist{display:flex;flex-direction:column;gap:3px;margin-top:8px;font-size:11.5px;color:var(--i-muted2);}
-.ref-stat-row{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:12px;color:var(--i-muted2);border-bottom:1px solid var(--i-bg2);}
-.ref-stat-row:last-child{border-bottom:none;}
-.ref-stat-label{flex:1;}
-.ref-stat-val{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;}
-.ref-stat-val.am{color:var(--i-amber);}.ref-stat-val.gr{color:var(--i-red);}
-/* ══ EDITOR ESTRUCTURADO ══ */
-.ta-mono{font-family:'JetBrains Mono',monospace !important;font-size:11.5px !important;}
-.ed-sec{font-family:'Bebas Neue',cursive;font-size:19px;letter-spacing:1.5px;color:var(--mid);margin:26px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--bdr);}
-.ed-sec:first-child{margin-top:0;}
-.ed-fuente{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:3px 9px;border-radius:4px;}
-.ed-fuente.manual{background:var(--warn-bg);color:var(--warn);}
-.ed-fuente.actas{background:var(--fit-bg);color:var(--fit);}
-@media(max-width:820px){.tramo-wrap{flex-direction:column;gap:18px;}.pitch-wrap{flex-direction:column;align-items:center;}.pitch-card{width:100%;max-width:300px;}.pitch-svg{max-width:100%;}}
+.tbl tr:hover td{background:rgba(232,25,44,.025);}
+.tbl .nm{font-weight:600;}
+.tbl .nm small{display:block;font-size:11px;font-weight:400;color:var(--faint);}
 
-/* ══ MODALES / TOAST ══ */
-.modal-bg{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s;}
-.modal-bg.open{display:flex;}
-.modal{background:var(--wh);border-radius:12px;padding:24px;width:min(400px,94vw);animation:fadeUp .2s;}
-.modal h3{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:800;margin-bottom:6px;}
-.modal p{font-size:12.5px;color:var(--mid);margin-bottom:14px;line-height:1.5;}
-.modal input{width:100%;font-size:14px;padding:10px 12px;border:1px solid var(--bdr);border-radius:8px;margin-bottom:14px;}
-.modal .m-actions{display:flex;gap:9px;justify-content:flex-end;}
-.modal .m-err{color:var(--inj);font-size:11.5px;margin:-8px 0 10px;display:none;}
-#videoModal{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.88);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px;}
-#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--blk);color:#fff;font-size:12.5px;font-weight:500;padding:10px 20px;border-radius:8px;z-index:500;display:none;animation:toastIn .25s;}
-@media(max-width:820px){
-  .inf-sidebar{display:none;}
-  .inf-section{padding:28px 18px;}
-  .ig2{grid-template-columns:minmax(0,1fr);}
-  .inf-cover h1{font-size:38px;}
-  .inf-cover{padding:40px 20px;}
-  .clip-add{grid-template-columns:1fr;}
-  .plan-ed-row{grid-template-columns:1fr;}
-  .video-grid{grid-template-columns:minmax(0,1fr);}
+/* DASHBOARD */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+.player-fine-card{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;padding:16px;border-left:3px solid transparent;transition:all .2s;}
+.player-fine-card:hover{border-left-color:var(--r);box-shadow:0 6px 18px rgba(0,0,0,.07);}
+.pfc-name{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px;}
+.pfc-total{font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--r);line-height:1;}
+.pfc-bar{height:4px;background:var(--bg);border-radius:2px;margin-top:8px;overflow:hidden;}
+.pfc-bar-fill{height:100%;background:var(--fit);border-radius:2px;transition:width .6s;}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.bar-lbl{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;width:160px;color:var(--mid);flex-shrink:0;font-size:11px;}
+.bar-track{flex:1;height:7px;background:var(--bg);border-radius:4px;overflow:hidden;}
+.bar-fill{height:100%;background:var(--r);border-radius:4px;transition:width .6s;}
+.bar-val{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mid);width:48px;text-align:right;flex-shrink:0;}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);}
+.overlay.open{display:flex;}
+.modal{background:var(--wh);border:1px solid var(--bdr);border-radius:8px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 24px 60px rgba(0,0,0,.15);}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--bdr);}
+.modal-head h3{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;}
+.modal-close{background:none;border:none;font-size:22px;color:var(--faint);cursor:pointer;padding:0;}
+.form-group{margin-bottom:14px;}
+.form-label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--mid);margin-bottom:6px;}
+.form-control{width:100%;background:var(--bg);border:1.5px solid var(--bdr);border-radius:4px;color:var(--txt);padding:9px 12px;font-size:13px;transition:border-color .18s;}
+.form-control:focus{border-color:var(--r);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--bdr);}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;right:28px;background:var(--blk);color:var(--wh);padding:12px 18px 12px 14px;border-radius:4px;border-left:3px solid var(--r);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px;animation:fadeUp .3s ease;}
+.toast.ok{border-left-color:var(--fit);}
+.toast.err{border-left-color:var(--inj);}
+
+.mobnav{display:none;}
+
+@media(max-width:900px){
+  .sidebar{display:none;}
+  .att-two-col{grid-template-columns:1fr;}
+  .zone-layout{grid-template-columns:1fr;}
+  .dash-grid{grid-template-columns:1fr;}
+  .mobnav{
+    display:flex; position:fixed; left:0; right:0; bottom:0; z-index:80;
+    background:#101014; border-top:1px solid rgba(255,255,255,.08);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .mobnav-item{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:9px 4px 8px; position:relative;
+    color:rgba(255,255,255,.45); border-top:2px solid transparent;
+  }
+  .mobnav-item .nav-icon{font-size:16px;}
+  .mobnav-item small{font-family:'Barlow Condensed',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;}
+  .mobnav-item.active{color:#fff;border-top-color:var(--r);}
+  .mobnav-badge{position:absolute;top:5px;right:calc(50% - 20px);background:var(--r);color:#fff;font-size:8.5px;font-weight:700;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+  .main{padding-bottom:64px;} /* deja hueco para que la barra inferior no tape contenido */
 }
+@media(max-width:600px){.page{padding:18px 14px 36px;}.topbar{padding:0 16px;}.form-row{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
+<div class="app">
 
-<!-- ══ TOPBAR ══ -->
-<header class="topbar">
-  <a href="index.html" class="back">← Racing Lab</a>
-  <h1>ANÁLISIS <span>RIVAL</span></h1>
-  <div class="spacer"></div>
-  <div class="mode-chip" id="modeChip" onclick="toggleAnalista()" style="cursor:pointer" title="Modo analista: generar, editar y eliminar informes">
-    <div class="dot"></div><span id="modeChipTxt">Modo lectura</span>
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sb-brand">
+    <button class="sb-back" onclick="window.location.href='index.html'">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Volver al Lab
+    </button>
+    <div class="sb-name">RACING <span>LAB</span></div>
+    <div class="sb-sub">Asistencia & Multas</div>
   </div>
-</header>
-
-<!-- ══ VISTA CALENDARIO ══ -->
-<div class="wrap" id="view-calendario">
-  <div class="banner" id="calBanner" style="display:none">
-    ⚠️ Calendario provisional — rivales asignados por orden de grupo hasta que la RFAF publique el calendario oficial. Actívalo en modo analista para corregirlo (J1–J17 sincroniza automáticamente su espejo J18–J34).
-  </div>
-  <div class="pagehead">
-    <div>
-      <div class="pt">Temporada 2026/27 · Grupo X</div>
-      <div class="ps">34 jornadas · Inicio 6 sep · J15 martes 8 dic · Parón 27 dic y 28 mar (Semana Santa) · Fin 2 may</div>
+  <nav class="sb-nav">
+    <div class="sb-section">Asistencia</div>
+    <div class="nav-item active" onclick="nav('p-register',this)"><span class="nav-icon">📷</span>Registrar</div>
+    <div class="nav-item" onclick="nav('p-history',this)"><span class="nav-icon">◫</span>Historial</div>
+    <!-- Zonas/Vision retirado — ver nota en el JS junto a checkZonesState() -->
+    <!-- <div class="nav-item" onclick="nav('p-setup',this)"><span class="nav-icon">◈</span>Configurar zonas</div> -->
+    <div class="sb-section">Multas</div>
+    <div class="nav-item" onclick="nav('p-fines',this)"><span class="nav-icon">◉</span>Registro <span class="nav-badge" id="unpaid-badge">0</span></div>
+    <div class="nav-item" onclick="nav('p-fine-types',this)"><span class="nav-icon">◐</span>Catálogo</div>
+    <div class="nav-item" onclick="nav('p-dashboard',this)"><span class="nav-icon">◧</span>Dashboard</div>
+  </nav>
+  <div class="sb-foot">
+    <div class="sync-row" style="margin-bottom:6px;">
+      <div class="sync-dot" id="sync-dot"></div>
+      <div class="sync-lbl" id="sync-lbl">Conectando…</div>
     </div>
-    <div style="display:flex;gap:9px;">
-      <button class="btn btn-ghost btn-sm" id="btnEditCal" onclick="toggleCalEdit()" style="display:none">✏️ Editar calendario</button>
-    </div>
-  </div>
-  <div class="jgrid" id="jgrid"></div>
-</div>
-
-<!-- ══ VISTA EDITOR ══ -->
-<div class="wrap" id="view-editor" style="display:none">
-  <div class="pagehead">
-    <div>
-      <div class="pt" id="edTitle">Editor</div>
-      <div class="ps" id="edSub"></div>
-    </div>
-    <div style="display:flex;gap:9px;">
-      <button class="btn btn-ghost btn-sm" onclick="showCalendario()">← Calendario</button>
-      <button class="btn btn-ghost btn-sm" onclick="openInforme(currentInformeId)">👁 Ver informe</button>
-    </div>
-  </div>
-  <div id="edBody"></div>
-  <div class="ed-savebar">
-    <button class="btn btn-ghost" onclick="recargarActas()">↻ Recargar datos de actas</button>
-    <button class="btn btn-danger" onclick="askDeleteInforme()">🗑 Eliminar informe</button>
-    <button class="btn btn-primary" onclick="saveInforme()">💾 Guardar cambios</button>
+    <div class="sb-foot-txt">Racing Club Portuense · 2026/27</div>
   </div>
 </div>
 
-<!-- ══ VISTA INFORME ══ -->
-<div id="view-informe">
-  <button class="inf-close" onclick="closeInforme()">✕ Cerrar</button>
-  <div class="inf-layout">
-    <aside class="inf-sidebar" id="infSidebar"></aside>
-    <main class="inf-main" id="infMain"></main>
-  </div>
-</div>
+<nav class="mobnav">
+  <div class="mobnav-item active" onclick="nav('p-register',this)"><span class="nav-icon">📷</span><small>Registrar</small></div>
+  <div class="mobnav-item" onclick="nav('p-history',this)"><span class="nav-icon">◫</span><small>Historial</small></div>
+  <div class="mobnav-item" onclick="nav('p-fines',this)"><span class="nav-icon">◉</span><small>Registro</small><span class="mobnav-badge" id="unpaid-badge-m">0</span></div>
+  <div class="mobnav-item" onclick="nav('p-fine-types',this)"><span class="nav-icon">◐</span><small>Catálogo</small></div>
+  <div class="mobnav-item" onclick="nav('p-dashboard',this)"><span class="nav-icon">◧</span><small>Dashboard</small></div>
+</nav>
 
-<!-- ══ MODAL CONTRASEÑA ══ -->
-<div class="modal-bg" id="passModal">
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Registrar Asistencia</div>
+    <div class="topbar-right" id="topbar-actions"></div>
+  </div>
+
+  <!-- REGISTER -->
+  <div class="page active" id="p-register">
+    <div id="reg-upload">
+      <div class="sh">
+        <div class="st">Registrar Asistencia</div>
+        <div class="sc" id="reg-date-label"></div>
+      </div>
+      <div class="att-upload-area" onclick="document.getElementById('att-file').click()">
+        <input type="file" id="att-file" accept="image/*" style="display:none" onchange="handlePhoto(this)"/>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);">Toca para subir la foto del papel</p>
+          <p style="font-size:12px;color:var(--faint);">JPG · PNG · Vertical</p>
+        </div>
+      </div>
+    </div>
+    <div id="reg-processing" style="display:none;">
+      <div class="processing-overlay">
+        <div class="spinner"></div>
+        <div class="proc-msg" id="proc-msg">Subiendo foto…</div>
+        <div style="font-size:12px;color:var(--faint);">Un momento</div>
+      </div>
+    </div>
+    <div id="reg-results" style="display:none;">
+      <div class="sh">
+        <div>
+          <div class="st" id="reg-results-title">Marcar asistencia</div>
+          <div class="sc" id="result-meta"></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="resetReg()">← Cancelar</button>
+          <button class="btn btn-green" onclick="saveSession()">💾 Guardar sesión</button>
+        </div>
+      </div>
+      <div class="att-two-col">
+        <div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);margin-bottom:8px;">Foto del papel</div>
+          <div class="att-img-preview"><img id="result-img" src="" alt=""/></div>
+          <button class="btn btn-ghost" style="margin-top:8px;width:100%;font-size:12px;" onclick="document.getElementById('att-file').click()">🔄 Cambiar foto</button>
+          <div style="margin-top:12px;padding:12px 14px;background:var(--bg);border:1px solid var(--bdr);border-radius:8px;">
+            <label for="reg-session-date" style="display:block;font-family:'Barlow Condensed',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:6px;">¿A qué día pertenece esta sesión?</label>
+            <input type="date" id="reg-session-date" style="width:100%;font-size:14px;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;background:var(--wh);"/>
+            <div style="font-size:10.5px;color:var(--faint);margin-top:5px;">Por defecto es hoy — cámbialo si estás subiendo la firma de un día anterior.</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);margin-bottom:12px;">
+            Lista de firma <span style="font-weight:400;font-family:'Barlow',sans-serif;color:var(--faint)">(mismo orden que el papel · todos parten como Presente)</span>
+          </div>
+          <div id="att-result-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="page" id="p-history">
+    <div class="sh"><div class="st">Historial</div><div class="sc" id="hist-count"></div></div>
+    <div id="hist-list"></div>
+  </div>
+
+  <!-- SETUP -->
+  <div class="page" id="p-setup">
+    <div class="sh">
+      <div>
+        <div class="st">Configurar Zonas</div>
+        <div class="sc">Setup único · se guarda en Firebase</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="clearZones()">Borrar zonas</button>
+        <button class="btn btn-primary btn-sm" onclick="saveZones()">Guardar zonas</button>
+      </div>
+    </div>
+    <div style="background:var(--r2);border:1px solid var(--r3);border-radius:6px;padding:14px 16px;margin-bottom:20px;font-size:13px;line-height:1.6;">
+      <strong style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Instrucciones:</strong>
+      Sube una foto del papel en <strong>blanco</strong>. Dibuja un rectángulo sobre la zona de firma de cada jugador y asígnale el nombre. Solo hay que hacerlo una vez.
+    </div>
+    <div class="zone-layout">
+      <div>
+        <div class="canvas-area" id="canvas-wrap">
+          <div class="upload-placeholder" id="canvas-ph" onclick="document.getElementById('setup-file').click()">
+            <input type="file" id="setup-file" accept="image/*" style="display:none" onchange="loadSetupImg(this)"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <p>Subir papel en blanco</p>
+          </div>
+          <canvas id="zone-canvas" style="display:none;"></canvas>
+        </div>
+      </div>
+      <div class="zone-sidebar">
+        <div class="zone-sb-title">Zonas definidas (<span id="zone-count">0</span>)</div>
+        <div class="drawing-info" id="drawing-info">Sube una imagen para comenzar.</div>
+        <div id="pending-assign" style="display:none;margin-bottom:12px;">
+          <div class="form-label">Asignar a jugador:</div>
+          <select class="form-control" id="zone-player-sel" style="margin-bottom:8px;"></select>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-primary btn-sm" onclick="confirmZone()" style="flex:1">Confirmar</button>
+            <button class="btn btn-ghost btn-sm" onclick="cancelZone()">✕</button>
+          </div>
+        </div>
+        <div class="zone-list" id="zone-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINES -->
+  <div class="page" id="p-fines">
+    <div class="sh">
+      <div class="st">Registro de Multas</div>
+      <div class="sc" id="fines-count"></div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <button class="btn btn-primary" onclick="openModal('modal-fine')">+ Añadir multa</button>
+    </div>
+    <div class="ftabs">
+      <button class="ftab active" onclick="filterFines('all',this)">Todas</button>
+      <button class="ftab" onclick="filterFines('pending',this)">Pendientes</button>
+      <button class="ftab" onclick="filterFines('paid',this)">Pagadas</button>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr>
+            <th>Fecha</th><th>Jugador</th><th>Tipo</th>
+            <th>Importe</th><th>Recurrente</th><th>Estado</th><th>Acciones</th>
+          </tr></thead>
+          <tbody id="fines-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINE TYPES -->
+  <div class="page" id="p-fine-types">
+    <div class="sh">
+      <div class="st">Régimen de Multas 26/27</div>
+      <div class="sc" id="ftypes-count"></div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <button class="btn btn-primary" onclick="openNewFineType()">+ Nuevo concepto</button>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Concepto</th><th>Importe</th><th>Categoría</th><th>Detalle</th><th></th></tr></thead>
+          <tbody id="ftypes-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page" id="p-dashboard">
+    <div class="sh"><div class="st">Dashboard Multas</div><div class="sc" id="dash-meta"></div></div>
+    <div class="kpi-grid" id="dash-kpis"></div>
+    <div class="dash-grid">
+      <div class="card">
+        <div class="card-title">Deuda pendiente por jugador</div>
+        <div id="debt-chart"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Multas por tipo</div>
+        <div id="type-chart"></div>
+      </div>
+    </div>
+    <div class="card-title" style="margin-bottom:14px;">Ranking de deuda</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;" id="fine-cards"></div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- MODAL MULTA -->
+<div class="overlay" id="modal-fine" onclick="overlayClose(event,'modal-fine')">
   <div class="modal">
-    <h3>Modo analista</h3>
-    <p>Introduce la contraseña para generar, editar o eliminar informes. El resto del staff puede leer los informes publicados sin contraseña.</p>
-    <input type="password" id="passInput" placeholder="Contraseña" onkeydown="if(event.key==='Enter')checkPass()"/>
-    <div class="m-err" id="passErr">Contraseña incorrecta.</div>
-    <div class="m-actions">
-      <button class="btn btn-ghost" onclick="closePassModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="checkPass()">Entrar</button>
+    <div class="modal-head"><h3>Añadir Multa</h3><button class="modal-close" onclick="closeModal('modal-fine')">×</button></div>
+    <div class="form-group">
+      <label class="form-label">Jugador</label>
+      <select class="form-control" id="af-player"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-control" id="af-type" onchange="autoAmount()"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Importe (€)</label>
+        <input type="number" class="form-control" id="af-amount" step="0.5" min="0"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Fecha</label>
+        <input type="date" class="form-control" id="af-date"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">¿Recurrente?</label>
+        <select class="form-control" id="af-recurrent">
+          <option value="no">No</option>
+          <option value="si">Sí</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notas</label>
+      <textarea class="form-control" id="af-notes" rows="2"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-fine')">Cancelar</button>
+      <button class="btn btn-primary" onclick="addFine()">Registrar</button>
     </div>
   </div>
 </div>
 
-<!-- ══ MODAL CONFIRMAR BORRADO ══ -->
-<div class="modal-bg" id="delModal">
+<!-- MODAL TIPO -->
+<div class="overlay" id="modal-type" onclick="overlayClose(event,'modal-type')">
   <div class="modal">
-    <h3>Eliminar informe</h3>
-    <p id="delTxt">Se eliminará el informe por completo (texto y clips referenciados). Los vídeos en Dropbox no se tocan. Esta acción no se puede deshacer.</p>
-    <div class="m-actions">
-      <button class="btn btn-ghost" onclick="closeModal('delModal')">Cancelar</button>
-      <button class="btn btn-danger" onclick="confirmDeleteInforme()">Eliminar definitivamente</button>
+    <div class="modal-head"><h3 id="modal-type-title">Nuevo Concepto</h3><button class="modal-close" onclick="closeModal('modal-type')">×</button></div>
+    <input type="hidden" id="ft-edit-id"/>
+    <div class="form-group">
+      <label class="form-label">Nombre</label>
+      <input type="text" class="form-control" id="ft-name" placeholder="Ej: Ausencia sin justificar"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Importe (€)</label>
+        <input type="number" class="form-control" id="ft-amount" step="0.5" min="0" placeholder="Vacío = a definir"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Categoría</label>
+        <select class="form-control" id="ft-cat">
+          <option value="puntualidad">Puntualidad</option>
+          <option value="asistencia">Asistencia</option>
+          <option value="comportamiento">Comportamiento</option>
+          <option value="equipamiento">Equipamiento</option>
+          <option value="otros">Otros</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descripción</label>
+      <textarea class="form-control" id="ft-desc" rows="2"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-type')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveFineType()">Guardar</button>
     </div>
   </div>
 </div>
 
-<!-- ══ MODAL RECARGAR ══ -->
-<div class="modal-bg" id="recModal">
-  <div class="modal">
-    <h3>Recargar datos de actas</h3>
-    <p id="recTxt"></p>
-    <div class="m-actions">
-      <button class="btn btn-ghost" onclick="closeModal('recModal')">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmRecargar()">Recargar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ MODAL VÍDEO ══ -->
-<div id="videoModal">
-  <div style="position:relative;width:min(900px,92vw);">
-    <button onclick="closeVideo()" style="position:absolute;top:-44px;right:0;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:22px;cursor:pointer;line-height:1;padding:6px 14px;border-radius:8px;">✕</button>
-    <video id="modalVideo" controls playsinline webkit-playsinline style="width:100%;border-radius:10px;background:#000;display:block;max-height:80vh;object-fit:contain;">
-      <source id="modalVideoSrc" src="" type="video/mp4">
-    </video>
-  </div>
-</div>
-
-<div id="toast"></div>
+<!-- FIREBASE + APP SCRIPT -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, getDocs, setDoc, deleteDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, collection, doc,
+  getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
+  query, orderBy, onSnapshot, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getStorage, ref, uploadBytes, getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
+/* ── FIREBASE INIT ── */
 const app = initializeApp({
-  apiKey: "AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
-  authDomain: "racing-portuense-scouting.firebaseapp.com",
-  projectId: "racing-portuense-scouting",
-  storageBucket: "racing-portuense-scouting.firebasestorage.app",
+  apiKey:            "AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
+  authDomain:        "racing-portuense-scouting.firebaseapp.com",
+  projectId:         "racing-portuense-scouting",
+  storageBucket:     "racing-portuense-scouting.firebasestorage.app",
   messagingSenderId: "1073919975511",
-  appId: "1:1073919975511:web:7c7f59495d1f67f6f44312"
+  appId:             "1:1073919975511:web:7c7f59495d1f67f6f44312"
 });
-const db = getFirestore(app);
+const db      = getFirestore(app);
+const storage = getStorage(app);
 
-/* ══════════ CONFIG ══════════ */
-const TEMPORADA = '2026-27';
-/* SHA-256 de la contraseña del analista. Por defecto: RCP2026 — CAMBIAR.
-   Para generar un hash nuevo, en la consola del navegador:
-   crypto.subtle.digest('SHA-256', new TextEncoder().encode('TuNuevaClave')).then(b=>console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''))) */
-const PASS_HASH = '401fde9cce4cbc36ab385715ead5a7cd8be898ab07368c4303d7cc5ff8543b1e';
-const ANALISTA = 'Carlos Rueda';
+/* ── CLOUDINARY ── */
+const CLOUD  = 'dprtymvge';
+const PRESET = 'racing_lab';
 
-/* Rivales Grupo X (mismos ids que tercera.html / colección rivals) */
-const CLUBS = [
-  { id:'san-roque',    lpId:'181',   name:'San Roque de Lepe',    short:'SRL', city:'Lepe',                      stadium:'Ciudad de Lepe' },
-  { id:'xerez-dfc',    lpId:'12717', name:'Xerez DFC',            short:'XDF', city:'Jerez de la Frontera',      stadium:'Chapín' },
-  { id:'onubense',     lpId:'362',   name:'Atlético Onubense',    short:'AON', city:'Huelva',                    stadium:'Ciudad Deportiva Decano' },
-  { id:'cadiz-b',      lpId:'163',   name:'Cádiz CF Mirandilla',  short:'CDZ', city:'Cádiz',                     stadium:'El Rosal' },
-  { id:'pozoblanco',   lpId:'21',    name:'CD Pozoblanco',        short:'POZ', city:'Pozoblanco',                stadium:'Municipal Pozoblanco' },
-  { id:'ceuta-b',      lpId:'13159', name:'AD Ceuta FC B',        short:'CEU', city:'Ceuta',                     stadium:'José Martínez Pirri' },
-  { id:'bollullos',    lpId:'582',   name:'Bollullos CF',         short:'BCF', city:'Bollullos Par del Condado', stadium:'Eloy Ávila Cano' },
-  { id:'sevilla-c',    lpId:'545',   name:'Sevilla FC C',         short:'SEV', city:'Sevilla',                   stadium:'C.D. José Ramón Cisneros Palacios' },
-  { id:'dos-hermanas', lpId:'34672', name:'Dos Hermanas CF 1971', short:'DH71',city:'Dos Hermanas',              stadium:'Miguel Román' },
-  { id:'egabrense',    lpId:'23',    name:'Egabrense',            short:'EGA', city:'Cabra',                     stadium:'Antonio Povedano' },
-  { id:'linense',      lpId:'580',   name:'RB Linense',           short:'RBL', city:'La Línea de la Concepción', stadium:'Ciudad de La Línea' },
-  { id:'tomares',      lpId:'199',   name:'UD Tomares',           short:'TOM', city:'Tomares',                   stadium:'San Sebastián' },
-  { id:'utrera',       lpId:'201',   name:'CD Utrera',            short:'UTR', city:'Utrera',                    stadium:'San Juan Bosco' },
-  { id:'chiclana',     lpId:'170',   name:'Chiclana CF',          short:'CHI', city:'Chiclana de la Frontera',   stadium:'Municipal de Chiclana' },
-  { id:'conil',        lpId:'313',   name:'Conil CF',             short:'CNL', city:'Conil de la Frontera',      stadium:'José Antonio Pérez Ureba' },
-  { id:'cordoba-b',    lpId:'472',   name:'Córdoba CF B',         short:'COR', city:'Córdoba',                   stadium:'Ciudad Deportiva CCF' },
-  { id:'betis-c',      lpId:'517',   name:'Real Betis C',         short:'RBC', city:'Sevilla',                   stadium:'Luis del Sol' },
+async function uploadToCloudinary(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', PRESET);
+  fd.append('folder', 'racing-lab/asistencia');
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, {
+    method: 'POST', body: fd
+  });
+  const data = await res.json();
+  return data.secure_url;
+}
+
+/* ── STATE ── */
+/* ══════════ CATÁLOGO OFICIAL — Régimen de Multas 26/27 ══════════
+   Transcrito del documento interno de plantilla (Primera Plantilla ·
+   Tercera Federación Grupo 10). Los ids son estables (rm01…rm13) para
+   que las multas ya registradas sigan apuntando a su concepto aunque se
+   editen importes o textos.
+   `amount:null` = importe a definir caso por caso (conducta antideportiva):
+   el concepto existe en el catálogo, pero obliga a teclear la cantidad al
+   registrar la multa en vez de aplicar un importe inventado. */
+const CATALOG_VERSION = 2;
+const CAT_ORDER = ['puntualidad','asistencia','comportamiento','equipamiento','otros'];
+const CAT_LABEL = {puntualidad:'Puntualidad', asistencia:'Asistencia',
+  comportamiento:'Comportamiento', equipamiento:'Equipamiento', otros:'Otros', otro:'Otros'};
+const DEFAULT_FINE_TYPES = [
+  {id:'rm01',order:1, name:'Retraso +5 min',   amount:10,  cat:'puntualidad',   desc:'A partir de los 5 minutos de retraso.'},
+  {id:'rm02',order:2, name:'Retraso +10 min',  amount:20,  cat:'puntualidad',   desc:'A partir de los 10 minutos de retraso.'},
+  {id:'rm03',order:3, name:'Retraso +15 min',  amount:30,  cat:'puntualidad',   desc:'A partir de los 15 minutos de retraso.'},
+  {id:'rm04',order:4, name:'Ausencia sin justificar a entrenamiento', amount:120, cat:'asistencia', desc:'Sin comunicar.'},
+  {id:'rm05',order:5, name:'No asistir a partidos de casa sin justificar', amount:100, cat:'asistencia', desc:'Jugadores no convocados que no asistan al partido.'},
+  {id:'rm06',order:6, name:'Conducta antideportiva (compañero / cuerpo técnico)', amount:null, cat:'comportamiento', desc:'Faltas de respeto. Importe a definir.'},
+  {id:'rm07',order:7, name:'Uso de vaper',     amount:25,  cat:'comportamiento', desc:'Cualquier evento, entrenamiento, partido o convivencia de club.'},
+  {id:'rm08',order:8, name:'Uso del móvil',    amount:10,  cat:'comportamiento', desc:'Entrenamientos: charla + entrenamiento en campo. Partido: 1 hora antes + descanso.'},
+  {id:'rm09',order:9, name:'Sonido de móvil',  amount:10,  cat:'comportamiento', desc:'Entrenamientos: charla + entrenamiento en campo. Partido: 1 hora antes + descanso.'},
+  {id:'rm10',order:10,name:'Dejar basura en el autobús', amount:5, cat:'comportamiento', desc:'Todo el equipo.'},
+  {id:'rm11',order:11,name:'Desorden & limpieza de vestuario', amount:5, cat:'comportamiento', desc:'Responsabilidad con el material propio.'},
+  {id:'rm12',order:12,name:'Balonazo',         amount:5,   cat:'comportamiento', desc:'Doble o nada desde mitad de campo.'},
+  {id:'rm13',order:13,name:'Wellness & RPE',   amount:5,   cat:'otros',          desc:'Rellenar diariamente.'},
 ];
-const clubById = id => CLUBS.find(c=>c.id===id) || null;
+const IDS_SEMILLA_ANTIGUA = ['ft1','ft2','ft3','ft4','ft5','ft6'];
+/* Concepto propuesto al marcar un estado en el registro de asistencia.
+   Siempre editable por el staff antes de guardar. */
+const AUTO_FINE_BY_STATUS = { ausencia:'rm04', retraso:'rm01', justificada:null, presente:null };
+const fmtAmount = a => (a==null || a==='') ? 'A definir' : a+'€';
 
-/* Fechas OFICIALES (Calendario RFAF 3ª Federación G.10 26/27, publicado).
-   Ojo: J15 es MARTES 08/12 (festivo), J18 SÍ se juega el 03/01.
-   Sin jornada el 27/12 ni el 28/03 (Semana Santa). Fin de liga 02/05/2027. */
-const JORNADA_DATES = [
-  '2026-09-06','2026-09-13','2026-09-20','2026-09-27','2026-10-04','2026-10-11','2026-10-18','2026-10-25',
-  '2026-11-01','2026-11-08','2026-11-15','2026-11-22','2026-11-29','2026-12-06','2026-12-08','2026-12-13',
-  '2026-12-20','2027-01-03','2027-01-10','2027-01-17','2027-01-24','2027-01-31','2027-02-07','2027-02-14',
-  '2027-02-21','2027-02-28','2027-03-07','2027-03-14','2027-03-21','2027-04-04','2027-04-11','2027-04-18',
-  '2027-04-25','2027-05-02'
-];
-const fmtDate = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.slice(2)}`; };
-const todayIso = () => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; };
+let PLAYERS    = [];
+let ATTENDANCE = [];
+let FINES      = [];
+let FINE_TYPES = [];
+let ZONES      = [];
+let SETUP_IMG  = null;
 
-/* Bloques del informe */
-const MOMENTOS = [
-  { key:'salidaBalon',        title:'Salida de balón' },
-  { key:'presionRival',       title:'Presión rival' },
-  { key:'faseOfensiva',       title:'Fase ofensiva' },
-  { key:'faseDefensiva',      title:'Fase defensiva' },
-  { key:'transicionOfensiva', title:'Transición ofensiva' },
-  { key:'transicionDefensiva',title:'Transición defensiva' },
-];
-const ABP = [
-  { key:'abpOfensiva',  title:'ABP Ofensiva',  hint:'Córners, faltas laterales/frontales, saques de banda, penaltis — a favor' },
-  { key:'abpDefensiva', title:'ABP Defensiva', hint:'Cómo defienden córners, faltas y saques de banda — a explotar' },
-];
+let pendingZone    = null;
+let currentRect    = null;
+let isDrawing      = false;
+let startX = 0, startY = 0;
+let currentPhotoFile = null;
+let currentPhotoB64  = null;
+let attendanceResults = [];
+let editingSessionId = null;          // id de la sesión en edición, null = sesión nueva
+let editingSessionExistingPhoto = null; // foto ya guardada, se conserva si no se sube otra
+let currentFineTab = 'all';
 
-/* ══════════ ESTADO ══════════ */
-let SHIELDS = {};          // lpId → shieldUrl
-let calendario = null;     // { jornadas:[{n,clubId,condicion}], provisional }
-let informesIdx = {};      // informeId → {estado}
-let currentInformeId = null;
-let currentInforme = null; // doc en edición
-let calEditMode = false;
-let unsubInformes = null;
-let rivalPlayers = [];   // plantilla del rival cargada de rivals/{clubId}/players
-
-/* ══════════ AUTH ANALISTA ══════════ */
-async function sha256(str){
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return [...new Uint8Array(buf)].map(x=>x.toString(16).padStart(2,'0')).join('');
-}
-const isAnalista = () => sessionStorage.getItem('rl_analista') === '1';
-function refreshMode(){
-  const chip = document.getElementById('modeChip');
-  const txt  = document.getElementById('modeChipTxt');
-  const on = isAnalista();
-  chip.classList.toggle('on', on);
-  txt.textContent = on ? `Analista · ${ANALISTA}` : 'Modo lectura';
-  document.getElementById('btnEditCal').style.display = on ? '' : 'none';
-  document.getElementById('calBanner').style.display = (on && calendario?.provisional) ? 'flex' : 'none';
-  renderCalendario();
-}
-window.toggleAnalista = function(){
-  if(isAnalista()){
-    sessionStorage.removeItem('rl_analista');
-    calEditMode = false;
-    if(document.getElementById('view-editor').style.display !== 'none') showCalendario();
-    refreshMode(); toast('Modo lectura activado');
-  } else {
-    document.getElementById('passErr').style.display='none';
-    document.getElementById('passInput').value='';
-    document.getElementById('passModal').classList.add('open');
-    setTimeout(()=>document.getElementById('passInput').focus(), 60);
-  }
-};
-window.checkPass = async function(){
-  const v = document.getElementById('passInput').value;
-  if(await sha256(v) === PASS_HASH){
-    sessionStorage.setItem('rl_analista','1');
-    closePassModal(); refreshMode(); toast('Modo analista activado');
-  } else {
-    document.getElementById('passErr').style.display='block';
-  }
-};
-window.closePassModal = () => document.getElementById('passModal').classList.remove('open');
-window.closeModal = id => document.getElementById(id).classList.remove('open');
-function requireAnalista(){
-  if(isAnalista()) return true;
-  window.toggleAnalista();
-  return false;
+/* ── SYNC INDICATOR ── */
+function setSynced(ok) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-lbl');
+  if(ok) { dot.style.background='var(--fit)'; lbl.textContent='Sincronizado'; }
+  else   { dot.style.background='var(--inj)'; lbl.textContent='Sin conexión'; }
 }
 
-/* ══════════ TOAST ══════════ */
-function toast(msg){
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.style.display='block';
-  clearTimeout(t._h); t._h = setTimeout(()=>t.style.display='none', 2600);
+/* ── PLAYERS — Firestore colección 'players' (misma que plantilla.html),
+   en tiempo real. Antes leía una copia congelada de localStorage que
+   dejó de actualizarse en cuanto plantilla.html se migró a Firebase. ── */
+function loadPlayers() {
+  onSnapshot(collection(db, 'players'), snap => {
+    PLAYERS = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.active !== false);
+  });
 }
 
-/* ══════════ DROPBOX URL ══════════ */
-/* Normaliza enlaces compartidos de Dropbox a reproducibles: dl=0 → raw=1.
-   Lección 25/26: mantener dominio www.dropbox.com; dl.dropboxusercontent rompe backgrounds. */
-function dbxRaw(url){
-  if(!url) return '';
-  url = url.trim();
-  if(url.includes('dropbox.com')){
-    url = url.replace(/([?&])dl=\d/,'$1raw=1');
-    if(!/[?&]raw=1/.test(url)) url += (url.includes('?')?'&':'?') + 'raw=1';
-  }
-  return url;
-}
+/* ── FIRESTORE LISTENERS ── */
+function startListeners() {
+  // Attendance
+  onSnapshot(collection(db, 'attendance'), snap => {
+    ATTENDANCE = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (b.date||'').localeCompare(a.date||''));
+    if(document.getElementById('p-history').classList.contains('active')) renderHistory();
+    setSynced(true);
+  });
 
-/* ══════════ CALENDARIO ══════════ */
-/* Calendario OFICIAL RFAF 26/27 — rival y condición de RCP en la primera vuelta,
-   transcrito del PDF oficial publicado. J18–J34 = espejo J±17 con condición
-   invertida (verificado jornada a jornada contra el PDF: cuadra las 34).
-   Nota: doble jornada en casa J14+J15 (6 y 8 dic) y doble fuera J31+J32. */
-const CAL_OFICIAL_IDA = [
-  ['xerez-dfc','fuera'],    // J1  06/09 Xerez DFC - RCP
-  ['san-roque','casa'],     // J2  13/09 RCP - San Roque de Lepe
-  ['egabrense','fuera'],    // J3  20/09 Egabrense - RCP
-  ['chiclana','casa'],      // J4  27/09 RCP - Chiclana
-  ['tomares','fuera'],      // J5  04/10 Tomares - RCP
-  ['dos-hermanas','casa'],  // J6  11/10 RCP - Dos Hermanas 1971
-  ['conil','fuera'],        // J7  18/10 Conil - RCP
-  ['pozoblanco','casa'],    // J8  25/10 RCP - Pozoblanco
-  ['utrera','fuera'],       // J9  01/11 Utrera - RCP
-  ['cadiz-b','casa'],       // J10 08/11 RCP - Cádiz (filial)
-  ['linense','fuera'],      // J11 15/11 Linense - RCP
-  ['cordoba-b','casa'],     // J12 22/11 RCP - Córdoba (filial)
-  ['ceuta-b','fuera'],      // J13 29/11 Ceuta (filial) - RCP
-  ['onubense','casa'],      // J14 06/12 RCP - Atlético Onubense
-  ['sevilla-c','casa'],     // J15 08/12 RCP - Sevilla FC C (MARTES)
-  ['bollullos','fuera'],    // J16 13/12 Bollullos - RCP
-  ['betis-c','casa'],       // J17 20/12 RCP - Betis (filial)
-];
-/* Versión del calendario oficial embebido. Subir este número cada vez que
-   cambie un rival o una condición obliga a resembrar el documento de
-   Firestore, que de otro modo se quedaría con los datos antiguos.
-   v1 → calendario oficial RFAF 26/27
-   v2 → Sevilla FC C ocupa la plaza del Salerm Puente Genil (ascendido a
-        2ª Federación por la vacante del CD Unión Malacitano). Confirmado
-        en el calendario oficial: J15 Racing Club Portuense - Sevilla FC C. */
-const CAL_VERSION = 2;
-function defaultCalendario(){
-  const jornadas = CAL_OFICIAL_IDA.map(([clubId,condicion],i)=>({ n:i+1, clubId, condicion }));
-  for(let n=18;n<=34;n++){
-    const ida = jornadas[n-18];
-    jornadas.push({ n, clubId:ida.clubId, condicion: ida.condicion==='casa'?'fuera':'casa' });
-  }
-  return { jornadas, provisional:false, version:CAL_VERSION,
-    fuente:'Calendario oficial RFAF 3ª Federación G.10 26/27' };
-}
-async function loadCalendario(){
-  try{
-    const snap = await getDoc(doc(db,'analisisCalendario',TEMPORADA));
-    const d = snap.exists() ? snap.data() : null;
-    if(d && !d.provisional && (d.version||1) >= CAL_VERSION){
-      calendario = d;
-    } else {
-      /* Doc inexistente, aún provisional, o de una versión anterior a la
-         actual → se sustituye por el calendario oficial embebido. Las
-         ediciones manuales posteriores quedan estampadas con la versión
-         vigente (ver saveCalendario) y ya no se pisan. */
-      const motivo = !d ? 'inexistente' : (d.provisional ? 'provisional' : 'versión '+(d.version||1));
-      calendario = defaultCalendario();
-      await setDoc(doc(db,'analisisCalendario',TEMPORADA), calendario);
-      console.log('[Calendario] resembrado con el oficial RFAF v'+CAL_VERSION+' (doc '+motivo+')');
-    }
-  }catch(e){ console.error('[Calendario]', e); calendario = defaultCalendario(); }
-}
-async function saveCalendario(){
-  try{
-    calendario.version = CAL_VERSION;
-    await setDoc(doc(db,'analisisCalendario',TEMPORADA), calendario);
-  }
-  catch(e){ console.error('[Calendario save]', e); toast('Error guardando calendario'); }
-}
-window.toggleCalEdit = function(){
-  if(!requireAnalista()) return;
-  calEditMode = !calEditMode;
-  document.getElementById('btnEditCal').textContent = calEditMode ? '✓ Terminar edición' : '✏️ Editar calendario';
-  renderCalendario();
-};
-window.calSetRival = async function(n, clubId){
-  const j = calendario.jornadas.find(x=>x.n===n); if(!j) return;
-  j.clubId = clubId;
-  const mirror = calendario.jornadas.find(x=>x.n === (n<=17 ? n+17 : n-17));
-  if(mirror) mirror.clubId = clubId;
-  await saveCalendario(); renderCalendario();
-};
-window.calSetCond = async function(n, cond){
-  const j = calendario.jornadas.find(x=>x.n===n); if(!j) return;
-  j.condicion = cond;
-  const mirror = calendario.jornadas.find(x=>x.n === (n<=17 ? n+17 : n-17));
-  if(mirror) mirror.condicion = cond==='casa'?'fuera':'casa';
-  await saveCalendario(); renderCalendario();
-};
-window.calConfirmOficial = async function(){
-  calendario.provisional = false;
-  await saveCalendario(); refreshMode(); toast('Calendario marcado como oficial');
-};
+  // Fines
+  onSnapshot(collection(db, 'fines'), snap => {
+    FINES = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (b.date||'').localeCompare(a.date||''));
+    updateBadge();
+    if(document.getElementById('p-fines').classList.contains('active')) renderFinesTable(currentFineTab);
+    if(document.getElementById('p-dashboard').classList.contains('active')) renderDashboard();
+  });
 
-const informeId = n => `${TEMPORADA}_J${String(n).padStart(2,'0')}`;
+  // Fine Types
+  onSnapshot(collection(db, 'fineTypes'), snap => {
+    FINE_TYPES = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b)=>{
+        const ca=CAT_ORDER.indexOf(a.cat), cb=CAT_ORDER.indexOf(b.cat);
+        if(ca!==cb) return (ca<0?99:ca)-(cb<0?99:cb);
+        return (a.order??999)-(b.order??999);
+      });
+    if(!catalogChecked){ catalogChecked = true; syncCatalog(); }
+    if(document.getElementById('p-fine-types').classList.contains('active')) renderFineTypes();
+  });
 
-function renderCalendario(){
-  const grid = document.getElementById('jgrid');
-  if(!calendario){ grid.innerHTML=''; return; }
-  const hoy = todayIso();
-  const admin = isAnalista();
-  grid.innerHTML = calendario.jornadas.map((j,i)=>{
-    const club = clubById(j.clubId);
-    const fecha = JORNADA_DATES[j.n-1];
-    const iid = informeId(j.n);
-    const est = informesIdx[iid]?.estado || null;
-    const shield = club && SHIELDS[club.lpId]
-      ? `<img class="jc-shield" src="${SHIELDS[club.lpId]}" alt=""/>`
-      : `<div class="jc-shield-ph">${club?club.short:'—'}</div>`;
-    const estadoBadge = est
-      ? `<span class="jc-estado ${est}">${est==='publicado'?'Publicado':'Borrador'}</span>`
-      : `<span class="jc-estado none">Sin informe</span>`;
-    let actions = '';
-    if(est){
-      actions += `<button class="btn btn-ghost btn-sm" onclick="openInforme('${iid}')">Ver</button>`;
-      if(admin) actions += `<button class="btn btn-ghost btn-sm" onclick="openEditor('${iid}')">Editar</button>`;
-    } else if(admin){
-      actions += `<button class="btn btn-primary btn-sm" onclick="generarInforme(${j.n})">⚡ Generar informe</button>`;
-    }
-    const editRow = (admin && calEditMode) ? `
-      <div class="jc-edit-row">
-        <select onchange="calSetRival(${j.n}, this.value)">
-          ${CLUBS.map(c=>`<option value="${c.id}" ${c.id===j.clubId?'selected':''}>${c.name}</option>`).join('')}
-        </select>
-        <select onchange="calSetCond(${j.n}, this.value)">
-          <option value="casa" ${j.condicion==='casa'?'selected':''}>Casa</option>
-          <option value="fuera" ${j.condicion==='fuera'?'selected':''}>Fuera</option>
-        </select>
-      </div>` : '';
-    return `<div class="jcard ${fecha<hoy?'pasada':''}" style="animation-delay:${Math.min(i*18,400)}ms">
-      <div class="jc-top">
-        <div class="jc-num">J${j.n}</div>
-        <div class="jc-date">${fmtDate(fecha)}</div>
-        <div class="jc-cond ${j.condicion}">${j.condicion}</div>
-      </div>
-      <div class="jc-rival">
-        ${shield}
-        <div><div class="jc-name">${club?club.name:'—'}</div><div class="jc-city">${club?club.city:''}</div></div>
-      </div>
-      ${editRow}
-      <div class="jc-foot">${estadoBadge}<div class="jc-actions">${actions}</div></div>
-    </div>`;
-  }).join('') + (admin && calEditMode && calendario.provisional
-      ? `<div style="grid-column:1/-1;text-align:center;padding:8px;"><button class="btn btn-ghost" onclick="calConfirmOficial()">✓ Marcar calendario como oficial (quita el aviso provisional)</button></div>`
-      : '');
-}
-
-/* ══════════ INFORMES · plantilla y CRUD ══════════
-   DISEÑO CLAVE: la estructura de `datos`, `convocatorias` y `arbitro` es el
-   ESPEJO EXACTO de lo que el pipeline de actas (módulo 07 / rival_stats.json)
-   escribirá. Hoy se rellena a mano; mañana el pipeline escribe los mismos
-   campos y cambia datos.fuente de 'manual' a 'actas'. El informe no cambia. */
-function emptyBloque(){ return { items:[], clips:[] }; }
-const zeros6 = () => [0,0,0,0,0,0];
-function emptyDatos(){
-  return {
-    fuente: 'manual',
-    clasificacion: [],      // [{pos, equipo, pj, pts}]
-    racha: [],              // [{jornada, cond, res, marcador, rival}]
-    golesTramos: { total:{gf:zeros6(),gc:zeros6()}, cond:{gf:zeros6(),gc:zeros6()} },
-    goleadores: [],         // [{nombre, goles}]
-    tarjetasJugadores: [],  // [{nombre, amarillas, rojas}]  · R1: doble amarilla = 1 AM + 1 RO
-    tarjetasStaff: [],      // [{nombre, cargo, amarillas, rojas}]  · R2: staff separado
-    rankings: [],           // [{metrica, rival, racing}]
-    patrones: [],           // [string]
-    plantillaMinutos: [],   // [{nombre,dorsalHabitual,convocatorias,titularidades,minutos,goles,amarillas,rojas}]
-  };
-}
-function emptyArbitro(){
-  return { nombre:'', delegacion:'', asistente1:'', asistente2:'',
-           stats:{ partidos:'', amarillas:'', dobles:'', rojas:'', goles:'' }, notas:[] };
-}
-/* ══════════ CARGA AUTOMÁTICA DESDE ACTAS ══════════
-   El navegador NO calcula nada. Lee `rivalStats/{clubId}`, que escribe
-   stats_engine.py (Marcelo) tras cada ingesta de actas, y lo congela dentro
-   del informe. Carlos puede sobrescribir cualquier campo: lo que edite queda
-   registrado en datosMeta.camposEditados y "Recargar de actas" lo respeta. */
-async function fetchRivalStats(clubId){
-  try{
-    const snap = await getDoc(doc(db,'rivalStats',clubId));
-    return snap.exists() ? snap.data() : null;
-  }catch(e){ console.error('[rivalStats]', e); return null; }
-}
-async function fetchArbitroStats(nombre){
-  if(!nombre) return null;
-  try{
-    const snap = await getDoc(doc(db,'arbitroStats', normNombre(nombre)));
-    return snap.exists() ? snap.data() : null;
-  }catch(e){ console.error('[arbitroStats]', e); return null; }
-}
-/* Misma normalización que norm() en stats_engine.py: sin tildes, minúsculas */
-const normNombre = s => (s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
-  .toLowerCase().split(/\s+/).filter(Boolean).join(' ');
-
-/* Mapea rivalStats → la forma que consume el informe. Un único punto de
-   traducción: si el motor cambia un nombre de campo, solo se toca aquí. */
-function snapshotStats(st, condicionPartido){
-  if(!st) return { datos: emptyDatos(), convocatorias: [], meta:{fuente:'vacio'} };
-  /* El rival juega en la condición contraria a la nuestra */
-  const condRival = condicionPartido === 'casa' ? 'fuera' : 'casa';
-  const tabla = st.clasificacion?.tabla || [];
-  const pos = tabla.findIndex(r => r.equipo === st.clubId);
-  const ventana = pos >= 0 ? tabla.slice(Math.max(0,pos-3), pos+4) : tabla.slice(0,7);
-  return {
-    datos: {
-      fuente: 'actas',
-      clasificacion: ventana.map(r=>({pos:String(r.pos), equipo:r.equipo, pj:String(r.pj), pts:String(r.pts)})),
-      racha: (st.racha||[]).map(r=>({jornada:r.jornada, cond:r.cond, res:r.res, marcador:r.marcador, rival:r.rival})),
-      golesTramos: {
-        total: st.golesTramos?.total || {gf:zeros6(),gc:zeros6()},
-        cond:  st.golesTramos?.[condRival] || {gf:zeros6(),gc:zeros6()},
-      },
-      goleadores: (st.goleadores||[]).slice(0,10).map(g=>({nombre:g.nombre, goles:String(g.goles)})),
-      tarjetasJugadores: (st.disciplina?.jugadores||[]).slice(0,12)
-        .map(t=>({nombre:t.nombre, amarillas:String(t.amarillas), rojas:String(t.rojas)})),
-      tarjetasStaff: (st.disciplina?.staff||[])
-        .map(t=>({nombre:t.nombre, cargo:t.cargo||'', amarillas:String(t.amarillas), rojas:String(t.rojas)})),
-      rankings: (st.rankings||[]).map(r=>({
-        metrica: r.metrica + (r.rivalPos?` (${r.rivalPos}º/${r.racingPos}º)`:''),
-        rival: String(r.rival), racing: String(r.racing) })),
-      patrones: patronesToLines(st.patrones),
-      plantillaMinutos: st.plantillaMinutos || [],
-    },
-    convocatorias: (st.convocatorias||[]).map(c=>({
-      jornada:c.jornada, cond:c.cond, res:c.res, marcador:c.marcador, rival:c.rival,
-      sistema: c.sistema || '',   /* el acta NO trae el sistema: lo pone Carlos */
-      titulares:(c.titulares||[]).map(p=>({dorsal:p.dorsal, nombre:p.nombre, cambio:p.salioMin?'>':'', min:p.salioMin||''})),
-      suplentes:(c.suplentes||[]).map(p=>({dorsal:p.dorsal, nombre:p.nombre, cambio:p.entroMin?'<':'', min:p.entroMin||''})),
-    })),
-    meta: { fuente:'actas', hastaJornada: st.hastaJornada, snapshotEn: new Date().toISOString(),
-            verificarClasificacion: !!st.clasificacion?.verificarOficial, camposEditados: [] },
-  };
-}
-function patronesToLines(p){
-  if(!p) return [];
-  const ved = o => o ? `${o.v}V ${o.e}E ${o.d}D` : '—';
-  const out = [];
-  if(p.conVentajaDescanso)   out.push(`Con ventaja al descanso: ${ved(p.conVentajaDescanso)}`);
-  if(p.empateDescanso)       out.push(`Empatando al descanso: ${ved(p.empateDescanso)}`);
-  if(p.enDesventajaDescanso) out.push(`En desventaja al descanso: ${ved(p.enDesventajaDescanso)}`);
-  if(p.trasMarcarPrimero)    out.push(`Cuando marcan primero: ${ved(p.trasMarcarPrimero)}`);
-  if(p.porteriaCero!=null)   out.push(`Porterías a cero: ${p.porteriaCero} de ${p.partidos} partidos`);
-  if(p.encajando2mas!=null)  out.push(`Partidos encajando 2 o más: ${p.encajando2mas}`);
-  return out;
-}
-
-function plantillaInforme(j){
-  const club = clubById(j.clubId);
-  const bloques = {};
-  [...MOMENTOS, ...ABP].forEach(b => bloques[b.key] = emptyBloque());
-  return {
-    temporada: TEMPORADA, jornada: j.n, clubId: j.clubId,
-    condicion: j.condicion, fecha: JORNADA_DATES[j.n-1],
-    rivalName: club ? club.name : '', estado: 'borrador',
-    sistema: '', dropboxFolder: '',
-    visionado: [], contexto: [],
-    bloques,
-    convocatorias: [],      // [{jornada,cond,res,marcador,rival,sistema,titulares:[{dorsal,nombre,cambio,min}],suplentes:[...]}]
-    datos: emptyDatos(),
-    arbitro: emptyArbitro(),
-    fortalezas: [], debilidades: [],
-    planTramos: [
-      { tramo:"0–15'",  tipo:'neutral', texto:'' },
-      { tramo:"16–30'", tipo:'neutral', texto:'' },
-      { tramo:"31–45'", tipo:'neutral', texto:'' },
-      { tramo:"46–60'", tipo:'neutral', texto:'' },
-      { tramo:"61–75'", tipo:'neutral', texto:'' },
-      { tramo:"76–90'", tipo:'neutral', texto:'' },
-    ],
-    createdAt: new Date().toISOString(),
-  };
-}
-/* Rellena campos ausentes en informes antiguos sin tocar lo que ya existe */
-function hydrate(inf){
-  const base = plantillaInforme({ n:inf.jornada, clubId:inf.clubId, condicion:inf.condicion });
-  const out = { ...base, ...inf };
-  out.bloques = { ...base.bloques, ...(inf.bloques||{}) };
-  out.datos = { ...emptyDatos(), ...(inf.datos&&!Array.isArray(inf.datos)?inf.datos:{}) };
-  out.datos.golesTramos = {
-    total:{ gf:inf.datos?.golesTramos?.total?.gf||zeros6(), gc:inf.datos?.golesTramos?.total?.gc||zeros6() },
-    cond: { gf:inf.datos?.golesTramos?.cond?.gf ||zeros6(), gc:inf.datos?.golesTramos?.cond?.gc ||zeros6() },
-  };
-  if(Array.isArray(inf.datos)) out.datos.patrones = inf.datos;   // migración v1: datos era array de líneas
-  out.arbitro = { ...emptyArbitro(), ...(inf.arbitro||{}) };
-  out.arbitro.stats = { ...emptyArbitro().stats, ...(inf.arbitro?.stats||{}) };
-  out.convocatorias = inf.convocatorias || [];
-  out.datosMeta = inf.datosMeta || { fuente:'manual', camposEditados:[] };
-  return out;
-}
-window.generarInforme = async function(n){
-  if(!requireAnalista()) return;
-  const j = calendario.jornadas.find(x=>x.n===n); if(!j) return;
-  const iid = informeId(n);
-  try{
-    const snap = await getDoc(doc(db,'analisisInformes',iid));
-    if(snap.exists()){ openEditor(iid); return; }   // idempotente: nunca machaca
-    toast('Generando informe · cargando datos de actas…');
-    const data = plantillaInforme(j);
-    const st = await fetchRivalStats(j.clubId);
-    const snap2 = snapshotStats(st, j.condicion);
-    data.datos = snap2.datos;
-    data.convocatorias = snap2.convocatorias;
-    data.datosMeta = snap2.meta;
-    data.updatedAt = new Date().toISOString(); data.updatedBy = ANALISTA;
-    await setDoc(doc(db,'analisisInformes',iid), data);
-    toast(st ? `Informe J${n} generado con datos hasta J${st.hastaJornada}`
-             : `Informe J${n} generado · sin datos de actas todavía`);
-    openEditor(iid);
-  }catch(e){ console.error('[Generar]', e); toast('Error generando el informe'); }
-};
-window.askDeleteInforme = function(){
-  if(!requireAnalista() || !currentInforme) return;
-  document.getElementById('delTxt').textContent =
-    `Se eliminará por completo el informe J${currentInforme.jornada} · ${currentInforme.rivalName}. Los vídeos en Dropbox no se tocan. Podrás volver a generarlo vacío. Esta acción no se puede deshacer.`;
-  document.getElementById('delModal').classList.add('open');
-};
-window.confirmDeleteInforme = async function(){
-  if(!requireAnalista() || !currentInformeId) return;
-  try{
-    await deleteDoc(doc(db,'analisisInformes',currentInformeId));
-    closeModal('delModal'); toast('Informe eliminado'); showCalendario();
-  }catch(e){ console.error('[Delete]', e); toast('Error eliminando'); }
-};
-
-/* ══════════ PARSERS · formato línea con | ══════════ */
-const linesToArr = txt => txt.split('\n').map(s=>s.trim()).filter(Boolean);
-const arrToLines = arr => (arr||[]).join('\n');
-const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const splitPipe = l => l.split('|').map(s=>s.trim());
-function parseTable(txt, cols){
-  return linesToArr(txt).map(l=>{ const p=splitPipe(l); const o={}; cols.forEach((c,i)=>o[c]=p[i]??''); return o; });
-}
-const tableToLines = (arr, cols) => (arr||[]).map(o=>cols.map(c=>o[c]??'').join(' | ')).join('\n');
-function parseTramos(txt){
-  const gf=zeros6(), gc=zeros6();
-  linesToArr(txt).slice(0,6).forEach((l,i)=>{ const p=splitPipe(l); gf[i]=parseInt(p[0])||0; gc[i]=parseInt(p[1])||0; });
-  return {gf,gc};
-}
-const tramosToLines = t => (t?.gf||zeros6()).map((v,i)=>`${v} | ${(t?.gc||zeros6())[i]}`).join('\n');
-/* Convocatorias: bloques separados por línea en blanco.
-   Cabecera: J28 | C | V | 3-1 | Montilla | 4-2-3-1   (sistema opcional)
-   Jugadores: "13 Ortiz Muñoz"  ·  ">76" sale al 76  ·  "<62" entra al 62
-   "--" separa titulares de suplentes. Orden de titulares = colocación en el
-   campograma: portero primero, luego líneas de atrás hacia delante. */
-function parseConvocatorias(txt){
-  return txt.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean).map(b=>{
-    const lines = b.split('\n').map(s=>s.trim()).filter(Boolean);
-    const h = splitPipe(lines[0]);
-    const c = { jornada:h[0]||'', cond:(h[1]||'').toUpperCase(), res:(h[2]||'').toUpperCase(),
-                marcador:h[3]||'', rival:h[4]||'', sistema:h[5]||'', titulares:[], suplentes:[] };
-    let mode='titulares';
-    lines.slice(1).forEach(l=>{
-      if(/^-{2,}$/.test(l)){ mode='suplentes'; return; }
-      const m = l.match(/^(\d+)\s+(.+?)(?:\s*([<>])\s*(\d+)\s*)?$/);
-      if(m) c[mode].push({ dorsal:m[1], nombre:m[2], cambio:m[3]||'', min:m[4]||'' });
+  // Zones config
+  onSnapshot(collection(db, 'config'), snap => {
+    snap.docs.forEach(d => {
+      if(d.id === 'zones') {
+        ZONES     = d.data().zones || [];
+        SETUP_IMG = d.data().setupImg || null;
+        renderZoneList();
+        if(SETUP_IMG && document.getElementById('p-setup').classList.contains('active')) {
+          loadImageOnCanvas(SETUP_IMG);
+        }
+      }
     });
-    return c;
   });
 }
-function convocatoriasToText(arr){
-  return (arr||[]).map(c=>{
-    const pl = p => `${p.dorsal} ${p.nombre}${p.cambio?` ${p.cambio}${p.min}`:''}`;
-    const head = [c.jornada,c.cond,c.res,c.marcador,c.rival,c.sistema].filter((x,i)=>i<5||x).join(' | ');
-    return [head, ...c.titulares.map(pl), '--', ...c.suplentes.map(pl)].join('\n');
-  }).join('\n\n');
-}
 
-/* ══════════ CAMPOGRAMA SVG ══════════ */
-const PITCH_BG = `<rect width="300" height="420" rx="6" fill="#1a6b34"/><rect x="10" y="10" width="280" height="400" rx="2" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><line x1="10" y1="210" x2="290" y2="210" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><circle cx="150" cy="210" r="40" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><circle cx="150" cy="210" r="2.5" fill="rgba(255,255,255,.75)"/><rect x="70" y="10" width="160" height="60" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><rect x="110" y="10" width="80" height="22" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1"/><path d="M 103 70 A 40 40 0 0 0 197 70" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><rect x="70" y="350" width="160" height="60" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><rect x="110" y="388" width="80" height="22" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1"/><path d="M 103 350 A 40 40 0 0 1 197 350" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/>`;
-function pitchSvg(conv){
-  const tit = conv.titulares || [];
-  if(tit.length !== 11 || !conv.sistema) return '';
-  const lines = conv.sistema.replace(/^1-/,'').split('-').map(Number).filter(n=>n>0);
-  if(lines.reduce((a,b)=>a+b,0) !== 10) return '';
-  let dots = '';
-  const dot = (x,y,d,gk) => `<circle cx="${x}" cy="${y}" r="16" fill="${gk?'#0fd68a':'#d01020'}" stroke="rgba(255,255,255,.6)" stroke-width="1.5"/><text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Barlow Condensed,sans-serif" font-size="14" font-weight="800" fill="#fff">${esc(d)}</text>`;
-  dots += dot(150, 390, tit[0].dorsal, true);
-  let idx = 1;
-  const yTop = 66, yBottom = 323;
-  lines.forEach((n, li) => {
-    const y = lines.length===1 ? (yTop+yBottom)/2 : yBottom - li*((yBottom-yTop)/(lines.length-1));
-    for(let j=0;j<n;j++){
-      const x = n===1 ? 150 : 50 + j*(200/(n-1));
-      dots += dot(Math.round(x), Math.round(y), tit[idx]?.dorsal||'', false);
-      idx++;
-    }
-  });
-  return `<svg viewBox="0 0 300 420" class="pitch-svg">${PITCH_BG}${dots}</svg>`;
-}
-
-/* ══════════ EDITOR ══════════ */
-window.showCalendario = function(){
-  document.getElementById('view-editor').style.display='none';
-  document.getElementById('view-calendario').style.display='block';
-  currentInforme = null; currentInformeId = null; rivalPlayers = [];
-};
-window.openEditor = async function(iid){
-  if(!requireAnalista()) return;
+/* Siembra y actualización del catálogo oficial.
+   Sube CATALOG_VERSION cuando cambie el régimen de multas: sin versión, un
+   catálogo ya sembrado en Firestore se quedaría con los importes viejos
+   para siempre (seedFineTypes solo actuaba con la colección vacía).
+   Lo que NO hace: pisar tipos que hayáis creado a mano, ni tocar los
+   importes que hayáis ajustado después de la siembra — solo escribe los
+   conceptos oficiales que falten o que sigan en una versión anterior. */
+let catalogChecked = false;
+async function syncCatalog() {
+  let guardada = 0;
   try{
-    const snap = await getDoc(doc(db,'analisisInformes',iid));
-    if(!snap.exists()){ toast('El informe no existe'); return; }
-    currentInforme = hydrate(snap.data()); currentInformeId = iid;
-    document.getElementById('view-calendario').style.display='none';
-    document.getElementById('view-editor').style.display='block';
-    document.getElementById('edTitle').textContent = `J${currentInforme.jornada} · ${currentInforme.rivalName}`;
-    document.getElementById('edSub').textContent = `${fmtDate(currentInforme.fecha)} · ${currentInforme.condicion.toUpperCase()} · ${currentInforme.estado==='publicado'?'Publicado':'Borrador'}`;
-    renderEditor();
-    window.scrollTo(0,0);
-  }catch(e){ console.error('[Editor]', e); toast('Error abriendo el editor'); }
-};
-function getBloqueRef(key){
-  if(!currentInforme.bloques[key]) currentInforme.bloques[key] = emptyBloque();
-  return currentInforme.bloques[key];
+    const snap = await getDoc(doc(db,'config','fineCatalog'));
+    if(snap.exists()) guardada = snap.data().version || 0;
+  }catch(e){ console.error('[Catálogo] lectura', e); return; }
+  if(guardada >= CATALOG_VERSION) return;
+
+  try{
+    for(const t of DEFAULT_FINE_TYPES){
+      const actual = FINE_TYPES.find(x => x.id === t.id);
+      // Si ya existe con esta versión y fue editado a mano, se respeta
+      if(actual && (actual.catalogVersion||0) >= CATALOG_VERSION) continue;
+      await setDoc(doc(db,'fineTypes',t.id), {...t, catalogVersion:CATALOG_VERSION});
+    }
+    // La semilla genérica antigua se retira solo si no la usa ninguna multa
+    for(const viejo of IDS_SEMILLA_ANTIGUA){
+      if(!FINE_TYPES.some(x => x.id === viejo)) continue;
+      if(FINES.some(f => f.typeId === viejo)) continue;
+      await deleteDoc(doc(db,'fineTypes',viejo));
+    }
+    await setDoc(doc(db,'config','fineCatalog'), {
+      version: CATALOG_VERSION,
+      fuente: 'Régimen de Multas 26/27 · documento interno de plantilla',
+      updatedAt: serverTimestamp()
+    });
+    console.log('[Catálogo] régimen de multas actualizado a v'+CATALOG_VERSION);
+  }catch(e){ console.error('[Catálogo] escritura', e); }
 }
-function clipListHtml(bkey){
-  const clips = getBloqueRef(bkey).clips || [];
-  return clips.map((c,idx)=>`
-    <div class="clip-row">
-      <span class="cl-lab">🎬 ${esc(c.label)||'Clip'}</span>
-      <span class="cl-url">${esc(c.video)}</span>
-      <button class="cl-del" onclick="delClip('${bkey}',${idx})">✕</button>
+
+/* ── NAVIGATION ── */
+const PAGE_TITLES = {
+  'p-register':'Registrar Asistencia','p-history':'Historial',
+  'p-setup':'Configurar Zonas','p-fines':'Registro de Multas',
+  'p-fine-types':'Catálogo de Multas','p-dashboard':'Dashboard Multas'
+};
+window.nav = function(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  // Se sincronizan SIEMPRE ambas barras (sidebar de escritorio + barra
+  // inferior de móvil) por id, no solo el elemento que se pulsó — si no,
+  // la que esté oculta se queda desincronizada con el tiempo.
+  document.querySelectorAll('.nav-item, .mobnav-item').forEach(n => {
+    const onclickAttr = n.getAttribute('onclick') || '';
+    n.classList.toggle('active', onclickAttr.includes("'"+id+"'"));
+  });
+  document.getElementById('page-title').textContent = PAGE_TITLES[id] || '';
+  renderPage(id);
+};
+
+function renderPage(id) {
+  if(id === 'p-register')   initRegister();
+  if(id === 'p-history')    renderHistory();
+  if(id === 'p-setup')      renderSetupPage();
+  if(id === 'p-fines')      renderFinesTable(currentFineTab);
+  if(id === 'p-fine-types') renderFineTypes();
+  if(id === 'p-dashboard')  renderDashboard();
+}
+
+/* ── REGISTER ── */
+function initRegister() {
+  document.getElementById('reg-date-label').textContent =
+    new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+}
+
+/* ── MAPEO NÚMERO DE HOJA → JUGADOR ──
+   La hoja física "Racing Club Portuense 26/27" tiene los números 1-30
+   impresos de forma fija; cada número corresponde siempre al mismo
+   jugador. Se empareja por 'nick' contra la plantilla EN VIVO (Firestore),
+   así que si algún día cambia el nick de alguien solo hay que tocar
+   este mapa, no toda la lógica. Los huecos en blanco de la hoja son null.
+   Zonas/Claude Vision retirado: los píxeles nunca coinciden entre fotos
+   tomadas desde ángulos distintos, y aquí no hace falta "leer" nada —
+   el número ya nos dice de quién es la casilla. */
+const SHEET_NUMBERS = {
+  1:'Jesús Castaño', 2:'Carmelo', 3:'Morata', 4:'Adri Rodríguez', 5:'Rodri',
+  6:'Lolo Garrido', 7:'Jacobo', 8:'Adri Cuevas', 9:'Javi Tamayo', 10:'Hugo Rodríguez',
+  11:'Rubén Sánchez', 12:'Lupu', 13:'Juanma', 14:'Rodrigo Sanz', 15:'Amengual',
+  16:null, 17:'Héctor Peña', 18:'Brandon', 19:'Marcos', 20:'Farrando',
+  21:'Lainez', 22:'Víctor Olmo', 23:'Marcos Talavera', 24:'Fuentes', 25:'Fernando',
+  26:null, 27:null, 28:null, 29:null, 30:null,
+};
+
+function buildRosterFromSheet(){
+  const byNick = {};
+  PLAYERS.forEach(p => { byNick[p.nick] = p; });
+  const used = new Set();
+  const roster = [];
+  for(let n=1; n<=30; n++){
+    const nick = SHEET_NUMBERS[n];
+    if(!nick) continue;
+    const p = byNick[nick];
+    if(!p) continue;
+    used.add(p.id);
+    roster.push({ sheetNum:n, playerId:p.id, playerName:p.nick });
+  }
+  // Jugadores en plantilla pero sin número asignado en la hoja (ej. altas nuevas)
+  PLAYERS.filter(p=>!used.has(p.id)).forEach(p=>{
+    roster.push({ sheetNum:null, playerId:p.id, playerName:p.nick });
+  });
+  return roster;
+}
+
+const STATUS_LABELS = {presente:'Presente', retraso:'Retraso', ausencia:'Ausencia', justificada:'Justificada'};
+
+window.handlePhoto = async function(input) {
+  const file = input.files[0];
+  if(!file) return;
+  currentPhotoFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentPhotoB64 = e.target.result;
+    document.getElementById('reg-upload').style.display='none';
+    document.getElementById('reg-processing').style.display='none';
+    // En edición: cambiar la foto no debe borrar las marcas ya hechas.
+    if(!editingSessionId){
+      attendanceResults = buildRosterFromSheet().map(r => ({
+        ...r, status:'presente', fine:false, fineTypeId:''
+      }));
+    }
+    showResults();
+  };
+  reader.readAsDataURL(file);
+};
+
+function showResults() {
+  document.getElementById('reg-results').style.display='block';
+  document.getElementById('reg-results-title').textContent = 'Marcar asistencia';
+  document.getElementById('result-img').src = currentPhotoB64;
+  // Fecha local del día (evita el bug de toISOString/UTC ya documentado:
+  // pasadas ciertas horas en España, toISOString() puede saltar al día siguiente).
+  // En edición se respeta la fecha ya puesta por editSession(), no se pisa.
+  if(!editingSessionId){
+    const hoy = new Date();
+    const localIso = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+    document.getElementById('reg-session-date').value = localIso;
+  }
+  updateResultMeta();
+  renderResultRows();
+}
+
+function renderResultRows() {
+  document.getElementById('att-result-list').innerHTML = attendanceResults.map((r,i) => `
+    <div class="att-row2 st-${r.status}" id="row-${i}">
+      <div class="att-row2-head">
+        <div class="att-row2-num">${r.sheetNum ?? '—'}</div>
+        <div class="att-row2-name">${r.playerName}</div>
+        <div class="status-seg">
+          ${Object.keys(STATUS_LABELS).map(st=>`
+            <button class="${r.status===st?'sel-'+st:''}" onclick="setAttStatus(${i},'${st}')">${STATUS_LABELS[st]}</button>
+          `).join('')}
+        </div>
+      </div>
+      <div class="att-row2-fine ${r.status!=='presente'?'show':''}" id="fine-${i}">
+        <label class="fine-check-lbl">
+          <input type="checkbox" ${r.fine?'checked':''} onchange="toggleFine(${i},this.checked)"/> Multa
+        </label>
+        <select class="fine-type-sel" id="finetype-${i}" onchange="setFineType(${i},this.value)" ${r.fine?'':'disabled'}>
+          <option value="">— Tipo de multa —</option>
+          ${FINE_TYPES.map(t=>`<option value="${t.id}" ${r.fineTypeId===t.id?'selected':''}>${t.name} (${fmtAmount(t.amount)})</option>`).join('')}
+        </select>
+      </div>
     </div>`).join('');
 }
-window.addClip = function(bkey){
-  const lab = document.getElementById(`cl-lab-${bkey}`).value.trim();
-  const vid = document.getElementById(`cl-vid-${bkey}`).value.trim();
-  const thu = document.getElementById(`cl-thu-${bkey}`).value.trim();
-  if(!vid){ toast('Falta el enlace del vídeo'); return; }
-  getBloqueRef(bkey).clips.push({ label: lab, video: dbxRaw(vid), thumb: dbxRaw(thu) });
-  document.getElementById(`clips-${bkey}`).innerHTML = clipListHtml(bkey);
-  ['cl-lab','cl-vid','cl-thu'].forEach(p=>document.getElementById(`${p}-${bkey}`).value='');
-};
-window.delClip = function(bkey, idx){
-  getBloqueRef(bkey).clips.splice(idx,1);
-  document.getElementById(`clips-${bkey}`).innerHTML = clipListHtml(bkey);
-};
-window.planAdd = function(){ currentInforme.planTramos.push({tramo:'',tipo:'neutral',texto:''}); renderPlanEd(); };
-window.planDel = function(i){ currentInforme.planTramos.splice(i,1); renderPlanEd(); };
-window.planSet = function(i, field, val){ currentInforme.planTramos[i][field] = val; };
-function renderPlanEd(){
-  document.getElementById('planEd').innerHTML = currentInforme.planTramos.map((p,i)=>`
-    <div class="plan-ed-row">
-      <input value="${esc(p.tramo)}" placeholder="Tramo (0–15')" oninput="planSet(${i},'tramo',this.value)"/>
-      <select onchange="planSet(${i},'tipo',this.value)">
-        <option value="neutral" ${p.tipo==='neutral'?'selected':''}>Neutral</option>
-        <option value="chance"  ${p.tipo==='chance'?'selected':''}>Oportunidad</option>
-        <option value="danger"  ${p.tipo==='danger'?'selected':''}>Peligro</option>
-      </select>
-      <input value="${esc(p.texto)}" placeholder="Consigna del tramo" oninput="planSet(${i},'texto',this.value)"/>
-      <button class="btn btn-ghost btn-sm" onclick="planDel(${i})">✕</button>
-    </div>`).join('') +
-    `<button class="btn btn-ghost btn-sm" onclick="planAdd()" style="margin-top:4px">+ Añadir tramo</button>`;
+
+function updateResultMeta(){
+  const counts = {presente:0,retraso:0,ausencia:0,justificada:0};
+  attendanceResults.forEach(r=>counts[r.status]++);
+  document.getElementById('result-meta').textContent =
+    `${counts.presente} presentes · ${counts.retraso} retrasos · ${counts.ausencia} ausencias · ${counts.justificada} justificadas`;
 }
-function taBlock(id, title, hint, value, mono){
-  return `<div class="ed-block">
-    <div class="ed-block-title">${title}</div>
-    <div class="ed-hint">${hint}</div>
-    <textarea id="${id}" ${mono?'class="ta-mono"':''}>${esc(value)}</textarea>
-  </div>`;
-}
-function bloqueEditorHtml(b, hint){
-  return `<div class="ed-block">
-    <div class="ed-block-title">${b.title}</div>
-    <div class="ed-hint">${hint || 'Una observación por línea — se convierten en viñetas del informe.'}</div>
-    <textarea id="ta-${b.key}">${esc(arrToLines(getBloqueRef(b.key).items))}</textarea>
-    <div class="clip-list" id="clips-${b.key}">${clipListHtml(b.key)}</div>
-    <div class="clip-add">
-      <input id="cl-lab-${b.key}" placeholder="Etiqueta del clip"/>
-      <input id="cl-vid-${b.key}" placeholder="Enlace Dropbox del vídeo (.mp4)"/>
-      <input id="cl-thu-${b.key}" placeholder="Enlace Dropbox de la miniatura (.png) — opcional"/>
-      <button class="btn btn-ghost btn-sm" onclick="addClip('${b.key}')">+ Clip</button>
-    </div>
-  </div>`;
-}
-function renderEditor(){
-  const inf = currentInforme;
-  const d = inf.datos;
-  /* Referencia para detectar ediciones manuales al guardar */
-  inf._snapAuto = {};
-  Object.keys(CAMPOS_AUTO).forEach(k=>{
-    inf._snapAuto[k] = JSON.parse(JSON.stringify(k==='convocatorias'?inf.convocatorias:d[k]??null));
-  });
-  const condLabel = inf.condicion==='casa' ? 'fuera de casa (visitan El Puerto)' : 'en casa (les visitamos)';
-  let html = `<div class="ed-meta">
-    <div class="ed-field"><label>Estado</label>
-      <select id="ed-estado">
-        <option value="borrador" ${inf.estado==='borrador'?'selected':''}>Borrador (solo analista)</option>
-        <option value="publicado" ${inf.estado==='publicado'?'selected':''}>Publicado (visible al staff)</option>
-      </select></div>
-    <div class="ed-field"><label>Sistema habitual</label><input id="ed-sistema" value="${esc(inf.sistema)}" placeholder="1-4-2-3-1"/></div>
-    <div class="ed-field" style="grid-column:span 2"><label>Carpeta Dropbox del rival</label><input id="ed-dbx" value="${esc(inf.dropboxFolder)}" placeholder="https://www.dropbox.com/scl/fo/..."/></div>
-    <div class="ed-field" style="grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-      <span class="ed-fuente ${d.fuente==='actas'?'actas':'manual'}">${d.fuente==='actas'
-        ? `⚙ Cargado de actas · hasta J${inf.datosMeta?.hastaJornada??'—'}`
-        : '✎ Sin datos de actas todavía'}</span>
-      ${(inf.datosMeta?.camposEditados||[]).length
-        ? `<span class="ed-fuente manual">✎ Editado a mano: ${(inf.datosMeta.camposEditados).map(k=>CAMPOS_AUTO[k]||k).join(', ')}</span>` : ''}
-      ${inf.datosMeta?.verificarClasificacion
-        ? '<span style="font-size:11px;color:var(--warn)">⚠ La clasificación sale de los resultados: si hay puntos restados por sanción administrativa, corrígela a mano (R7).</span>' : ''}
-    </div>
-  </div>`;
 
-  html += `<div class="ed-sec">01 · Previa</div>`;
-  html += taBlock('ta-visionado','Visionado','Partidos vistos para este informe. Uno por línea.',arrToLines(inf.visionado));
-  html += taBlock('ta-contexto','Contexto / Situación del rival','Dinámica, necesidad, bajas, entorno. Una idea por línea.',arrToLines(inf.contexto));
-  html += taBlock('ta-clasificacion','Clasificación','⚙ Se rellena solo desde las actas. Edítalo únicamente para corregir (R7: sanciones administrativas). Formato: <b>pos | equipo | pj | pts</b>',tableToLines(d.clasificacion,['pos','equipo','pj','pts']),true);
-  html += taBlock('ta-racha','Racha · últimos 5 partidos','⚙ Se rellena solo desde las actas. Formato: <b>jornada | C/F | V/E/D | marcador | rival</b>',tableToLines(d.racha,['jornada','cond','res','marcador','rival']),true);
-  html += taBlock('ta-goleadores','Goleadores','⚙ Se rellena solo desde las actas (propias puertas excluidas, R3). Formato: <b>nombre | goles</b>',tableToLines(d.goleadores,['nombre','goles']),true);
-  html += taBlock('ta-tarjJug','Tarjetas · Jugadores','⚙ Se rellena solo desde las actas aplicando R1 (doble amarilla = 1 amarilla + 1 roja). Con 4 amarillas se marca «al límite» automáticamente.',tableToLines(d.tarjetasJugadores,['nombre','amarillas','rojas']),true);
-  html += taBlock('ta-tarjStaff','Tarjetas · Cuerpo técnico','⚙ Se rellena solo desde las actas. R2: el staff nunca se mezcla con jugadores.',tableToLines(d.tarjetasStaff,['nombre','cargo','amarillas','rojas']),true);
-
-  html += `<div class="ed-sec">02 · Formación</div>`;
-  html += taBlock('ta-convocatorias','Últimas 5 convocatorias','⚙ Las últimas 5 se rellenan solas desde las actas, con los 18 convocados y los minutos de cambio. <b>El sistema NO viene en el acta</b>: añádelo tú al final de la cabecera para que se dibuje el campograma.<br/>Cabecera: <b>J28 | C | V | 3-1 | Montilla | 4-2-3-1</b> (sistema opcional → dibuja el campograma).<br/>Jugadores: <b>13 Ortiz Muñoz</b> · sale al 76: <b>8 Caballero &gt;76</b> · entra al 62: <b>22 Ariza &lt;62</b> · <b>--</b> separa titulares de suplentes.<br/>El orden de titulares coloca el campograma: portero primero, luego líneas de atrás hacia delante.',convocatoriasToText(inf.convocatorias),true);
-
-  html += `<div class="ed-sec">03 · Momentos del juego</div>`;
-  MOMENTOS.forEach(b => html += bloqueEditorHtml(b));
-  html += `<div class="ed-sec">04 · ABP</div>`;
-  ABP.forEach(b => html += bloqueEditorHtml(b, b.hint));
-
-  html += `<div class="ed-sec">05 · Datos</div>`;
-  html += taBlock('ta-tramosTotal','Goles por tramos · Temporada completa','⚙ Se rellena solo desde las actas. 6 franjas. Formato: <b>GF | GC</b>',tramosToLines(d.golesTramos.total),true);
-  html += taBlock('ta-tramosCond',`Goles por tramos · Rival ${condLabel}`,'⚙ Se rellena solo desde las actas, filtrado por la condición en que jugarán. Formato: <b>GF | GC</b>',tramosToLines(d.golesTramos.cond),true);
-  html += taBlock('ta-rankings','Rankings de liga · comparativa','⚙ Se rellena solo desde las actas, con la posición de cada uno en la liga. Formato: <b>métrica | rival | Racing</b>',tableToLines(d.rankings,['metrica','rival','racing']),true);
-  html += taBlock('ta-patrones','Patrones situacionales','⚙ Se rellena solo desde las actas: descanso, primer gol, porterías a cero.',arrToLines(d.patrones));
-
-  html += `<div class="ed-sec">06 · Árbitro</div>`;
-  html += `<div class="ed-block">
-    <div class="ed-block-title">Trío arbitral</div>
-    <div class="ed-hint">Escribe el <b>nombre del principal</b> y pulsa el botón: sus estadísticas se cargan solas desde la base de árbitros. <button class="btn btn-ghost btn-sm" style="margin-left:6px" onclick="cargarArbitro()">⚙ Cargar perfil del árbitro</button></div>
-    <div class="ed-meta" style="margin:0;padding:0;border:none;">
-      <div class="ed-field"><label>Árbitro principal</label><input id="ed-arb-nombre" value="${esc(inf.arbitro.nombre)}"/></div>
-      <div class="ed-field"><label>Delegación</label><input id="ed-arb-del" value="${esc(inf.arbitro.delegacion)}" placeholder="Delegación de..."/></div>
-      <div class="ed-field"><label>Asistente 1</label><input id="ed-arb-a1" value="${esc(inf.arbitro.asistente1)}"/></div>
-      <div class="ed-field"><label>Asistente 2</label><input id="ed-arb-a2" value="${esc(inf.arbitro.asistente2)}"/></div>
-      <div class="ed-field"><label>Partidos</label><input id="ed-arb-pj" value="${esc(inf.arbitro.stats.partidos)}" inputmode="numeric"/></div>
-      <div class="ed-field"><label>Amarillas</label><input id="ed-arb-am" value="${esc(inf.arbitro.stats.amarillas)}" inputmode="numeric"/></div>
-      <div class="ed-field"><label>Dobles amarillas</label><input id="ed-arb-da" value="${esc(inf.arbitro.stats.dobles)}" inputmode="numeric"/></div>
-      <div class="ed-field"><label>Rojas directas</label><input id="ed-arb-ro" value="${esc(inf.arbitro.stats.rojas)}" inputmode="numeric"/></div>
-      <div class="ed-field"><label>Goles en sus partidos</label><input id="ed-arb-gl" value="${esc(inf.arbitro.stats.goles)}" inputmode="numeric"/></div>
-    </div>
-  </div>`;
-  html += taBlock('ta-arbnotas','Árbitro · Notas','Tendencias, gestión, criterio. Una por línea.',arrToLines(inf.arbitro.notas));
-
-  html += `<div class="ed-sec">07 · Plan de partido</div>`;
-  html += taBlock('ta-fortalezas','Fortalezas del rival','',arrToLines(inf.fortalezas));
-  html += taBlock('ta-debilidades','Debilidades / A explotar','',arrToLines(inf.debilidades));
-  html += `<div class="ed-block">
-    <div class="ed-block-title">Plan por tramos</div>
-    <div class="ed-hint">Tu síntesis subjetiva con todo el contexto: una consigna por franja. "Oportunidad" verde, "Peligro" rojo.</div>
-    <div id="planEd"></div>
-  </div>`;
-
-  document.getElementById('edBody').innerHTML = html;
-  renderPlanEd();
-}
-/* Recarga desde rivalStats. Los bloques que Carlos haya tocado a mano se
-   respetan salvo que los desmarque: nunca se pisa trabajo manual en silencio. */
-const CAMPOS_AUTO = {
-  clasificacion:'Clasificación', racha:'Racha', goleadores:'Goleadores',
-  tarjetasJugadores:'Tarjetas jugadores', tarjetasStaff:'Tarjetas staff',
-  golesTramos:'Goles por tramos', rankings:'Rankings', patrones:'Patrones',
-  convocatorias:'Convocatorias',
-};
-window.recargarActas = async function(){
-  if(!requireAnalista() || !currentInforme) return;
-  const st = await fetchRivalStats(currentInforme.clubId);
-  if(!st){ toast('Todavía no hay datos de actas para este rival'); return; }
-  const editados = currentInforme.datosMeta?.camposEditados || [];
-  const nombres = editados.map(k=>CAMPOS_AUTO[k]||k);
-  document.getElementById('recTxt').innerHTML = editados.length
-    ? `Se traerán los datos de actas hasta la <b>jornada ${st.hastaJornada}</b>.<br/><br/>
-       Estos bloques los has editado a mano y <b>se conservarán</b>: ${nombres.join(', ')}.<br/><br/>
-       Para que uno se sobrescriba, vacía su cuadro antes de recargar.`
-    : `Se traerán los datos de actas hasta la <b>jornada ${st.hastaJornada}</b>, sobrescribiendo los bloques automáticos. Lo cualitativo (momentos, ABP, fortalezas, plan) no se toca nunca.`;
-  document.getElementById('recModal').classList.add('open');
-};
-window.confirmRecargar = async function(){
-  const st = await fetchRivalStats(currentInforme.clubId);
-  if(!st){ closeModal('recModal'); return; }
-  const snap2 = snapshotStats(st, currentInforme.condicion);
-  const editados = currentInforme.datosMeta?.camposEditados || [];
-  Object.keys(CAMPOS_AUTO).forEach(k=>{
-    if(editados.includes(k)) return;                  // respetar lo manual
-    if(k==='convocatorias') currentInforme.convocatorias = snap2.convocatorias;
-    else currentInforme.datos[k] = snap2.datos[k];
-  });
-  currentInforme.datos.fuente = 'actas';
-  currentInforme.datos.plantillaMinutos = snap2.datos.plantillaMinutos;
-  currentInforme.datosMeta = { ...snap2.meta, camposEditados: editados };
-  closeModal('recModal');
-  renderEditor();
-  toast(`Datos recargados hasta J${st.hastaJornada} — recuerda guardar`);
-};
-
-/* LUCHO · escribes el nombre del árbitro y sus estadísticas llegan solas
-   desde arbitroStats, cruzando por nombre normalizado igual que el motor. */
-window.cargarArbitro = async function(){
-  if(!requireAnalista() || !currentInforme) return;
-  const nombre = document.getElementById('ed-arb-nombre').value.trim();
-  if(!nombre){ toast('Escribe primero el nombre del árbitro'); return; }
-  const a = await fetchArbitroStats(nombre);
-  if(!a){ toast(`Sin datos de "${nombre}" en la base de árbitros`); return; }
-  const S = (id,v) => document.getElementById(id).value = v ?? '';
-  S('ed-arb-del', a.delegacion);
-  S('ed-arb-pj', a.partidos); S('ed-arb-am', a.amarillasJugadores);
-  S('ed-arb-da', a.dobles);   S('ed-arb-ro', a.rojas); S('ed-arb-gl', a.goles);
-  const notas = [];
-  if(a.mediaSanciones!=null) notas.push(`Media de sanciones por partido: ${a.mediaSanciones}`);
-  if(a.mediaGoles!=null)     notas.push(`Media de goles por partido: ${a.mediaGoles}`);
-  if(a.amarillasStaff)       notas.push(`Amarillas a cuerpos técnicos: ${a.amarillasStaff}`);
-  const tl=a.tarjetasLocal||0, tv=a.tarjetasVisitante||0, tt=tl+tv;
-  if(tt) notas.push(`Reparto de amarillas: ${tl} al local (${Math.round(tl/tt*100)}%) · ${tv} al visitante (${Math.round(tv/tt*100)}%)`);
-  if(a.partidos) notas.push(`Resultados: ${a.victoriasLocal}V local · ${a.empates}E · ${a.victoriasVisitante}V visitante`);
-  const ta = document.getElementById('ta-arbnotas');
-  ta.value = (ta.value.trim() ? ta.value.trim()+'\n' : '') + notas.join('\n');
-  toast(`Perfil de ${a.nombre} cargado · ${a.partidos} partidos`);
-};
-
-window.saveInforme = async function(){
-  if(!requireAnalista() || !currentInforme) return;
-  const inf = currentInforme;
-  const V = id => document.getElementById(id).value;
-  inf.estado    = V('ed-estado');
-  inf.sistema   = V('ed-sistema').trim();
-  inf.dropboxFolder = V('ed-dbx').trim();
-  inf.visionado = linesToArr(V('ta-visionado'));
-  inf.contexto  = linesToArr(V('ta-contexto'));
-  inf.convocatorias = parseConvocatorias(V('ta-convocatorias'));
-  inf.datos.clasificacion     = parseTable(V('ta-clasificacion'),['pos','equipo','pj','pts']);
-  inf.datos.racha             = parseTable(V('ta-racha'),['jornada','cond','res','marcador','rival']);
-  inf.datos.goleadores        = parseTable(V('ta-goleadores'),['nombre','goles']);
-  inf.datos.tarjetasJugadores = parseTable(V('ta-tarjJug'),['nombre','amarillas','rojas']);
-  inf.datos.tarjetasStaff     = parseTable(V('ta-tarjStaff'),['nombre','cargo','amarillas','rojas']);
-  inf.datos.golesTramos.total = parseTramos(V('ta-tramosTotal'));
-  inf.datos.golesTramos.cond  = parseTramos(V('ta-tramosCond'));
-  inf.datos.rankings          = parseTable(V('ta-rankings'),['metrica','rival','racing']);
-  inf.datos.patrones          = linesToArr(V('ta-patrones'));
-  inf.arbitro = {
-    nombre: V('ed-arb-nombre').trim(), delegacion: V('ed-arb-del').trim(),
-    asistente1: V('ed-arb-a1').trim(), asistente2: V('ed-arb-a2').trim(),
-    stats: { partidos:V('ed-arb-pj').trim(), amarillas:V('ed-arb-am').trim(),
-             dobles:V('ed-arb-da').trim(), rojas:V('ed-arb-ro').trim(), goles:V('ed-arb-gl').trim() },
-    notas: linesToArr(V('ta-arbnotas')),
-  };
-  inf.fortalezas  = linesToArr(V('ta-fortalezas'));
-  inf.debilidades = linesToArr(V('ta-debilidades'));
-  inf.planTramos  = inf.planTramos.filter(p=>p.tramo||p.texto);
-  [...MOMENTOS, ...ABP].forEach(b => {
-    getBloqueRef(b.key).items = linesToArr(V(`ta-${b.key}`));
-  });
-  /* Marca como editados a mano los bloques que difieren del último snapshot
-     de actas, para que "Recargar" no los pise. */
-  const prevSnap = inf._snapAuto || {};
-  const editados = new Set(inf.datosMeta?.camposEditados || []);
-  Object.keys(CAMPOS_AUTO).forEach(k=>{
-    const actual = k==='convocatorias' ? inf.convocatorias : inf.datos[k];
-    if(prevSnap[k]!==undefined && JSON.stringify(actual)!==JSON.stringify(prevSnap[k])) editados.add(k);
-  });
-  inf.datosMeta = { ...(inf.datosMeta||{}), camposEditados:[...editados] };
-  delete inf._snapAuto;
-  inf.updatedAt = new Date().toISOString(); inf.updatedBy = ANALISTA;
-  try{
-    await setDoc(doc(db,'analisisInformes',currentInformeId), inf);
-    toast('Informe guardado');
-    document.getElementById('edSub').textContent = `${fmtDate(inf.fecha)} · ${inf.condicion.toUpperCase()} · ${inf.estado==='publicado'?'Publicado':'Borrador'}`;
-    if(inf.planTramos.length===0) inf.planTramos=[{tramo:'',tipo:'neutral',texto:''}];
-    renderPlanEd();
-  }catch(e){ console.error('[Save]', e); toast('Error guardando'); }
-};
-
-/* ══════════ VISTA INFORME ══════════ */
-function bulletsHtml(arr){
-  if(!arr || !arr.length) return `<div style="font-size:12px;color:var(--i-muted);font-style:italic;">Sin contenido aún.</div>`;
-  return `<ul>${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
-}
-function clipsHtml(clips, tag){
-  if(!clips || !clips.length) return '';
-  const cls = clips.length===1 ? 'video-grid v1' : 'video-grid';
-  return `<div class="video-section"><div class="video-label">Referencias en vídeo</div><div class="${cls}">` +
-    clips.map(c=>`
-      <div class="video-placeholder" onclick="openVideo('${esc(c.video)}')" ${c.thumb?`style="background-image:url('${esc(c.thumb)}')"`:''}>
-        <div class="vp-overlay"></div>
-        <div class="vp-play"><svg viewBox="0 0 10 10"><path d="M3 2l5 3-5 3z" fill="#fff"/></svg></div>
-        <div class="vp-tag">${esc(tag)}</div>
-        <div class="vp-label">${esc(c.label)||'Ver clip'}</div>
-      </div>`).join('') + `</div></div>`;
-}
-function bloqueInformeHtml(b, inf){
-  const data = inf.bloques?.[b.key] || {items:[],clips:[]};
-  return `<div class="icard" style="margin-bottom:14px;">
-    <div class="subsection-title">${b.title}</div>
-    ${bulletsHtml(data.items)}
-    ${clipsHtml(data.clips, b.title)}
-  </div>`;
-}
-const RES_COLOR = { V:'var(--i-green)', E:'var(--i-amber)', D:'var(--i-red)' };
-const TRAMO_LBL = ["0′-15","16′-30","31′-45","46′-60","61′-75","76′-90′+"];
-function tramosColHtml(t, head){
-  const sumF = t.gf.reduce((a,b)=>a+b,0), sumC = t.gc.reduce((a,b)=>a+b,0);
-  const max = Math.max(...t.gf, ...t.gc, 1);
-  return `<div class="tramo-col">
-    <div class="tramo-head">${head} · ${sumF} GF · ${sumC} GC</div>
-    ${TRAMO_LBL.map((lbl,i)=>`
-      <div class="tramo-row"><span class="tramo-time">${lbl}</span>
-        <div class="tramo-bars">
-          <div class="tbar gf" style="width:${Math.max(t.gf[i]/max*50,7)}%"><span>${t.gf[i]}</span></div>
-          <div class="tbar gc" style="width:${Math.max(t.gc[i]/max*50,7)}%"><span>${t.gc[i]}</span></div>
-        </div>
-      </div>`).join('')}
-    <div class="tramo-totals"><span class="gf-l">${sumF} GF</span><span class="gc-l">${sumC} GC</span></div>
-  </div>`;
-}
-function convCardHtml(c){
-  const pl = (p, tit) => `<div class="lu-player${tit?' titl':''}">
-    <span class="lu-dorsal">${esc(p.dorsal)}</span><span class="lu-player-name">${esc(p.nombre)}</span>
-    ${p.min?`<span class="sub-min ${p.cambio==='>'?'out':'in'}"><svg viewBox="0 0 10 10"><path d="M1 5h8M6 2l3 3-3 3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(p.min)}′</span>`:''}
-  </div>`;
-  return `<div class="lu-card">
-    <div class="lu-header"><span class="lu-badge" style="background:${RES_COLOR[c.res]||'var(--i-muted)'}">${esc(c.res)||'·'}</span>
-      <span class="lu-title">${esc(c.jornada)} · ${esc(c.cond)} · ${esc(c.marcador)} · ${esc(c.rival)}</span></div>
-    ${c.titulares.map(p=>pl(p,true)).join('')}
-    ${c.suplentes.length?`<div class="lu-sep">Suplentes</div>${c.suplentes.map(p=>pl(p,false)).join('')}`:''}
-  </div>`;
-}
-function clasifTableHtml(rows, rivalName){
-  if(!rows.length) return bulletsHtml([]);
-  return `<table class="tbl"><thead><tr><th>Pos</th><th>Equipo</th><th class="num">PJ</th><th class="num">Pts</th></tr></thead><tbody>` +
-    rows.map(r=>{
-      const isRacing = /racing|portuense/i.test(r.equipo);
-      const isRival = !isRacing && rivalName && r.equipo && rivalName.toLowerCase().includes(r.equipo.toLowerCase().slice(0,6));
-      return `<tr class="${isRacing?'hl-racing':isRival?'hl-rival':''}">
-        <td><span class="pos-b">${esc(r.pos)}</span></td><td>${esc(r.equipo)}</td>
-        <td class="num">${esc(r.pj)}</td><td class="num" style="font-weight:700">${esc(r.pts)}</td></tr>`;
-    }).join('') + `</tbody></table>`;
-}
-async function loadRivalPlayers(clubId){
-  try{
-    const snap = await getDocs(collection(db, `rivals/${clubId}/players`));
-    return snap.docs.map(x=>x.data());
-  }catch(e){ console.error('[Rival players]', e); return []; }
-}
-function plantillaMinutosHtml(rows){
-  return `<table class="tbl"><thead><tr><th>#</th><th>Jugador</th><th class="num">Conv.</th><th class="num">Tit.</th><th class="num">Min.</th><th class="num">⚽</th><th class="num">🟨</th><th class="num">🟥</th></tr></thead><tbody>` +
-    rows.map(p=>`<tr>
-      <td><span class="pos-b">${esc(p.dorsalHabitual||'—')}</span>${p.dorsalVariable?'<span class="risk-b" style="margin-left:4px" title="Rota dorsal entre jornadas">↻</span>':''}</td>
-      <td style="font-weight:600;color:var(--i-text)">${esc(p.nombre)}</td>
-      <td class="num">${esc(p.convocatorias)}</td><td class="num">${esc(p.titularidades)}</td>
-      <td class="num" style="font-weight:700">${esc(p.minutos)}′</td>
-      <td class="num" style="color:var(--i-green);font-weight:700">${p.goles||''}</td>
-      <td class="num" style="color:var(--i-amber)">${p.amarillas||''}</td>
-      <td class="num" style="color:var(--i-red)">${p.rojas||''}</td></tr>`).join('') +
-    `</tbody></table>`;
-}
-function plantillaTableHtml(players){
-  if(!players.length) return `<div class="pipe-note">📋 <span>Sin plantilla registrada para este rival. Se gestiona en <strong>Tercera RFEF</strong> (tercera.html) — importa desde lapreferente y aparecerá aquí sola.</span></div>`;
-  const posOrder = {POR:0,DEF:1,MED:2,DEL:3};
-  const sorted = [...players].sort((a,b)=>(posOrder[a.pos]??9)-(posOrder[b.pos]??9) || (parseInt(a.dorsal)||99)-(parseInt(b.dorsal)||99));
-  const posLbl = {POR:'Portero',DEF:'Defensa',MED:'Centrocampista',DEL:'Delantero'};
-  return `<table class="tbl"><thead><tr><th>#</th><th>Jugador</th><th>Posición</th><th>Demarcación</th><th class="num">Edad</th></tr></thead><tbody>` +
-    sorted.map(p=>`<tr><td><span class="pos-b">${esc(p.dorsal??'—')}</span></td><td style="font-weight:600;color:var(--i-text)">${esc(p.name)}</td><td>${esc(posLbl[p.pos]||p.pos||'')}</td><td>${esc(p.dem||'')}</td><td class="num">${esc(p.age||'')}</td></tr>`).join('') +
-    `</tbody></table>`;
-}
-window.openInforme = async function(iid){
-  if(!iid) return;
-  let inf;
-  try{
-    const snap = await getDoc(doc(db,'analisisInformes',iid));
-    if(!snap.exists()){ toast('El informe no existe'); return; }
-    inf = hydrate(snap.data());
-  }catch(e){ console.error('[Informe]', e); toast('Error cargando el informe'); return; }
-  if(inf.estado!=='publicado' && !isAnalista()){ toast('Informe en borrador — solo visible para el analista'); return; }
-
-  rivalPlayers = await loadRivalPlayers(inf.clubId);
-  const d = inf.datos;
-  const club = clubById(inf.clubId);
-  const shield = club && SHIELDS[club.lpId] ? SHIELDS[club.lpId] : '';
-  const condLabel = inf.condicion==='casa' ? 'Fuera de casa' : 'En casa';
-  const secciones = [
-    {id:'portada',  num:'00', nom:'Portada'},
-    {id:'previa',   num:'01', nom:'Previa'},
-    {id:'formacion',num:'02', nom:'Formación'},
-    {id:'plantilla',num:'03', nom:'Plantilla'},
-    {id:'momentos', num:'04', nom:'Momentos del juego'},
-    {id:'abp',      num:'05', nom:'ABP'},
-    {id:'datos',    num:'06', nom:'Datos'},
-    {id:'arbitro',  num:'07', nom:'Árbitro'},
-    {id:'plan',     num:'08', nom:'Plan de partido'},
-  ];
-  document.getElementById('infSidebar').innerHTML = `
-    <div class="inf-sb-header">
-      <div class="inf-sb-badge"><div class="inf-sb-badge-dot"></div><span>Jornada ${inf.jornada}</span></div>
-      <div class="inf-sb-title">${esc(inf.rivalName)}</div>
-      <div class="inf-sb-sub">Análisis previo · ${fmtDate(inf.fecha)} · ${inf.condicion==='casa'?'En casa':'A domicilio'}</div>
-    </div>
-    <nav class="inf-sb-nav" id="infNav">
-      ${secciones.map((s,i)=>`<a href="#s-${s.id}" class="${i===0?'active':''}" onclick="infScroll(event,'s-${s.id}')"><span class="inf-sb-num">${s.num}</span>${s.nom}</a>`).join('')}
-      <div style="margin-top:auto;padding:12px 0;border-top:1px solid rgba(255,255,255,.08);">
-        ${inf.dropboxFolder?`<a href="${esc(inf.dropboxFolder)}" target="_blank" style="border-left:2px solid transparent;">📂&nbsp;&nbsp;Carpeta Dropbox</a>`:''}
-      </div>
-    </nav>
-    <div class="inf-sb-footer"><strong>Racing Club Portuense</strong>Temporada 2026/2027</div>`;
-
-  /* campogramas: las 2 convocatorias más recientes con 11 titulares y sistema */
-  const pitches = inf.convocatorias.filter(c=>c.titulares.length===11 && c.sistema).slice(0,2)
-    .map(c=>{ const svg = pitchSvg(c); return svg ? `<div class="pitch-card icard"><div class="pitch-label">${esc(c.jornada)} · ${esc(c.cond)} · ${esc(c.marcador)} · ${esc(c.rival)} ${c.res==='V'?'✅':c.res==='E'?'➖':c.res==='D'?'❌':''}</div>${svg}</div>` : ''; })
-    .filter(Boolean).join('');
-
-  const fuenteChip = `<div class="pipe-note" style="margin-top:14px;">${d.fuente==='actas'
-    ? '⚙️ <span>Datos cargados automáticamente del módulo <strong>Actas (07)</strong> a partir de las actas RFAF.</span>'
-    : '✎ <span>Datos introducidos manualmente. Cuando el módulo <strong>Actas (07)</strong> esté operativo, estos mismos campos se rellenarán solos desde las actas RFAF (goles, tarjetas, minutos, tramos, patrones y perfil arbitral por nombre).</span>'}</div>`;
-
-  let main = `
-  <section class="inf-cover" id="s-portada">
-    ${shield?`<img class="cv-shield" src="${shield}" alt=""/>`:''}
-    <div class="cv-kicker">Análisis rival · Jornada ${inf.jornada}</div>
-    <h1>${esc(inf.rivalName)}</h1>
-    <div class="cv-meta">
-      <span class="cv-chip">📅 ${fmtDate(inf.fecha)}</span>
-      <span class="cv-chip">${inf.condicion==='casa'?'🏟 En casa':'✈️ A domicilio'}</span>
-      ${inf.sistema?`<span class="cv-chip">📋 Sistema ${esc(inf.sistema)}</span>`:''}
-      ${club?`<span class="cv-chip">📍 ${esc(inf.condicion==='casa'?'El Puerto de Santa María':club.stadium+' · '+club.city)}</span>`:''}
-      <span class="cv-chip" style="${inf.estado==='borrador'?'color:var(--i-amber);border-color:rgba(196,123,0,.35)':''}">${inf.estado==='publicado'?'✓ Publicado':'✎ Borrador'}</span>
-    </div>
-  </section>
-
-  <section class="inf-section" id="s-previa">
-    <div class="sec-label">01 · Previa</div>
-    <div class="sec-title">Contexto</div>
-    <div class="ig2" style="margin-bottom:14px;">
-      <div class="icard"><div class="subsection-title">Visionado</div>${bulletsHtml(inf.visionado)}</div>
-      <div class="icard"><div class="subsection-title">Situación del rival</div>${bulletsHtml(inf.contexto)}</div>
-    </div>
-    <div class="ig2" style="margin-bottom:14px;">
-      <div class="icard"><div class="subsection-title">Clasificación</div>${clasifTableHtml(d.clasificacion, inf.rivalName)}</div>
-      <div class="icard"><div class="subsection-title">Racha · últimos 5</div>
-        ${d.racha.length ? d.racha.map(r=>`
-          <div class="form-row"><span class="form-j">${esc(r.jornada)}</span>
-            <span class="form-badge ${esc(r.res)}">${esc(r.res)}</span>
-            <span class="form-score">${esc(r.marcador)}</span>
-            <span class="form-rival">${esc(r.rival)}</span>
-            <span class="form-cond">${esc(r.cond)}</span></div>`).join('') : bulletsHtml([])}
-      </div>
-    </div>
-    <div class="ig2" style="margin-bottom:14px;">
-      <div class="icard"><div class="subsection-title">Goleadores</div>
-        ${d.goleadores.length ? `<table class="tbl"><tbody>${d.goleadores.map(g=>`<tr><td style="font-weight:600;color:var(--i-text)">${esc(g.nombre)}</td><td class="num" style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--i-green)">${esc(g.goles)} ⚽</td></tr>`).join('')}</tbody></table>` : bulletsHtml([])}
-      </div>
-      <div class="icard"><div class="subsection-title">Tarjetas · Jugadores</div>
-        ${d.tarjetasJugadores.length ? `<table class="tbl"><thead><tr><th>Jugador</th><th class="num">🟨</th><th class="num">🟥</th><th></th></tr></thead><tbody>${d.tarjetasJugadores.map(t=>{
-          const am = parseInt(t.amarillas)||0;
-          return `<tr><td style="font-weight:600;color:var(--i-text)">${esc(t.nombre)}</td><td class="num" style="color:var(--i-amber);font-weight:700">${esc(t.amarillas)}</td><td class="num" style="color:var(--i-red);font-weight:700">${esc(t.rojas)}</td><td>${am>=4?'<span class="risk-b">⚠ Al límite</span>':''}</td></tr>`;
-        }).join('')}</tbody></table>` : bulletsHtml([])}
-      </div>
-    </div>
-    ${d.tarjetasStaff.length ? `<div class="icard"><div class="subsection-title">Tarjetas · Cuerpo técnico</div>
-      <table class="tbl"><thead><tr><th>Nombre</th><th>Cargo</th><th class="num">🟨</th><th class="num">🟥</th></tr></thead><tbody>${d.tarjetasStaff.map(t=>`<tr><td style="font-weight:600;color:var(--i-text)">${esc(t.nombre)}</td><td>${esc(t.cargo)}</td><td class="num" style="color:var(--i-amber);font-weight:700">${esc(t.amarillas)}</td><td class="num" style="color:var(--i-red);font-weight:700">${esc(t.rojas)}</td></tr>`).join('')}</tbody></table></div>` : ''}
-  </section>
-
-  <section class="inf-section" id="s-formacion">
-    <div class="sec-label">02 · Formación</div>
-    <div class="sec-title">Alineaciones y sistema</div>
-    ${pitches?`<div class="pitch-wrap">${pitches}</div>`:''}
-    <div class="subsection-title">Últimas 5 convocatorias</div>
-    ${inf.convocatorias.length ? `<div class="lu-grid">${inf.convocatorias.map(convCardHtml).join('')}</div>` : `<div class="icard">${bulletsHtml([])}</div>`}
-  </section>
-
-  <section class="inf-section" id="s-plantilla">
-    <div class="sec-label">03 · Plantilla</div>
-    <div class="sec-title">Plantilla del rival</div>
-    <div class="icard">${d.plantillaMinutos?.length ? plantillaMinutosHtml(d.plantillaMinutos) : plantillaTableHtml(rivalPlayers)}</div>
-    <div class="pipe-note" style="margin-top:10px;">${d.plantillaMinutos?.length
-      ? '⚙ <span>Fichas calculadas desde las actas: convocatorias, titularidades, minutos, goles y tarjetas por jugador.</span>'
-      : rivalPlayers.length ? '🔗 <span>Cargada desde <strong>Tercera RFEF</strong>. Cuando haya actas de esta temporada, se sustituye por las fichas con minutos reales.</span>' : ''}</div>
-  </section>
-
-  <section class="inf-section" id="s-momentos">
-    <div class="sec-label">04 · Análisis táctico</div>
-    <div class="sec-title">Momentos del juego</div>
-    ${MOMENTOS.map(b=>bloqueInformeHtml(b,inf)).join('')}
-  </section>
-
-  <section class="inf-section" id="s-abp">
-    <div class="sec-label">05 · Estrategia</div>
-    <div class="sec-title">Acciones a balón parado</div>
-    ${ABP.map(b=>bloqueInformeHtml(b,inf)).join('')}
-  </section>
-
-  <section class="inf-section" id="s-datos">
-    <div class="sec-label">06 · Datos</div>
-    <div class="sec-title">Goles por tramos y patrones</div>
-    <div class="icard" style="margin-bottom:14px;">
-      <div class="tramo-wrap">
-        ${tramosColHtml(d.golesTramos.total, 'Goles totales temporada')}
-        ${tramosColHtml(d.golesTramos.cond, condLabel)}
-      </div>
-      <div class="tramo-legend"><span><i class="leg-gf"></i>A favor</span><span><i class="leg-gc"></i>En contra</span></div>
-    </div>
-    ${d.rankings.length ? `<div class="subsection-title">Rankings de liga</div>
-    <div class="icard" style="margin-bottom:14px;">
-      <div class="rank-head"><div class="rh" style="text-align:right;">${esc(inf.rivalName)}</div><div class="rank-met">Métrica</div><div class="rh" style="color:var(--i-red)">Racing</div></div>
-      ${d.rankings.map(r=>`<div class="rank-row"><div class="rank-v left">${esc(r.rival)}</div><div class="rank-met">${esc(r.metrica)}</div><div class="rank-v right">${esc(r.racing)}</div></div>`).join('')}
-    </div>`:''}
-    ${d.patrones.length ? `<div class="subsection-title">Patrones situacionales</div><div class="icard">${bulletsHtml(d.patrones)}</div>`:''}
-    ${fuenteChip}
-  </section>
-
-  <section class="inf-section" id="s-arbitro">
-    <div class="sec-label">07 · Colegiado</div>
-    <div class="sec-title">Árbitro designado</div>
-    <div class="ig2">
-      <div class="icard">
-        <div class="ref-role">Árbitro principal</div>
-        <div class="ref-main">${esc(inf.arbitro.nombre)||'Pendiente de designación'}</div>
-        ${inf.arbitro.delegacion?`<div style="font-size:12px;color:var(--i-muted);margin-top:2px;">${esc(inf.arbitro.delegacion)}</div>`:''}
-        <div class="ref-assist">
-          ${inf.arbitro.asistente1?`<span>🟡 Asistente 1: ${esc(inf.arbitro.asistente1)}</span>`:''}
-          ${inf.arbitro.asistente2?`<span>🟡 Asistente 2: ${esc(inf.arbitro.asistente2)}</span>`:''}
-        </div>
-      </div>
-      <div class="icard">
-        <div class="subsection-title">Estadísticas</div>
-        ${['partidos','amarillas','dobles','rojas','goles'].some(k=>inf.arbitro.stats[k]) ? `
-          <div class="ref-stat-row"><span>📋</span><span class="ref-stat-label">Partidos arbitrados</span><span class="ref-stat-val">${esc(inf.arbitro.stats.partidos)||'—'}</span></div>
-          <div class="ref-stat-row"><span>🟡</span><span class="ref-stat-label">Amarillas</span><span class="ref-stat-val am">${esc(inf.arbitro.stats.amarillas)||'—'}</span></div>
-          <div class="ref-stat-row"><span>🟨🟨</span><span class="ref-stat-label">Dobles amarillas</span><span class="ref-stat-val gr">${esc(inf.arbitro.stats.dobles)||'—'}</span></div>
-          <div class="ref-stat-row"><span>🟥</span><span class="ref-stat-label">Rojas directas</span><span class="ref-stat-val gr">${esc(inf.arbitro.stats.rojas)||'—'}</span></div>
-          <div class="ref-stat-row"><span>⚽</span><span class="ref-stat-label">Goles en sus partidos</span><span class="ref-stat-val">${esc(inf.arbitro.stats.goles)||'—'}</span></div>
-        ` : bulletsHtml([])}
-      </div>
-    </div>
-    ${inf.arbitro.notas.length?`<div class="icard" style="margin-top:14px;"><div class="subsection-title">Notas</div>${bulletsHtml(inf.arbitro.notas)}</div>`:''}
-  </section>
-
-  <section class="inf-section" id="s-plan" style="padding-bottom:90px;">
-    <div class="sec-label">08 · Plan de partido</div>
-    <div class="sec-title">Fortalezas, debilidades y plan por tramos</div>
-    <div class="ig2" style="margin-bottom:24px;">
-      <div class="icard" style="border-left:3px solid var(--i-green);">
-        <div class="subsection-title" style="color:var(--i-green)">Fortalezas</div>${bulletsHtml(inf.fortalezas)}
-      </div>
-      <div class="icard" style="border-left:3px solid var(--i-red);">
-        <div class="subsection-title" style="color:var(--i-red)">Debilidades</div>${bulletsHtml(inf.debilidades)}
-      </div>
-    </div>
-    ${inf.planTramos && inf.planTramos.filter(p=>p.texto).length ? `
-    <div class="subsection-title" style="margin-top:24px;">Plan por tramos</div>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      ${inf.planTramos.filter(p=>p.texto).map(p=>`
-        <div class="plan-item ${p.tipo!=='neutral'?p.tipo:''}">
-          <div class="plan-time">${esc(p.tramo)}</div>
-          <div class="plan-text">${esc(p.texto)}</div>
-        </div>`).join('')}
-    </div>`:''}
-  </section>`;
-
-  const mainEl = document.getElementById('infMain');
-  mainEl.innerHTML = main;
-  mainEl.scrollTop = 0;
-  document.getElementById('view-informe').style.display='block';
-  document.body.style.overflow='hidden';
-  mainEl.onscroll = () => {
-    const links = document.querySelectorAll('#infNav a[href^="#s-"]');
-    let active = 's-portada';
-    secciones.forEach(s=>{
-      const el = document.getElementById('s-'+s.id);
-      if(el && el.offsetTop - 120 <= mainEl.scrollTop) active = 's-'+s.id;
-    });
-    links.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+active));
-  };
-};
-window.infScroll = function(ev, id){
-  ev.preventDefault();
-  const el = document.getElementById(id);
-  if(el) document.getElementById('infMain').scrollTo({top: el.offsetTop, behavior:'smooth'});
-};
-window.closeInforme = function(){
-  document.getElementById('view-informe').style.display='none';
-  document.body.style.overflow='';
-  document.getElementById('modalVideo').pause();
-};
-
-/* ══════════ VÍDEO MODAL ══════════ */
-window.openVideo = function(url){
-  const modal = document.getElementById('videoModal');
-  const src = document.getElementById('modalVideoSrc');
-  const video = document.getElementById('modalVideo');
-  src.src = url; video.load();
-  modal.style.display='flex';
-  const onCan = () => { video.play().catch(()=>{}); video.removeEventListener('canplay', onCan); };
-  video.addEventListener('canplay', onCan);
-};
-window.closeVideo = function(){
-  const modal = document.getElementById('videoModal');
-  const video = document.getElementById('modalVideo');
-  video.pause(); document.getElementById('modalVideoSrc').src=''; video.load();
-  modal.style.display='none';
-};
-document.getElementById('videoModal').addEventListener('click', function(e){
-  if(e.target === this) closeVideo();
-});
-document.addEventListener('keydown', e => {
-  if(e.key==='Escape'){
-    if(document.getElementById('videoModal').style.display==='flex') closeVideo();
-    else if(document.getElementById('view-informe').style.display==='block') closeInforme();
+window.setAttStatus = function(i, status){
+  const r = attendanceResults[i];
+  r.status = status;
+  // Multa por defecto: justificada nunca la lleva por defecto (pero se puede marcar a mano);
+  // ausencia y retraso sí, como ya hacía el sistema anterior de multas automáticas.
+  if(status==='presente'){ r.fine=false; r.fineTypeId=''; }
+  else if(status==='justificada'){ r.fine=false; }
+  else { r.fine=true; }
+  // Preselección del concepto por id del catálogo oficial. Antes se
+  // adivinaba por el texto del nombre y la ausencia no casaba nunca:
+  // "Ausencia sin justificar" contiene "justific", que era justo lo que
+  // el filtro descartaba. Para el retraso se propone el tramo más bajo
+  // (+5 min) y el staff sube al de +10 o +15 si procede.
+  if(r.fine && !r.fineTypeId){
+    const preferido = AUTO_FINE_BY_STATUS[status];
+    let guess = preferido ? FINE_TYPES.find(t=>t.id===preferido) : null;
+    if(!guess && status==='retraso')  guess = FINE_TYPES.find(t=>/retraso/i.test(t.name));
+    if(!guess && status==='ausencia') guess = FINE_TYPES.find(t=>/ausencia/i.test(t.name));
+    if(guess) r.fineTypeId = guess.id;
   }
-});
+  const row = document.getElementById('row-'+i);
+  row.className = 'att-row2 st-'+status;
+  row.querySelectorAll('.status-seg button').forEach(b=>{
+    b.className = Object.keys(STATUS_LABELS).find(st=>STATUS_LABELS[st]===b.textContent)===status ? 'sel-'+status : '';
+  });
+  const fineBlock = document.getElementById('fine-'+i);
+  fineBlock.className = 'att-row2-fine'+(status!=='presente'?' show':'');
+  fineBlock.querySelector('input[type=checkbox]').checked = r.fine;
+  const sel = document.getElementById('finetype-'+i);
+  sel.disabled = !r.fine;
+  sel.value = r.fineTypeId||'';
+  updateResultMeta();
+};
 
-/* ══════════ INIT ══════════ */
-async function loadShields(){
+window.toggleFine = function(i, checked){
+  attendanceResults[i].fine = checked;
+  document.getElementById('finetype-'+i).disabled = !checked;
+};
+
+window.setFineType = function(i, typeId){
+  attendanceResults[i].fineTypeId = typeId;
+};
+
+window.saveSession = async function() {
+  const date = document.getElementById('reg-session-date').value;
+  if(!date){
+    showToast('Selecciona a qué día pertenece la sesión antes de guardar','err');
+    return;
+  }
+  document.getElementById('proc-msg').textContent = editingSessionId ? 'Actualizando sesión…' : 'Subiendo foto a Cloudinary…';
+  document.getElementById('reg-results').style.display='none';
+  document.getElementById('reg-processing').style.display='block';
+
+  // La foto SIEMPRE se sube y se guarda como prueba/histórico, marcación
+  // manual o no — esto no depende de si hay detección automática.
+  // En edición: si no se eligió una foto nueva, se conserva la existente.
+  let photoUrl = editingSessionId ? editingSessionExistingPhoto : null;
+  if(currentPhotoFile){
+    try {
+      photoUrl = await uploadToCloudinary(currentPhotoFile);
+    } catch(e) {
+      showToast('No se pudo subir la foto — la sesión se guarda igualmente','err');
+    }
+  }
+
+  const resultsPayload = attendanceResults.map(r=>({
+    playerId:r.playerId, playerName:r.playerName, sheetNum:r.sheetNum,
+    status:r.status, present: r.status==='presente' // compat con lecturas antiguas
+  }));
+
+  let sessionId;
+  if(editingSessionId){
+    sessionId = editingSessionId;
+    await updateDoc(doc(db, 'attendance', sessionId), {
+      date, results: resultsPayload, photoUrl, updatedAt: serverTimestamp()
+    });
+    // Reconciliar multas: se borran las que generó esta sesión y se
+    // recrean según el marcado actual, para no dejar duplicados ni huérfanas.
+    const antiguas = FINES.filter(f => f.sourceSessionId === sessionId);
+    for(const f of antiguas){
+      await deleteDoc(doc(db, 'fines', f.id));
+    }
+  } else {
+    const ref = await addDoc(collection(db, 'attendance'), {
+      date, results: resultsPayload, photoUrl, createdAt: serverTimestamp()
+    });
+    sessionId = ref.id;
+  }
+
+  // Multas: solo las que el staff marcó explícitamente en cada fila
+  let finesCreated = 0;
+  for(const r of attendanceResults){
+    if(!r.fine) continue;
+    const type = FINE_TYPES.find(t=>t.id===r.fineTypeId);
+    // Un concepto "a definir" no puede colarse como 0€: se registra igual
+    // para no perder el hecho, pero queda marcado para ponerle importe.
+    const sinImporte = !type || type.amount==null;
+    await addDoc(collection(db, 'fines'), {
+      playerId:r.playerId, playerName:r.playerName,
+      typeId: type?.id||null, typeName: type?.name||'Sin especificar',
+      amount: sinImporte ? 0 : type.amount,
+      pendingAmount: sinImporte,
+      date, paid:false, recurrent:'no',
+      notes: `Generada desde asistencia · ${STATUS_LABELS[r.status]}`+(sinImporte?' · IMPORTE PENDIENTE DE DEFINIR':''),
+      auto:true, sourceSessionId: sessionId, createdAt: serverTimestamp()
+    });
+    finesCreated++;
+  }
+
+  document.getElementById('reg-processing').style.display='none';
+  resetReg();
+  showToast(editingSessionId ? `Sesión actualizada · ${finesCreated} multa(s) vigente(s)`
+                              : `Sesión guardada · ${finesCreated} multa(s) generada(s)`,'ok');
+};
+
+window.resetReg = function() {
+  currentPhotoFile = null; currentPhotoB64 = null; attendanceResults = [];
+  editingSessionId = null; editingSessionExistingPhoto = null;
+  document.getElementById('att-file').value = '';
+  document.getElementById('reg-results').style.display='none';
+  document.getElementById('reg-processing').style.display='none';
+  document.getElementById('reg-upload').style.display='block';
+};
+
+/* ── EDITAR / ELIMINAR SESIÓN YA SUBIDA ── */
+window.editSession = function(id, ev) {
+  if(ev) ev.stopPropagation(); // no abrir/cerrar el acordeón del historial
+  const s = ATTENDANCE.find(x => x.id === id);
+  if(!s){ showToast('Sesión no encontrada','err'); return; }
+
+  editingSessionId = id;
+  editingSessionExistingPhoto = s.photoUrl || null;
+  currentPhotoFile = null;
+  currentPhotoB64 = s.photoUrl || '';
+
+  // Recupera el estado de multa de cada jugador cruzando por sourceSessionId,
+  // para que editar no borre "sin querer" las multas ya asociadas a la sesión.
+  attendanceResults = (s.results || []).map(r => {
+    const f = FINES.find(x => x.sourceSessionId === id && x.playerId === r.playerId);
+    return {
+      playerId: r.playerId, playerName: r.playerName, sheetNum: r.sheetNum,
+      status: r.status || (r.present ? 'presente' : 'ausencia'),
+      fine: !!f, fineTypeId: f ? (f.typeId || '') : '',
+    };
+  });
+
+  nav('p-register', document.querySelector('.nav-item[onclick*="p-register"]'));
+  document.getElementById('reg-upload').style.display = 'none';
+  document.getElementById('reg-processing').style.display = 'none';
+  document.getElementById('reg-results').style.display = 'block';
+  document.getElementById('reg-results-title').textContent = `Editando sesión del ${s.date ? new Date(s.date+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'long'}) : ''}`;
+  document.getElementById('result-img').src = currentPhotoB64;
+  document.getElementById('reg-session-date').value = s.date || '';
+  updateResultMeta();
+  renderResultRows();
+  showToast('Editando la sesión — cambia lo necesario y pulsa Guardar','ok');
+};
+
+window.deleteSession = async function(id, ev) {
+  if(ev) ev.stopPropagation();
+  const s = ATTENDANCE.find(x => x.id === id);
+  const fecha = s ? new Date(s.date+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'long'}) : '';
+  if(!confirm(`¿Eliminar la sesión de asistencia del ${fecha}? También se eliminarán las multas que generó automáticamente. Esta acción no se puede deshacer.`)) return;
+  try {
+    await deleteDoc(doc(db, 'attendance', id));
+    const relacionadas = FINES.filter(f => f.sourceSessionId === id);
+    for(const f of relacionadas){ await deleteDoc(doc(db, 'fines', f.id)); }
+    showToast('Sesión eliminada','ok');
+  } catch(e) {
+    showToast('Error al eliminar la sesión','err');
+  }
+};
+
+/* ── HISTORY ── */
+function renderHistory() {
+  document.getElementById('hist-count').textContent = ATTENDANCE.length+' sesiones';
+  document.getElementById('hist-list').innerHTML = ATTENDANCE.length
+    ? ATTENDANCE.map(s => {
+        const present = (s.results||[]).filter(r=>r.present).length;
+        const total   = (s.results||[]).length;
+        const pct     = total ? Math.round(present/total*100) : 0;
+        const cls     = pct>=85?'pill-green':pct>=70?'pill-amber':'pill-red';
+        return `<div class="hist-session">
+          <div class="hist-head" onclick="toggleHist('hb-${s.id}')">
+            <div class="hist-date">${new Date(s.date+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span class="pill ${cls}">${present}/${total} · ${pct}%</span>
+              <button class="btn btn-ghost" style="padding:4px 9px;font-size:12px;" onclick="editSession('${s.id}',event)" title="Editar sesión">✏️</button>
+              <button class="btn btn-ghost" style="padding:4px 9px;font-size:12px;color:var(--inj);" onclick="deleteSession('${s.id}',event)" title="Eliminar sesión">🗑</button>
+              <span style="color:var(--faint)">▸</span>
+            </div>
+          </div>
+          <div id="hb-${s.id}" class="hist-body" style="display:none;">
+            <div class="hist-grid">
+              ${(s.results||[]).map(r=>`<div class="hist-player">
+                <div class="hist-dot" style="background:${r.present?'var(--fit)':'var(--inj)'}"></div>
+                ${r.playerName}
+              </div>`).join('')}
+            </div>
+            ${s.photoUrl?`<div class="hist-photo"><img src="${s.photoUrl}" onclick="window.open('${s.photoUrl}','_blank')" title="Ver foto original"/></div>`:''}
+          </div>
+        </div>`;
+      }).join('')
+    : '<div class="card" style="text-align:center;padding:32px;color:var(--faint);font-family:\'Barlow Condensed\',sans-serif;font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">Sin sesiones registradas aún</div>';
+}
+
+window.toggleHist = id => { const el=document.getElementById(id); if(el) el.style.display=el.style.display==='none'?'block':'none'; };
+
+/* ── SETUP / ZONES ── */
+function renderSetupPage() {
+  populateZonePlayerSel();
+  renderZoneList();
+  if(SETUP_IMG) loadImageOnCanvas(SETUP_IMG);
+}
+
+window.loadSetupImg = function(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { SETUP_IMG = e.target.result; loadImageOnCanvas(e.target.result); };
+  reader.readAsDataURL(file);
+};
+
+function loadImageOnCanvas(src) {
+  const img = new Image();
+  img.onload = () => {
+    document.getElementById('canvas-ph').style.display='none';
+    const cv = document.getElementById('zone-canvas');
+    cv.style.display='block';
+    document.getElementById('canvas-wrap').classList.add('has-image');
+    const maxH = window.innerHeight * 0.65;
+    const scale = Math.min(1, maxH/img.height);
+    cv.width  = img.width  * scale;
+    cv.height = img.height * scale;
+    window._setupImg = img;
+    document.getElementById('drawing-info').innerHTML = '<strong>Dibuja un rectángulo</strong> sobre la zona de firma de cada jugador.';
+    setupCanvasEvents();
+    redrawCanvas();
+  };
+  img.src = src;
+}
+
+function redrawCanvas() {
+  const cv  = document.getElementById('zone-canvas');
+  const ctx = cv.getContext('2d');
+  if(!window._setupImg) return;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.drawImage(window._setupImg,0,0,cv.width,cv.height);
+  ZONES.forEach((z,i) => {
+    const x=z.x*cv.width, y=z.y*cv.height, w=z.w*cv.width, h=z.h*cv.height;
+    ctx.strokeStyle='rgba(232,25,44,.8)'; ctx.lineWidth=2;
+    ctx.fillStyle='rgba(232,25,44,.1)';
+    ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h);
+    ctx.fillStyle='rgba(232,25,44,.85)';
+    ctx.fillRect(x,y,Math.min(w,140),18);
+    ctx.fillStyle='white'; ctx.font='bold 11px Barlow Condensed, sans-serif';
+    ctx.fillText((i+1)+'. '+z.playerName, x+4, y+12);
+  });
+  if(pendingZone) {
+    const x=pendingZone.x*cv.width, y=pendingZone.y*cv.height;
+    const w=pendingZone.w*cv.width,  h=pendingZone.h*cv.height;
+    ctx.strokeStyle='rgba(37,99,235,.9)'; ctx.lineWidth=2;
+    ctx.fillStyle='rgba(37,99,235,.1)';
+    ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h);
+  }
+}
+
+function setupCanvasEvents() {
+  const cv = document.getElementById('zone-canvas');
+  const getPos = (e,touch) => {
+    const r=cv.getBoundingClientRect(), src=touch||e;
+    return {x:(src.clientX-r.left)/cv.width, y:(src.clientY-r.top)/cv.height};
+  };
+  const start = p => { if(pendingZone) return; startX=p.x; startY=p.y; isDrawing=true; };
+  const move  = p => {
+    if(!isDrawing) return;
+    currentRect={x:Math.min(startX,p.x),y:Math.min(startY,p.y),w:Math.abs(p.x-startX),h:Math.abs(p.y-startY)};
+    redrawCanvas();
+    const cv2=document.getElementById('zone-canvas'),ctx2=cv2.getContext('2d');
+    ctx2.strokeStyle='rgba(37,99,235,.9)'; ctx2.lineWidth=2;
+    ctx2.fillStyle='rgba(37,99,235,.1)';
+    ctx2.fillRect(currentRect.x*cv2.width,currentRect.y*cv2.height,currentRect.w*cv2.width,currentRect.h*cv2.height);
+    ctx2.strokeRect(currentRect.x*cv2.width,currentRect.y*cv2.height,currentRect.w*cv2.width,currentRect.h*cv2.height);
+  };
+  const end = () => {
+    if(!isDrawing||!currentRect) return;
+    isDrawing=false;
+    if(currentRect.w<0.02||currentRect.h<0.01){currentRect=null;return;}
+    pendingZone=currentRect; currentRect=null;
+    document.getElementById('pending-assign').style.display='block';
+    redrawCanvas();
+  };
+  cv.onmousedown  = e => start(getPos(e));
+  cv.onmousemove  = e => move(getPos(e));
+  cv.onmouseup    = ()=> end();
+  cv.ontouchstart = e => { e.preventDefault(); start(getPos(null,e.touches[0])); };
+  cv.ontouchmove  = e => { e.preventDefault(); move(getPos(null,e.touches[0])); };
+  cv.ontouchend   = e => { e.preventDefault(); end(); };
+}
+
+function populateZonePlayerSel() {
+  const assigned = ZONES.map(z=>z.playerId);
+  document.getElementById('zone-player-sel').innerHTML =
+    '<option value="">— Seleccionar jugador —</option>' +
+    PLAYERS.filter(p=>!assigned.includes(p.id)).sort((a,b)=>a.d-b.d)
+      .map(p=>`<option value="${p.id}">${p.d?p.d+' · ':''}${p.nick}</option>`).join('');
+}
+
+window.confirmZone = function() {
+  const sel = document.getElementById('zone-player-sel');
+  const pid = sel.value;
+  if(!pid){showToast('Selecciona un jugador','err');return;}
+  const p = PLAYERS.find(pl=>pl.id===pid);
+  ZONES.push({...pendingZone, playerId:pid, playerName:p?p.nick:'?'});
+  pendingZone=null;
+  document.getElementById('pending-assign').style.display='none';
+  renderZoneList(); populateZonePlayerSel(); redrawCanvas();
+  showToast('Zona asignada a '+p.nick,'ok');
+};
+
+window.cancelZone = function() {
+  pendingZone=null;
+  document.getElementById('pending-assign').style.display='none';
+  redrawCanvas();
+};
+
+function renderZoneList() {
+  document.getElementById('zone-count').textContent = ZONES.length;
+  document.getElementById('zone-list').innerHTML = ZONES.map((z,i)=>`
+    <div class="zone-item">
+      <div class="zone-dot"></div>
+      <div class="zone-num">${i+1}</div>
+      <div class="zone-name">${z.playerName}</div>
+      <button class="zone-del" onclick="deleteZone(${i})">×</button>
+    </div>`).join('') || '<div style="color:var(--faint);font-size:12px;padding:4px 0">Sin zonas definidas</div>';
+}
+
+window.deleteZone = i => { ZONES.splice(i,1); renderZoneList(); populateZonePlayerSel(); redrawCanvas(); };
+
+window.clearZones = function() {
+  if(!confirm('¿Borrar todas las zonas?')) return;
+  ZONES=[]; renderZoneList(); redrawCanvas();
+};
+
+window.saveZones = async function() {
+  await setDoc(doc(db,'config','zones'), { zones:ZONES, setupImg:SETUP_IMG||null });
+  showToast(ZONES.length+' zonas guardadas en Firebase','ok');
+};
+
+/* ── FINES ── */
+function renderFinesTable(tab) {
+  currentFineTab = tab;
+  let fines = [...FINES];
+  if(tab==='pending') fines = fines.filter(f=>!f.paid);
+  if(tab==='paid')    fines = fines.filter(f=>f.paid);
+  document.getElementById('fines-count').textContent = FINES.length+' multas · '+FINES.filter(f=>!f.paid).length+' pendientes';
+  document.getElementById('fines-tbody').innerHTML = fines.length
+    ? fines.map(f=>`<tr>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint)">${f.date||''}</td>
+        <td class="nm">${f.playerName}</td>
+        <td><span class="pill pill-gray">${f.typeName}</span>${f.auto?'<span class="pill pill-amber" style="margin-left:4px;">Auto</span>':''}</td>
+        <td style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--r)">${f.amount}€</td>
+        <td>${f.recurrent==='si'?'<span class="pill pill-amber">Sí</span>':'<span style="color:var(--faint);font-size:12px">No</span>'}</td>
+        <td>${f.paid?'<span class="pill pill-green">Pagada</span>':'<span class="pill pill-red">Pendiente</span>'}</td>
+        <td><div style="display:flex;gap:4px;">
+          ${!f.paid?`<button class="btn btn-ghost btn-sm" onclick="markPaid('${f.id}')">✓</button>`:''}
+          <button class="btn btn-ghost btn-sm" style="color:var(--inj)" onclick="deleteFine('${f.id}')">✕</button>
+        </div></td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--faint)">Sin multas</td></tr>';
+}
+
+window.filterFines = function(tab, el) {
+  document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderFinesTable(tab);
+};
+
+window.markPaid = async function(id) {
+  await updateDoc(doc(db,'fines',id), { paid:true });
+  showToast('Multa marcada como pagada','ok');
+};
+
+window.deleteFine = async function(id) {
+  if(!confirm('¿Eliminar esta multa?')) return;
+  await deleteDoc(doc(db,'fines',id));
+  showToast('Multa eliminada');
+};
+
+function populateFineModals() {
+  document.getElementById('af-player').innerHTML =
+    '<option value="">— Jugador —</option>'+
+    PLAYERS.sort((a,b)=>a.d-b.d).map(p=>`<option value="${p.id}">${p.d?p.d+' · ':''}${p.nick}</option>`).join('');
+  document.getElementById('af-type').innerHTML =
+    '<option value="">— Tipo —</option>'+
+    FINE_TYPES.map(t=>`<option value="${t.id}">${t.name} (${t.amount}€)</option>`).join('');
+  document.getElementById('af-date').value = new Date().toISOString().slice(0,10);
+}
+
+window.autoAmount = function() {
+  const tid = document.getElementById('af-type').value;
+  const t   = FINE_TYPES.find(ft=>ft.id===tid);
+  const inp = document.getElementById('af-amount');
+  if(!t) return;
+  // Concepto sin importe fijo: se deja en blanco y con el foco puesto para
+  // que el importe lo decida quien registra la multa.
+  if(t.amount==null){ inp.value=''; inp.placeholder='A definir'; inp.focus(); }
+  else { inp.value = t.amount; inp.placeholder=''; }
+};
+
+window.addFine = async function() {
+  const pid    = document.getElementById('af-player').value;
+  const tid    = document.getElementById('af-type').value;
+  const amount = parseFloat(document.getElementById('af-amount').value);
+  const date   = document.getElementById('af-date').value;
+  if(!pid||!tid||!date||isNaN(amount)){showToast('Rellena todos los campos','err');return;}
+  const p = PLAYERS.find(pl=>pl.id===pid);
+  const t = FINE_TYPES.find(ft=>ft.id===tid);
+  await addDoc(collection(db,'fines'), {
+    playerId:p?.id||pid, playerName:p?.nick||'—',
+    typeId:tid, typeName:t?.name||'—',
+    amount, date,
+    recurrent: document.getElementById('af-recurrent').value,
+    paid:false, auto:false,
+    notes: document.getElementById('af-notes').value.trim(),
+    createdAt: serverTimestamp()
+  });
+  closeModal('modal-fine');
+  showToast('Multa registrada','ok');
+};
+
+/* ── FINE TYPES ── */
+function renderFineTypes() {
+  const total = FINE_TYPES.reduce((s,t)=>s+(t.amount||0),0);
+  document.getElementById('ftypes-count').textContent =
+    `${FINE_TYPES.length} conceptos · ${total}€ en total`;
+
+  // Agrupado por categoría, en el mismo orden que el documento de plantilla
+  const cats = [...new Set(FINE_TYPES.map(t=>t.cat))].sort((a,b)=>{
+    const ia=CAT_ORDER.indexOf(a), ib=CAT_ORDER.indexOf(b);
+    return (ia<0?99:ia)-(ib<0?99:ib);
+  });
+  document.getElementById('ftypes-tbody').innerHTML = cats.map(cat=>{
+    const grupo = FINE_TYPES.filter(t=>t.cat===cat);
+    const cab = `<tr class="ft-cat-row"><td colspan="5">
+        ${CAT_LABEL[cat]||cat}<span>${grupo.length} concepto${grupo.length>1?'s':''}</span>
+      </td></tr>`;
+    return cab + grupo.map(t=>`<tr>
+      <td class="nm">${t.name}</td>
+      <td class="ft-amount ${t.amount==null?'todef':''}">${fmtAmount(t.amount)}</td>
+      <td><span class="pill pill-gray">${CAT_LABEL[t.cat]||t.cat}</span></td>
+      <td style="font-size:12px;color:var(--mid)">${t.desc||'—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="editFineType('${t.id}')">✎</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--inj)" onclick="deleteFineType('${t.id}')">✕</button>
+      </td>
+    </tr>`).join('');
+  }).join('');
+}
+
+/* Alta y edición comparten modal: ft-edit-id vacío = alta. */
+window.openNewFineType = function() {
+  document.getElementById('modal-type-title').textContent = 'Nuevo Concepto';
+  document.getElementById('ft-edit-id').value = '';
+  document.getElementById('ft-name').value    = '';
+  document.getElementById('ft-amount').value  = '';
+  document.getElementById('ft-cat').value     = 'comportamiento';
+  document.getElementById('ft-desc').value    = '';
+  openModal('modal-type');
+};
+
+window.editFineType = function(id) {
+  const t = FINE_TYPES.find(x=>x.id===id);
+  if(!t){ showToast('No encuentro ese concepto','err'); return; }
+  document.getElementById('modal-type-title').textContent = 'Editar Concepto';
+  document.getElementById('ft-edit-id').value = t.id;
+  document.getElementById('ft-name').value    = t.name || '';
+  document.getElementById('ft-amount').value  = t.amount==null ? '' : t.amount;
+  document.getElementById('ft-cat').value     = t.cat || 'otros';
+  document.getElementById('ft-desc').value    = t.desc || '';
+  openModal('modal-type');
+};
+
+window.saveFineType = async function() {
+  const id     = document.getElementById('ft-edit-id').value;
+  const name   = document.getElementById('ft-name').value.trim();
+  const raw    = document.getElementById('ft-amount').value.trim();
+  if(!name){ showToast('El nombre es obligatorio','err'); return; }
+  // Importe vacío = "a definir", igual que la conducta antideportiva del
+  // régimen: se decide al registrar cada multa.
+  const amount = raw==='' ? null : parseFloat(raw);
+  if(raw!=='' && (isNaN(amount) || amount<0)){ showToast('Importe no válido','err'); return; }
+  const datos = {
+    name, amount,
+    cat:  document.getElementById('ft-cat').value,
+    desc: document.getElementById('ft-desc').value.trim(),
+    updatedAt: serverTimestamp()
+  };
   try{
-    const snap = await getDocs(collection(db,'clubShields'));
-    SHIELDS = {};
-    snap.docs.forEach(d=>{ SHIELDS[d.id] = d.data().shieldUrl; });
-  }catch(e){ console.error('[Shields]', e); }
+    if(id){
+      // Se marca con la versión vigente para que el catálogo oficial no
+      // vuelva a pisar este cambio en la próxima sincronización.
+      await updateDoc(doc(db,'fineTypes',id), {...datos, catalogVersion:CATALOG_VERSION});
+      showToast('Concepto actualizado','ok');
+    }else{
+      const orden = Math.max(0, ...FINE_TYPES.map(t=>t.order||0)) + 1;
+      await addDoc(collection(db,'fineTypes'), {...datos, order:orden, catalogVersion:CATALOG_VERSION});
+      showToast('Concepto añadido','ok');
+    }
+    closeModal('modal-type');
+  }catch(e){
+    console.error('[fineTypes]', e);
+    showToast('No se pudo guardar','err');
+  }
+};
+
+window.deleteFineType = async function(id) {
+  const t = FINE_TYPES.find(x=>x.id===id);
+  const usos = FINES.filter(f=>f.typeId===id).length;
+  const aviso = usos
+    ? `"${t?t.name:''}" tiene ${usos} multa${usos>1?'s':''} registrada${usos>1?'s':''}.\nSe eliminará del catálogo, pero esas multas se conservan con su importe y su concepto.\n\n¿Continuar?`
+    : `¿Eliminar "${t?t.name:''}" del catálogo?`;
+  if(!confirm(aviso)) return;
+  try{ await deleteDoc(doc(db,'fineTypes',id)); showToast('Concepto eliminado'); }
+  catch(e){ console.error('[fineTypes]', e); showToast('No se pudo eliminar','err'); }
+};
+
+/* ── DASHBOARD ── */
+function renderDashboard() {
+  const total   = FINES.reduce((s,f)=>s+f.amount,0);
+  const paid    = FINES.filter(f=>f.paid).reduce((s,f)=>s+f.amount,0);
+  const pending = total-paid;
+  document.getElementById('dash-meta').textContent = FINES.length+' multas registradas';
+  document.getElementById('dash-kpis').innerHTML = `
+    <div class="kpi"><div class="kv red">${pending.toFixed(0)}€</div><div class="kl">Pendiente</div></div>
+    <div class="kpi"><div class="kv green">${paid.toFixed(0)}€</div><div class="kl">Recaudado</div></div>
+    <div class="kpi"><div class="kv">${total.toFixed(0)}€</div><div class="kl">Total generado</div></div>
+    <div class="kpi"><div class="kv amber">${FINES.filter(f=>!f.paid).length}</div><div class="kl">Pendientes</div></div>
+  `;
+  // By player
+  const pm={};
+  FINES.forEach(f=>{
+    if(!pm[f.playerId]) pm[f.playerId]={name:f.playerName,total:0,pending:0,paid:0,count:0};
+    pm[f.playerId].total+=f.amount; pm[f.playerId].count++;
+    if(f.paid) pm[f.playerId].paid+=f.amount; else pm[f.playerId].pending+=f.amount;
+  });
+  const ps=Object.values(pm).sort((a,b)=>b.pending-a.pending);
+  const maxP=ps[0]?.pending||1;
+  document.getElementById('debt-chart').innerHTML = ps.length
+    ? ps.slice(0,8).map(p=>`<div class="bar-row">
+        <div class="bar-lbl">${p.name}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${p.pending/maxP*100}%"></div></div>
+        <div class="bar-val">${p.pending.toFixed(0)}€</div>
+      </div>`).join('')
+    : '<div style="color:var(--faint);font-size:13px">Sin datos</div>';
+  // By type
+  const tm={};
+  FINES.forEach(f=>{ if(!tm[f.typeName]) tm[f.typeName]=0; tm[f.typeName]+=f.amount; });
+  const ts=Object.entries(tm).sort((a,b)=>b[1]-a[1]);
+  const maxT=ts[0]?.[1]||1;
+  document.getElementById('type-chart').innerHTML = ts.length
+    ? ts.map(([n,a])=>`<div class="bar-row">
+        <div class="bar-lbl">${n}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${a/maxT*100}%;background:var(--warn)"></div></div>
+        <div class="bar-val">${a.toFixed(0)}€</div>
+      </div>`).join('')
+    : '<div style="color:var(--faint);font-size:13px">Sin datos</div>';
+  // Cards
+  document.getElementById('fine-cards').innerHTML = ps.length
+    ? ps.map(p=>{
+        const pct=p.total>0?Math.round(p.paid/p.total*100):0;
+        return `<div class="player-fine-card">
+          <div class="pfc-name">${p.name}</div>
+          <div class="pfc-total">${p.pending.toFixed(0)}€</div>
+          <div style="font-size:11px;color:var(--mid);margin-top:2px">${p.count} multa(s) · ${pct}% pagado</div>
+          <div class="pfc-bar"><div class="pfc-bar-fill" style="width:${pct}%"></div></div>
+        </div>`;
+      }).join('')
+    : '<div style="color:var(--faint);font-size:13px">Sin multas registradas</div>';
 }
-function watchInformes(){
-  unsubInformes = onSnapshot(collection(db,'analisisInformes'),
-    snap => {
-      informesIdx = {};
-      snap.docs.forEach(d=>{
-        const x = d.data();
-        if(x.temporada===TEMPORADA) informesIdx[d.id] = { estado:x.estado };
-      });
-      renderCalendario();
-    },
-    err => console.error('[Informes watch]', err)
-  );
+
+/* ── UTILS ── */
+function updateBadge() {
+  document.getElementById('unpaid-badge').textContent = FINES.filter(f=>!f.paid).length;
+  document.getElementById('unpaid-badge-m').textContent = FINES.filter(f=>!f.paid).length;
 }
-(async function init(){
-  await Promise.all([loadCalendario(), loadShields()]);
-  refreshMode();
-  renderCalendario();
-  watchInformes();
-})();
+
+window.openModal = function(id) {
+  if(id==='modal-fine') populateFineModals();
+  document.getElementById(id).classList.add('open');
+};
+window.closeModal  = id => document.getElementById(id).classList.remove('open');
+window.overlayClose = (e,id) => { if(e.target.classList.contains('overlay')) closeModal(id); };
+
+let toastTimer = null;
+window.showToast = function(msg, type='ok') {
+  let t = document.querySelector('.toast');
+  if(!t){ t=document.createElement('div'); t.className='toast'; document.body.appendChild(t); }
+  t.textContent=msg; t.className='toast '+(type==='err'?'err':'ok');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.remove(),3200);
+};
+
+/* ── INIT ── */
+loadPlayers();
+startListeners();
+initRegister();
+document.getElementById('reg-date-label').textContent =
+  new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+setSynced(false);
+
 </script>
 </body>
 </html>
