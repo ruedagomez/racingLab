@@ -617,6 +617,16 @@ const DEFAULT_FINE_TYPES = [
   {id:'rm13',order:13,name:'Wellness & RPE',   amount:5,   cat:'otros',          desc:'Rellenar diariamente.'},
 ];
 const IDS_SEMILLA_ANTIGUA = ['ft1','ft2','ft3','ft4','ft5','ft6'];
+/* Un retraso ES asistencia: el jugador vino. Solo la ausencia y la falta
+   justificada cuentan como no asistir. El flag `present` que se guarda en
+   cada sesión existe por compatibilidad con lecturas antiguas, pero el
+   estado real es `status`, así que se lee de ahí siempre que exista y las
+   sesiones ya guardadas quedan bien contadas sin migrar nada. */
+const STATUS_ASISTE = ['presente','retraso'];
+function asistio(r){
+  if(!r) return false;
+  return r.status ? STATUS_ASISTE.includes(r.status) : !!r.present;
+}
 /* Concepto propuesto al marcar un estado en el registro de asistencia.
    Siempre editable por el staff antes de guardar. */
 const AUTO_FINE_BY_STATUS = { ausencia:'rm04', retraso:'rm01', justificada:null, presente:null };
@@ -950,7 +960,7 @@ window.saveSession = async function() {
 
   const resultsPayload = attendanceResults.map(r=>({
     playerId:r.playerId, playerName:r.playerName, sheetNum:r.sheetNum,
-    status:r.status, present: r.status==='presente' // compat con lecturas antiguas
+    status:r.status, present: STATUS_ASISTE.includes(r.status) // compat con lecturas antiguas
   }));
 
   let sessionId;
@@ -1061,15 +1071,23 @@ function renderHistory() {
   document.getElementById('hist-count').textContent = ATTENDANCE.length+' sesiones';
   document.getElementById('hist-list').innerHTML = ATTENDANCE.length
     ? ATTENDANCE.map(s => {
-        const present = (s.results||[]).filter(r=>r.present).length;
-        const total   = (s.results||[]).length;
+        const res     = s.results||[];
+        const present = res.filter(asistio).length;
+        const total   = res.length;
         const pct     = total ? Math.round(present/total*100) : 0;
+        const n       = st => res.filter(r => (r.status || (r.present?'presente':'ausencia')) === st).length;
+        const desglose = [
+          n('presente')   ? n('presente')+' presentes'   : '',
+          n('retraso')    ? n('retraso')+' con retraso'  : '',
+          n('ausencia')   ? n('ausencia')+' ausencias'   : '',
+          n('justificada')? n('justificada')+' justificadas' : '',
+        ].filter(Boolean).join(' · ');
         const cls     = pct>=85?'pill-green':pct>=70?'pill-amber':'pill-red';
         return `<div class="hist-session">
           <div class="hist-head" onclick="toggleHist('hb-${s.id}')">
             <div class="hist-date">${new Date(s.date+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
             <div style="display:flex;gap:8px;align-items:center;">
-              <span class="pill ${cls}">${present}/${total} · ${pct}%</span>
+              <span class="pill ${cls}" title="${desglose}">${present}/${total} · ${pct}%</span>
               <button class="btn btn-ghost" style="padding:4px 9px;font-size:12px;" onclick="editSession('${s.id}',event)" title="Editar sesión">✏️</button>
               <button class="btn btn-ghost" style="padding:4px 9px;font-size:12px;color:var(--inj);" onclick="deleteSession('${s.id}',event)" title="Eliminar sesión">🗑</button>
               <span style="color:var(--faint)">▸</span>
@@ -1077,10 +1095,13 @@ function renderHistory() {
           </div>
           <div id="hb-${s.id}" class="hist-body" style="display:none;">
             <div class="hist-grid">
-              ${(s.results||[]).map(r=>`<div class="hist-player">
-                <div class="hist-dot" style="background:${r.present?'var(--fit)':'var(--inj)'}"></div>
+              ${(s.results||[]).map(r=>{
+                const st = r.status || (r.present?'presente':'ausencia');
+                const col = st==='presente'?'var(--fit)':st==='retraso'?'var(--warn)':st==='justificada'?'var(--faint)':'var(--inj)';
+                return `<div class="hist-player" title="${STATUS_LABELS[st]||st}">
+                <div class="hist-dot" style="background:${col}"></div>
                 ${r.playerName}
-              </div>`).join('')}
+              </div>`;}).join('')}
             </div>
             ${s.photoUrl?`<div class="hist-photo"><img src="${s.photoUrl}" onclick="window.open('${s.photoUrl}','_blank')" title="Ver foto original"/></div>`:''}
           </div>
