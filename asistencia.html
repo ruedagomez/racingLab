@@ -173,6 +173,15 @@ input,select,textarea{font-family:inherit;outline:none;}
 .hist-photo{margin-top:10px;}
 .hist-photo img{width:100%;max-width:320px;border-radius:4px;border:1px solid var(--bdr);cursor:pointer;}
 
+/* Catálogo: cabeceras de categoría e importes */
+.ft-cat-row td{background:var(--bg);font-family:'Barlow Condensed',sans-serif;font-size:10px;
+  font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--mid);
+  padding:9px 12px !important;border-bottom:1px solid var(--bdr);}
+.ft-cat-row td span{float:right;font-weight:600;letter-spacing:.1em;color:var(--faint);}
+.ft-amount{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--r);white-space:nowrap;}
+.ft-amount.todef{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--mid);}
+
 /* FINES */
 .tbl-wrap{overflow-x:auto;}
 .tbl{width:100%;border-collapse:collapse;font-size:13px;}
@@ -424,16 +433,16 @@ input,select,textarea{font-family:inherit;outline:none;}
   <!-- FINE TYPES -->
   <div class="page" id="p-fine-types">
     <div class="sh">
-      <div class="st">Catálogo de Multas</div>
+      <div class="st">Régimen de Multas 26/27</div>
       <div class="sc" id="ftypes-count"></div>
     </div>
     <div style="margin-bottom:16px;">
-      <button class="btn btn-primary" onclick="openModal('modal-type')">+ Nuevo tipo</button>
+      <button class="btn btn-primary" onclick="openNewFineType()">+ Nuevo concepto</button>
     </div>
     <div class="card" style="padding:0;overflow:hidden;">
       <div class="tbl-wrap">
         <table class="tbl">
-          <thead><tr><th>Nombre</th><th>Importe</th><th>Categoría</th><th>Descripción</th><th></th></tr></thead>
+          <thead><tr><th>Concepto</th><th>Importe</th><th>Categoría</th><th>Detalle</th><th></th></tr></thead>
           <tbody id="ftypes-tbody"></tbody>
         </table>
       </div>
@@ -506,7 +515,8 @@ input,select,textarea{font-family:inherit;outline:none;}
 <!-- MODAL TIPO -->
 <div class="overlay" id="modal-type" onclick="overlayClose(event,'modal-type')">
   <div class="modal">
-    <div class="modal-head"><h3>Nuevo Tipo de Multa</h3><button class="modal-close" onclick="closeModal('modal-type')">×</button></div>
+    <div class="modal-head"><h3 id="modal-type-title">Nuevo Concepto</h3><button class="modal-close" onclick="closeModal('modal-type')">×</button></div>
+    <input type="hidden" id="ft-edit-id"/>
     <div class="form-group">
       <label class="form-label">Nombre</label>
       <input type="text" class="form-control" id="ft-name" placeholder="Ej: Ausencia sin justificar"/>
@@ -514,16 +524,16 @@ input,select,textarea{font-family:inherit;outline:none;}
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Importe (€)</label>
-        <input type="number" class="form-control" id="ft-amount" step="0.5" min="0"/>
+        <input type="number" class="form-control" id="ft-amount" step="0.5" min="0" placeholder="Vacío = a definir"/>
       </div>
       <div class="form-group">
         <label class="form-label">Categoría</label>
         <select class="form-control" id="ft-cat">
-          <option value="asistencia">Asistencia</option>
           <option value="puntualidad">Puntualidad</option>
+          <option value="asistencia">Asistencia</option>
           <option value="comportamiento">Comportamiento</option>
           <option value="equipamiento">Equipamiento</option>
-          <option value="otro">Otro</option>
+          <option value="otros">Otros</option>
         </select>
       </div>
     </div>
@@ -533,7 +543,7 @@ input,select,textarea{font-family:inherit;outline:none;}
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-type')">Cancelar</button>
-      <button class="btn btn-primary" onclick="addFineType()">Guardar</button>
+      <button class="btn btn-primary" onclick="saveFineType()">Guardar</button>
     </div>
   </div>
 </div>
@@ -543,7 +553,7 @@ input,select,textarea{font-family:inherit;outline:none;}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore, collection, doc,
-  getDocs, addDoc, setDoc, updateDoc, deleteDoc,
+  getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
   query, orderBy, onSnapshot, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
@@ -579,14 +589,38 @@ async function uploadToCloudinary(file) {
 }
 
 /* ── STATE ── */
+/* ══════════ CATÁLOGO OFICIAL — Régimen de Multas 26/27 ══════════
+   Transcrito del documento interno de plantilla (Primera Plantilla ·
+   Tercera Federación Grupo 10). Los ids son estables (rm01…rm13) para
+   que las multas ya registradas sigan apuntando a su concepto aunque se
+   editen importes o textos.
+   `amount:null` = importe a definir caso por caso (conducta antideportiva):
+   el concepto existe en el catálogo, pero obliga a teclear la cantidad al
+   registrar la multa en vez de aplicar un importe inventado. */
+const CATALOG_VERSION = 2;
+const CAT_ORDER = ['puntualidad','asistencia','comportamiento','equipamiento','otros'];
+const CAT_LABEL = {puntualidad:'Puntualidad', asistencia:'Asistencia',
+  comportamiento:'Comportamiento', equipamiento:'Equipamiento', otros:'Otros', otro:'Otros'};
 const DEFAULT_FINE_TYPES = [
-  {id:'ft1',name:'Ausencia sin justificar',amount:10,cat:'asistencia',desc:'No presentarse sin aviso'},
-  {id:'ft2',name:'Ausencia justificada',   amount:5, cat:'asistencia',desc:'Baja con aviso'},
-  {id:'ft3',name:'Retraso +5 min',         amount:3, cat:'puntualidad',desc:'Más de 5 minutos tarde'},
-  {id:'ft4',name:'Retraso +15 min',        amount:5, cat:'puntualidad',desc:'Más de 15 minutos tarde'},
-  {id:'ft5',name:'Sin equipamiento',       amount:5, cat:'equipamiento',desc:'Sin material requerido'},
-  {id:'ft6',name:'Conducta antideportiva', amount:15,cat:'comportamiento',desc:'Actitud inapropiada'},
+  {id:'rm01',order:1, name:'Retraso +5 min',   amount:10,  cat:'puntualidad',   desc:'A partir de los 5 minutos de retraso.'},
+  {id:'rm02',order:2, name:'Retraso +10 min',  amount:20,  cat:'puntualidad',   desc:'A partir de los 10 minutos de retraso.'},
+  {id:'rm03',order:3, name:'Retraso +15 min',  amount:30,  cat:'puntualidad',   desc:'A partir de los 15 minutos de retraso.'},
+  {id:'rm04',order:4, name:'Ausencia sin justificar a entrenamiento', amount:120, cat:'asistencia', desc:'Sin comunicar.'},
+  {id:'rm05',order:5, name:'No asistir a partidos de casa sin justificar', amount:100, cat:'asistencia', desc:'Jugadores no convocados que no asistan al partido.'},
+  {id:'rm06',order:6, name:'Conducta antideportiva (compañero / cuerpo técnico)', amount:null, cat:'comportamiento', desc:'Faltas de respeto. Importe a definir.'},
+  {id:'rm07',order:7, name:'Uso de vaper',     amount:25,  cat:'comportamiento', desc:'Cualquier evento, entrenamiento, partido o convivencia de club.'},
+  {id:'rm08',order:8, name:'Uso del móvil',    amount:10,  cat:'comportamiento', desc:'Entrenamientos: charla + entrenamiento en campo. Partido: 1 hora antes + descanso.'},
+  {id:'rm09',order:9, name:'Sonido de móvil',  amount:10,  cat:'comportamiento', desc:'Entrenamientos: charla + entrenamiento en campo. Partido: 1 hora antes + descanso.'},
+  {id:'rm10',order:10,name:'Dejar basura en el autobús', amount:5, cat:'comportamiento', desc:'Todo el equipo.'},
+  {id:'rm11',order:11,name:'Desorden & limpieza de vestuario', amount:5, cat:'comportamiento', desc:'Responsabilidad con el material propio.'},
+  {id:'rm12',order:12,name:'Balonazo',         amount:5,   cat:'comportamiento', desc:'Doble o nada desde mitad de campo.'},
+  {id:'rm13',order:13,name:'Wellness & RPE',   amount:5,   cat:'otros',          desc:'Rellenar diariamente.'},
 ];
+const IDS_SEMILLA_ANTIGUA = ['ft1','ft2','ft3','ft4','ft5','ft6'];
+/* Concepto propuesto al marcar un estado en el registro de asistencia.
+   Siempre editable por el staff antes de guardar. */
+const AUTO_FINE_BY_STATUS = { ausencia:'rm04', retraso:'rm01', justificada:null, presente:null };
+const fmtAmount = a => (a==null || a==='') ? 'A definir' : a+'€';
 
 let PLAYERS    = [];
 let ATTENDANCE = [];
@@ -644,8 +678,13 @@ function startListeners() {
 
   // Fine Types
   onSnapshot(collection(db, 'fineTypes'), snap => {
-    FINE_TYPES = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(!FINE_TYPES.length) seedFineTypes();
+    FINE_TYPES = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b)=>{
+        const ca=CAT_ORDER.indexOf(a.cat), cb=CAT_ORDER.indexOf(b.cat);
+        if(ca!==cb) return (ca<0?99:ca)-(cb<0?99:cb);
+        return (a.order??999)-(b.order??999);
+      });
+    if(!catalogChecked){ catalogChecked = true; syncCatalog(); }
     if(document.getElementById('p-fine-types').classList.contains('active')) renderFineTypes();
   });
 
@@ -664,10 +703,42 @@ function startListeners() {
   });
 }
 
-async function seedFineTypes() {
-  for(const t of DEFAULT_FINE_TYPES) {
-    await setDoc(doc(db, 'fineTypes', t.id), t);
-  }
+/* Siembra y actualización del catálogo oficial.
+   Sube CATALOG_VERSION cuando cambie el régimen de multas: sin versión, un
+   catálogo ya sembrado en Firestore se quedaría con los importes viejos
+   para siempre (seedFineTypes solo actuaba con la colección vacía).
+   Lo que NO hace: pisar tipos que hayáis creado a mano, ni tocar los
+   importes que hayáis ajustado después de la siembra — solo escribe los
+   conceptos oficiales que falten o que sigan en una versión anterior. */
+let catalogChecked = false;
+async function syncCatalog() {
+  let guardada = 0;
+  try{
+    const snap = await getDoc(doc(db,'config','fineCatalog'));
+    if(snap.exists()) guardada = snap.data().version || 0;
+  }catch(e){ console.error('[Catálogo] lectura', e); return; }
+  if(guardada >= CATALOG_VERSION) return;
+
+  try{
+    for(const t of DEFAULT_FINE_TYPES){
+      const actual = FINE_TYPES.find(x => x.id === t.id);
+      // Si ya existe con esta versión y fue editado a mano, se respeta
+      if(actual && (actual.catalogVersion||0) >= CATALOG_VERSION) continue;
+      await setDoc(doc(db,'fineTypes',t.id), {...t, catalogVersion:CATALOG_VERSION});
+    }
+    // La semilla genérica antigua se retira solo si no la usa ninguna multa
+    for(const viejo of IDS_SEMILLA_ANTIGUA){
+      if(!FINE_TYPES.some(x => x.id === viejo)) continue;
+      if(FINES.some(f => f.typeId === viejo)) continue;
+      await deleteDoc(doc(db,'fineTypes',viejo));
+    }
+    await setDoc(doc(db,'config','fineCatalog'), {
+      version: CATALOG_VERSION,
+      fuente: 'Régimen de Multas 26/27 · documento interno de plantilla',
+      updatedAt: serverTimestamp()
+    });
+    console.log('[Catálogo] régimen de multas actualizado a v'+CATALOG_VERSION);
+  }catch(e){ console.error('[Catálogo] escritura', e); }
 }
 
 /* ── NAVIGATION ── */
@@ -799,7 +870,7 @@ function renderResultRows() {
         </label>
         <select class="fine-type-sel" id="finetype-${i}" onchange="setFineType(${i},this.value)" ${r.fine?'':'disabled'}>
           <option value="">— Tipo de multa —</option>
-          ${FINE_TYPES.map(t=>`<option value="${t.id}" ${r.fineTypeId===t.id?'selected':''}>${t.name} (${t.amount}€)</option>`).join('')}
+          ${FINE_TYPES.map(t=>`<option value="${t.id}" ${r.fineTypeId===t.id?'selected':''}>${t.name} (${fmtAmount(t.amount)})</option>`).join('')}
         </select>
       </div>
     </div>`).join('');
@@ -820,14 +891,16 @@ window.setAttStatus = function(i, status){
   if(status==='presente'){ r.fine=false; r.fineTypeId=''; }
   else if(status==='justificada'){ r.fine=false; }
   else { r.fine=true; }
-  // Preselección razonable de tipo de multa si no hay una elegida ya
+  // Preselección del concepto por id del catálogo oficial. Antes se
+  // adivinaba por el texto del nombre y la ausencia no casaba nunca:
+  // "Ausencia sin justificar" contiene "justific", que era justo lo que
+  // el filtro descartaba. Para el retraso se propone el tramo más bajo
+  // (+5 min) y el staff sube al de +10 o +15 si procede.
   if(r.fine && !r.fineTypeId){
-    const guess = FINE_TYPES.find(t=>{
-      const n=t.name.toLowerCase();
-      if(status==='ausencia') return n.includes('ausencia') && !n.includes('justific');
-      if(status==='retraso')  return n.includes('retraso');
-      return false;
-    });
+    const preferido = AUTO_FINE_BY_STATUS[status];
+    let guess = preferido ? FINE_TYPES.find(t=>t.id===preferido) : null;
+    if(!guess && status==='retraso')  guess = FINE_TYPES.find(t=>/retraso/i.test(t.name));
+    if(!guess && status==='ausencia') guess = FINE_TYPES.find(t=>/ausencia/i.test(t.name));
     if(guess) r.fineTypeId = guess.id;
   }
   const row = document.getElementById('row-'+i);
@@ -904,12 +977,16 @@ window.saveSession = async function() {
   for(const r of attendanceResults){
     if(!r.fine) continue;
     const type = FINE_TYPES.find(t=>t.id===r.fineTypeId);
+    // Un concepto "a definir" no puede colarse como 0€: se registra igual
+    // para no perder el hecho, pero queda marcado para ponerle importe.
+    const sinImporte = !type || type.amount==null;
     await addDoc(collection(db, 'fines'), {
       playerId:r.playerId, playerName:r.playerName,
       typeId: type?.id||null, typeName: type?.name||'Sin especificar',
-      amount: type?.amount||0,
+      amount: sinImporte ? 0 : type.amount,
+      pendingAmount: sinImporte,
       date, paid:false, recurrent:'no',
-      notes: `Generada desde asistencia · ${STATUS_LABELS[r.status]}`,
+      notes: `Generada desde asistencia · ${STATUS_LABELS[r.status]}`+(sinImporte?' · IMPORTE PENDIENTE DE DEFINIR':''),
       auto:true, sourceSessionId: sessionId, createdAt: serverTimestamp()
     });
     finesCreated++;
@@ -1208,7 +1285,12 @@ function populateFineModals() {
 window.autoAmount = function() {
   const tid = document.getElementById('af-type').value;
   const t   = FINE_TYPES.find(ft=>ft.id===tid);
-  if(t) document.getElementById('af-amount').value = t.amount;
+  const inp = document.getElementById('af-amount');
+  if(!t) return;
+  // Concepto sin importe fijo: se deja en blanco y con el foco puesto para
+  // que el importe lo decida quien registra la multa.
+  if(t.amount==null){ inp.value=''; inp.placeholder='A definir'; inp.focus(); }
+  else { inp.value = t.amount; inp.placeholder=''; }
 };
 
 window.addFine = async function() {
@@ -1234,32 +1316,98 @@ window.addFine = async function() {
 
 /* ── FINE TYPES ── */
 function renderFineTypes() {
-  document.getElementById('ftypes-count').textContent = FINE_TYPES.length+' tipos';
-  document.getElementById('ftypes-tbody').innerHTML = FINE_TYPES.map(t=>`<tr>
-    <td class="nm">${t.name}</td>
-    <td style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--r)">${t.amount}€</td>
-    <td><span class="pill pill-gray">${t.cat}</span></td>
-    <td style="font-size:12px;color:var(--mid)">${t.desc||'—'}</td>
-    <td><button class="btn btn-ghost btn-sm" style="color:var(--inj)" onclick="deleteFineType('${t.id}')">✕</button></td>
-  </tr>`).join('');
+  const total = FINE_TYPES.reduce((s,t)=>s+(t.amount||0),0);
+  document.getElementById('ftypes-count').textContent =
+    `${FINE_TYPES.length} conceptos · ${total}€ en total`;
+
+  // Agrupado por categoría, en el mismo orden que el documento de plantilla
+  const cats = [...new Set(FINE_TYPES.map(t=>t.cat))].sort((a,b)=>{
+    const ia=CAT_ORDER.indexOf(a), ib=CAT_ORDER.indexOf(b);
+    return (ia<0?99:ia)-(ib<0?99:ib);
+  });
+  document.getElementById('ftypes-tbody').innerHTML = cats.map(cat=>{
+    const grupo = FINE_TYPES.filter(t=>t.cat===cat);
+    const cab = `<tr class="ft-cat-row"><td colspan="5">
+        ${CAT_LABEL[cat]||cat}<span>${grupo.length} concepto${grupo.length>1?'s':''}</span>
+      </td></tr>`;
+    return cab + grupo.map(t=>`<tr>
+      <td class="nm">${t.name}</td>
+      <td class="ft-amount ${t.amount==null?'todef':''}">${fmtAmount(t.amount)}</td>
+      <td><span class="pill pill-gray">${CAT_LABEL[t.cat]||t.cat}</span></td>
+      <td style="font-size:12px;color:var(--mid)">${t.desc||'—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="editFineType('${t.id}')">✎</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--inj)" onclick="deleteFineType('${t.id}')">✕</button>
+      </td>
+    </tr>`).join('');
+  }).join('');
 }
 
-window.addFineType = async function() {
+/* Alta y edición comparten modal: ft-edit-id vacío = alta. */
+window.openNewFineType = function() {
+  document.getElementById('modal-type-title').textContent = 'Nuevo Concepto';
+  document.getElementById('ft-edit-id').value = '';
+  document.getElementById('ft-name').value    = '';
+  document.getElementById('ft-amount').value  = '';
+  document.getElementById('ft-cat').value     = 'comportamiento';
+  document.getElementById('ft-desc').value    = '';
+  openModal('modal-type');
+};
+
+window.editFineType = function(id) {
+  const t = FINE_TYPES.find(x=>x.id===id);
+  if(!t){ showToast('No encuentro ese concepto','err'); return; }
+  document.getElementById('modal-type-title').textContent = 'Editar Concepto';
+  document.getElementById('ft-edit-id').value = t.id;
+  document.getElementById('ft-name').value    = t.name || '';
+  document.getElementById('ft-amount').value  = t.amount==null ? '' : t.amount;
+  document.getElementById('ft-cat').value     = t.cat || 'otros';
+  document.getElementById('ft-desc').value    = t.desc || '';
+  openModal('modal-type');
+};
+
+window.saveFineType = async function() {
+  const id     = document.getElementById('ft-edit-id').value;
   const name   = document.getElementById('ft-name').value.trim();
-  const amount = parseFloat(document.getElementById('ft-amount').value);
-  if(!name||isNaN(amount)){showToast('Nombre e importe obligatorios','err');return;}
-  await addDoc(collection(db,'fineTypes'), {
+  const raw    = document.getElementById('ft-amount').value.trim();
+  if(!name){ showToast('El nombre es obligatorio','err'); return; }
+  // Importe vacío = "a definir", igual que la conducta antideportiva del
+  // régimen: se decide al registrar cada multa.
+  const amount = raw==='' ? null : parseFloat(raw);
+  if(raw!=='' && (isNaN(amount) || amount<0)){ showToast('Importe no válido','err'); return; }
+  const datos = {
     name, amount,
     cat:  document.getElementById('ft-cat').value,
-    desc: document.getElementById('ft-desc').value.trim()
-  });
-  closeModal('modal-type');
-  showToast('Tipo añadido','ok');
+    desc: document.getElementById('ft-desc').value.trim(),
+    updatedAt: serverTimestamp()
+  };
+  try{
+    if(id){
+      // Se marca con la versión vigente para que el catálogo oficial no
+      // vuelva a pisar este cambio en la próxima sincronización.
+      await updateDoc(doc(db,'fineTypes',id), {...datos, catalogVersion:CATALOG_VERSION});
+      showToast('Concepto actualizado','ok');
+    }else{
+      const orden = Math.max(0, ...FINE_TYPES.map(t=>t.order||0)) + 1;
+      await addDoc(collection(db,'fineTypes'), {...datos, order:orden, catalogVersion:CATALOG_VERSION});
+      showToast('Concepto añadido','ok');
+    }
+    closeModal('modal-type');
+  }catch(e){
+    console.error('[fineTypes]', e);
+    showToast('No se pudo guardar','err');
+  }
 };
 
 window.deleteFineType = async function(id) {
-  if(!confirm('¿Eliminar este tipo?')) return;
-  await deleteDoc(doc(db,'fineTypes',id));
+  const t = FINE_TYPES.find(x=>x.id===id);
+  const usos = FINES.filter(f=>f.typeId===id).length;
+  const aviso = usos
+    ? `"${t?t.name:''}" tiene ${usos} multa${usos>1?'s':''} registrada${usos>1?'s':''}.\nSe eliminará del catálogo, pero esas multas se conservan con su importe y su concepto.\n\n¿Continuar?`
+    : `¿Eliminar "${t?t.name:''}" del catálogo?`;
+  if(!confirm(aviso)) return;
+  try{ await deleteDoc(doc(db,'fineTypes',id)); showToast('Concepto eliminado'); }
+  catch(e){ console.error('[fineTypes]', e); showToast('No se pudo eliminar','err'); }
 };
 
 /* ── DASHBOARD ── */
