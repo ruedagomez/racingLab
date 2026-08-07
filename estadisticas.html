@@ -176,6 +176,13 @@ input,select,textarea{font-family:inherit;outline:none;}
 .modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--bdr);}
 .toast{position:fixed;bottom:28px;right:28px;background:var(--blk);color:var(--wh);padding:12px 18px 12px 14px;border-radius:4px;border-left:3px solid var(--r);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px;animation:fadeUp .3s ease;}
   .dash-grid{grid-template-columns:1fr;}
+
+/* Correcciones de layout: la barra inferior solo existe en móvil y el
+   toast solo se ve cuando hay mensaje. Sin esto ambos quedan colgando
+   al final de la página en escritorio. */
+.mobnav{display:none;}
+.toast{display:none;}
+.toast.show{display:flex;}
 /* ══════════════════════════════════════════════════════════════════════
    ESTADÍSTICAS · sala de control
    Retícula estricta, hairlines, números grandes en Bebas y cifras
@@ -582,7 +589,7 @@ const F = {
   comp:   guardado.comp   || 'todo',
   ambito: guardado.ambito || 'ambos',
   agreg:  guardado.agreg  || 'media',
-  perfil: guardado.perfil || 'analista',
+  bloque: guardado.bloque || 'todo',
   sel: new Set(),
 };
 
@@ -928,116 +935,141 @@ function fmt(v, dec){
   return (Math.round(v*Math.pow(10,d))/Math.pow(10,d)).toString().replace('.',',');
 }
 
-function lecturas(ms, perfil){
-  if(!ms.length) return [];
-  const A = agregar(ms,'rcp','media'), B = agregar(ms,'opp','media');
-  const At = A._tot, Bt = B._tot;
+/* Las lecturas se agrupan por TIPO DE CONTENIDO, no por rol: un mismo
+   dato le sirve al analista y al entrenador, y separarlo por perfil
+   obligaba a pasear por tres pestañas para ver todo lo de finalización.
+   Cada lectura declara su bloque y la interfaz filtra por él. */
+const BLOQUES = [
+  ['todo',        'Todo'],
+  ['finalizacion','Finalización'],
+  ['creacion',    'Creación'],
+  ['defensa',     'Fase defensiva'],
+  ['disciplina',  'Disciplina'],
+  ['plantilla',   'Plantilla'],
+];
+
+function lecturas(ms){
   const out = [];
-  const add = (tono,titulo,cuerpo,tag)=>out.push({tono,titulo,cuerpo,tag});
+  const add = (bloque,tono,titulo,cuerpo,tag)=>out.push({bloque,tono,titulo,cuerpo,tag});
   const n = ms.length;
 
-  if(perfil==='analista'){
-    // Eficiencia ofensiva
+  if(n){
+    const A = agregar(ms,'rcp','media'), B = agregar(ms,'opp','media');
+    const At = A._tot, Bt = B._tot;
+
+    /* ── FINALIZACIÓN ── */
     const conv = rt(At.goals, At.shots, 100), convR = rt(Bt.goals, Bt.shots, 100);
     const tpg  = At.goals ? At.shots/At.goals : null;
-    if(conv!==null){
-      const tono = convR!==null ? (conv>=convR?'pos':'neg') : 'neu';
-      add(tono, `Convertimos el ${pct(conv,1)} de los tiros`,
-        `${At.goals} goles en ${At.shots} tiros` + (tpg? `, uno cada ${fmt(tpg,1)} intentos`:'') +
-        (convR!==null? `. Los rivales convierten el ${pct(convR,1)}.`:'.'), 'Finalización');
-    }
+    if(conv!==null) add('finalizacion', convR!==null ? (conv>=convR?'pos':'neg') : 'neu',
+      `Convertimos el ${pct(conv,1)} de los tiros`,
+      `${At.goals} goles en ${At.shots} tiros` + (tpg? `, uno cada ${fmt(tpg,1)} intentos`:'') +
+      (convR!==null? `. Los rivales convierten el ${pct(convR,1)}.`:'.'), 'Eficacia');
+
     const prec = rt(At.onTarget, At.shots, 100);
-    if(prec!==null){
-      add(prec>=40?'pos':prec>=30?'neu':'neg', `${pct(prec)} de los tiros van a puerta`,
-        `${At.onTarget} de ${At.shots}. Es la puerta de entrada de todo lo demás: sin volumen a portería la conversión no se sostiene.`,
-        'Finalización');
-    }
-    // Volumen concedido
-    if(typeof Bt.shots==='number'){
-      const dif = At.shots - Bt.shots;
-      add(dif>=0?'pos':'neg', dif>=0 ? `Generamos ${dif} tiros más que los rivales` : `Concedemos ${Math.abs(dif)} tiros más de los que generamos`,
-        `${fmt(A.shots,1)} tiros por partido frente a ${fmt(B.shots,1)} del rival.` +
-        (Bt.onTarget!==null? ` De los suyos, ${Bt.onTarget} van a puerta.`:''), 'Balance');
-    }
-    // Estructura del ataque
+    if(prec!==null) add('finalizacion', prec>=40?'pos':prec>=30?'neu':'neg',
+      `${pct(prec)} de los tiros van a puerta`,
+      `${At.onTarget} de ${At.shots}. Sin volumen a portería la conversión no se sostiene.` +
+      (typeof At.blocked==='number' && At.shots ? ` Nos bloquean ${At.blocked} (${pct(rt(At.blocked,At.shots,100))}).`:''), 'Puntería');
+
+    const pcx = rt(At.crossesOk, At.crosses, 100);
+    if(pcx!==null && At.crosses>=6) add('finalizacion', pcx>=30?'pos':'neg',
+      `${pct(pcx)} de los centros encuentran destino`,
+      `${At.crossesOk} de ${At.crosses}, ${fmt(A.crosses,1)} centros por partido. ` +
+      (pcx<30 ? 'Es un canal caro: mucho envío para poco premio.' : 'Buen rendimiento del envío lateral.'), 'Centros');
+
+    if(typeof At.offsides==='number' && At.offsides>0) add('finalizacion', At.offsides/n>=2?'neg':'neu',
+      `${At.offsides} fueras de juego (${fmt(At.offsides/n,1)} por partido)`,
+      'Ataques anulados antes de rematar: revisar el timing entre el desmarque y el último pase.', 'Timing');
+
+    /* ── CREACIÓN ── */
+    const pp = rt(At.passesOk, At.passes, 100), ppR = rt(Bt.passesOk, Bt.passes, 100);
+    if(pp!==null) add('creacion', pp>=85?'pos':pp>=78?'neu':'neg',
+      `Precisión de pase del ${pct(pp)}`,
+      `${At.passesOk} de ${At.passes} pases completados` + (ppR!==null?`, frente al ${pct(ppR)} del rival`:'') +
+      `. ${fmt(A.passes,0)} intentos por partido.`, 'Circulación');
+
     if(A.passesPerAttack!==null){
       const largo = A.passesPerAttack>=4.5, corto = A.passesPerAttack<3;
       const desc = largo ? 'Ataques largos: se elabora antes de finalizar.'
-                 : corto ? 'Ataques cortos: mucha finalización tras pocas acciones, perfil directo o de transición.'
+                 : corto ? 'Ataques cortos: se finaliza tras pocas acciones, perfil directo o de transición.'
                  : 'Duración de ataque intermedia.';
-      add('neu', `${fmt(A.passesPerAttack,1)} pases por ataque`,
+      add('creacion','neu', `${fmt(A.passesPerAttack,1)} pases por ataque`,
         desc + (B.passesPerAttack!==null ? ` El rival promedia ${fmt(B.passesPerAttack,1)}.` : ''), 'Estructura');
     }
-    if(A.attacksEnding){
-      add(A.attacksEnding.atk>=40?'pos':'neu', `${pct(A.attacksEnding.atk)} de nuestros ataques mueren en el último tercio`,
-        `Reparto: ${pct(A.attacksEnding.def)} defensivo · ${pct(A.attacksEnding.mid)} medio · ${pct(A.attacksEnding.atk)} ataque.` +
-        (B.attacksEnding? ` El rival llega al último tercio en el ${pct(B.attacksEnding.atk)} de los suyos.`:''), 'Progresión');
-    }
-    const pc2 = rt(At.crossesOk, At.crosses, 100);
-    if(pc2!==null && At.crosses>=6){
-      add(pc2>=30?'pos':'neg', `Solo ${pct(pc2)} de los centros encuentran destino`,
-        `${At.crossesOk} de ${At.crosses}. Con ${fmt(A.crosses,1)} centros por partido, es un canal caro si no mejora.`, 'Finalización');
-    }
-  }
-
-  if(perfil==='entrenador'){
-    const prec = rt(At.passesOk, At.passes, 100), precR = rt(Bt.passesOk, Bt.passes, 100);
-    if(prec!==null) add(prec>=85?'pos':prec>=78?'neu':'neg', `Precisión de pase del ${pct(prec)}`,
-      `${At.passesOk} de ${At.passes} pases completados` + (precR!==null?`, frente al ${pct(precR)} del rival`:'') + '.', 'Construcción');
-    if(A.attacksFrom) add('neu', `${pct(A.attacksFrom.def)} de nuestros ataques nacen en campo propio`,
+    if(A.attacksFrom) add('creacion','neu',
+      `${pct(A.attacksFrom.def)} de nuestros ataques nacen en campo propio`,
       `Salida ${pct(A.attacksFrom.def)} · zona media ${pct(A.attacksFrom.mid)} · campo rival ${pct(A.attacksFrom.atk)}. ` +
-      (A.attacksFrom.atk>=25? 'Buen porcentaje de robos arriba.' : 'Poca recuperación en campo contrario: el ataque casi siempre arranca lejos.'), 'Salida');
-    const rec = sum(At.interceptions, At.blocks);
-    if(rec!==null) add('neu', `${rec} recuperaciones (${fmt(rec/n,1)} por partido)`,
-      `${At.interceptions} intercepciones y ${At.blocks} bloqueos.` +
-      (Bt.passes? ` El rival intenta ${fmt(Bt.passes/n,0)} pases por partido.`:''), 'Presión');
-    if(typeof Bt.onTarget==='number' && typeof At.saves==='number'){
-      add(Bt.onTarget>At.saves*1.3?'neg':'pos', `Nos rematan ${Bt.onTarget} veces a puerta y paramos ${At.saves}`,
-        `Diferencia de ${Bt.onTarget-At.saves}: los que no para el portero acaban dentro o los saca la madera.`, 'Portería');
+      (A.attacksFrom.atk>=25 ? 'Buen porcentaje de robos arriba.' : 'Poca recuperación en campo contrario: el ataque casi siempre arranca lejos.'), 'Origen');
+
+    if(A.attacksEnding) add('creacion', A.attacksEnding.atk>=40?'pos':'neu',
+      `${pct(A.attacksEnding.atk)} de nuestros ataques mueren en el último tercio`,
+      `Reparto: ${pct(A.attacksEnding.def)} defensivo · ${pct(A.attacksEnding.mid)} medio · ${pct(A.attacksEnding.atk)} ataque.` +
+      (B.attacksEnding? ` El rival llega al último tercio en el ${pct(B.attacksEnding.atk)} de los suyos.`:''), 'Progresión');
+
+    /* ── FASE DEFENSIVA ── */
+    if(typeof Bt.shots==='number'){
+      const dif = At.shots - Bt.shots;
+      add('defensa', dif>=0?'pos':'neg',
+        dif>=0 ? `Generamos ${dif} tiros más que los rivales` : `Concedemos ${Math.abs(dif)} tiros más de los que generamos`,
+        `${fmt(A.shots,1)} tiros por partido frente a ${fmt(B.shots,1)} del rival.` +
+        (Bt.onTarget!==null? ` De los suyos, ${Bt.onTarget} van a puerta.`:''), 'Balance de tiro');
     }
+    const rec = sum(At.interceptions, At.blocks);
+    if(rec!==null) add('defensa','neu', `${rec} recuperaciones (${fmt(rec/n,1)} por partido)`,
+      `${At.interceptions} intercepciones y ${At.blocks} bloqueos, de los cuales ${At.shotBlocks??'—'} a tiro.` +
+      (Bt.passes? ` El rival intenta ${fmt(Bt.passes/n,0)} pases por partido.`:''), 'Presión');
+
+    if(typeof Bt.onTarget==='number' && typeof At.saves==='number')
+      add('defensa', Bt.onTarget>At.saves*1.3?'neg':'pos',
+        `Nos rematan ${Bt.onTarget} veces a puerta y paramos ${At.saves}`,
+        `Diferencia de ${Bt.onTarget-At.saves}: los que no ataja el portero acaban dentro o los saca la madera.`, 'Portería');
+
+    /* ── DISCIPLINA ── */
     if(typeof At.fouls==='number' && typeof Bt.fouls==='number'){
       const d = At.fouls-Bt.fouls;
-      add(d>0?'neg':'pos', d>0 ? `Cometemos ${d} faltas más que el rival` : `Cometemos ${Math.abs(d)} faltas menos que el rival`,
+      add('disciplina', d>0?'neg':'pos',
+        d>0 ? `Cometemos ${d} faltas más que el rival` : `Cometemos ${Math.abs(d)} faltas menos que el rival`,
         `${fmt(A.fouls,1)} por partido frente a ${fmt(B.fouls,1)}. ` +
-        (d>0? 'Cada falta cerca del área es un balón parado en contra.' : 'Buen control del contacto.'), 'Disciplina');
+        (d>0? 'Cada falta cerca del área es un balón parado en contra.' : 'Buen control del contacto.'), 'Faltas');
     }
-    if(typeof At.offsides==='number' && At.offsides>0){
-      add(At.offsides/n>=2?'neg':'neu', `${At.offsides} fueras de juego (${fmt(At.offsides/n,1)} por partido)`,
-        'Ataques anulados antes de rematar: revisar timing de desmarque y del último pase.', 'Ataque');
-    }
+    const tarj = sum(At.yellow, At.red);
+    if(tarj!==null) add('disciplina', At.red>0?'neg':tarj/n>=3?'neu':'pos',
+      tarj===0 ? 'Ninguna tarjeta en la selección' : `${At.yellow} amarillas y ${At.red} rojas`,
+      tarj===0 ? 'Sin sanciones que condicionen convocatorias.' : `${fmt(tarj/n,1)} tarjetas por partido.`, 'Tarjetas');
   }
 
-  if(perfil==='fisico'){
-    const activos = PLAYERS.length;
+  /* ── PLANTILLA (no depende de los partidos seleccionados) ── */
+  const activos = PLAYERS.length;
+  if(activos){
     const lesion = PLAYERS.filter(p=>estadoDe(p.id)==='injury').length;
     const prec2  = PLAYERS.filter(p=>estadoDe(p.id)==='caution').length;
-    add(lesion? 'neg':'pos', `${activos-lesion-prec2} de ${activos} jugadores plenamente disponibles`,
+    add('plantilla', lesion?'neg':'pos',
+      `${activos-lesion-prec2} de ${activos} jugadores plenamente disponibles`,
       `${lesion} lesionados y ${prec2} en precaución. ` +
       (lesion+prec2 >= activos*0.25 ? 'Más de un cuarto de la plantilla condicionada.' : 'Plantel en buen estado.'), 'Disponibilidad');
     const ses = ATT.length;
     if(ses){
-      const media = PLAYERS.length ? PLAYERS.reduce((s,p)=>
-        s + ATT.filter(x=>asistio((x.results||[]).find(r=>r.playerId===p.id))).length, 0) / (PLAYERS.length*ses) * 100 : null;
-      add(media>=90?'pos':media>=80?'neu':'neg', `Asistencia media del ${pct(media)}`,
+      const media = PLAYERS.reduce((s,p)=>
+        s + ATT.filter(x=>asistio((x.results||[]).find(r=>r.playerId===p.id))).length, 0) / (activos*ses) * 100;
+      add('plantilla', media>=90?'pos':media>=80?'neu':'neg', `Asistencia media del ${pct(media)}`,
         `Sobre ${ses} sesiones registradas. Los retrasos cuentan como asistencia.`, 'Asistencia');
       const flojos = PLAYERS.map(p=>({p, v: ATT.filter(x=>asistio((x.results||[]).find(r=>r.playerId===p.id))).length}))
         .filter(x=>x.v/ses < 0.75).sort((a,b)=>a.v-b.v);
-      if(flojos.length) add('neg', `${flojos.length} jugador${flojos.length>1?'es':''} por debajo del 75% de asistencia`,
-        flojos.slice(0,5).map(x=>`${x.p.nick} (${Math.round(x.v/ses*100)}%)`).join(' · '), 'Asistencia');
+      if(flojos.length) add('plantilla','neg',
+        `${flojos.length} jugador${flojos.length>1?'es':''} por debajo del 75% de asistencia`,
+        flojos.slice(0,6).map(x=>`${x.p.nick} (${Math.round(x.v/ses*100)}%)`).join(' · '), 'Asistencia');
     }
+  }
+  if(FINES.length){
     const pend = FINES.filter(f=>!f.paid).reduce((s,f)=>s+(f.amount||0),0);
-    if(FINES.length) add(pend>0?'neu':'pos', `${pend}€ pendientes de cobro`,
-      `${FINES.filter(f=>!f.paid).length} multas sin pagar de ${FINES.length} registradas.`, 'Disciplina');
-    if(n) add('neu', `${n} partido${n>1?'s':''} en la selección actual`,
-      'La carga de competición se cruzará con minutos jugados cuando el scraper de actas los extraiga.', 'Carga');
+    add('plantilla', pend>0?'neu':'pos', `${pend}€ pendientes de cobro`,
+      `${FINES.filter(f=>!f.paid).length} multas sin pagar de ${FINES.length} registradas.`, 'Multas');
   }
 
-  // Aviso de tamaño de muestra: se pone al final para no encabezar la lista
-  if(n>0 && n<3 && perfil!=='fisico'){
-    out.push({tono:'neu', titulo:`Lecturas sobre ${n} partido${n>1?'s':''}`,
-      cuerpo:'Con esta muestra los números describen lo que pasó, no una tendencia. A partir del tercer partido las comparaciones empiezan a tener peso.',
-      tag:'Muestra'});
-  }
+  /* Tamaño de muestra: al final, para no encabezar la lista */
+  if(n>0 && n<3) out.push({bloque:'todo', tono:'neu', titulo:`Lecturas sobre ${n} partido${n>1?'s':''}`,
+    cuerpo:'Con esta muestra los números describen lo que pasó, no una tendencia. A partir del tercer partido las comparaciones empiezan a tener peso.',
+    tag:'Muestra'});
   return out;
 }
 
@@ -1047,7 +1079,6 @@ function lecturas(ms, perfil){
 const AMBITOS = [['racing','Solo Racing'],['ambos','Racing vs rival'],['dif','Diferencial']];
 const AGREGS  = [['acum','Acumulado'],['media','Media/partido'],['partido','Partido a partido']];
 const COMPS   = [['todo','Todo'],['pretemporada','Pretemporada'],['liga','Liga']];
-const PERFILES= [['analista','Analista'],['entrenador','Entrenador'],['fisico','Preparador físico']];
 
 /* Partidos que pasan los filtros de competición y selección manual */
 function partidos(){
@@ -1082,10 +1113,14 @@ function renderCtl(){
         <div class="chips">
           <button class="chip ${!sel.size?'on':''}" onclick="selTodos()">Todos (${todos.length})</button>
           ${todos.map(m=>`<button class="chip ${sel.size? (sel.has(m.id)?'on':'off') : ''}"
-             onclick="toggleSel('${m.id}')" title="${esc(m.rival)} ${m.gf}-${m.gc}">${esc(etiquetaPartido(m))}</button>`).join('')}
+             onclick="toggleSel(event,'${m.id}')"
+             title="${esc(m.rival)} ${m.gf}-${m.gc} · clic para ver solo este partido">${esc(etiquetaPartido(m))}</button>`).join('')}
         </div>
       </div>
-      ${sel.size?`<span class="ctl-note">${sel.size} de ${todos.length} seleccionados</span>`:''}
+      <span class="ctl-note">${sel.size===1
+        ? 'Viendo solo '+esc(nombrePartido([...sel][0]))+' · pulsa «Todos» para volver'
+        : sel.size ? sel.size+' de '+todos.length+' seleccionados'
+        : 'Clic en un partido para verlo aislado · ⌘/Ctrl+clic para combinar varios'}</span>
     </div>`;
 }
 window.setF = function(k,v){
@@ -1094,15 +1129,27 @@ window.setF = function(k,v){
   guardarF(); renderCtl(); repaint();
 };
 window.selTodos = function(){ F.sel = new Set(); guardarF(); renderCtl(); repaint(); };
-window.toggleSel = function(id){
+function nombrePartido(id){
+  const m = MATCHES.find(x=>x.id===id);
+  return m ? etiquetaPartido(m) : '';
+}
+/* Clic simple = aislar ese partido (que es lo que se espera al pulsarlo).
+   Clic con ⌘/Ctrl/Shift = sumar o quitar de una selección múltiple.
+   Volver a pulsar el partido ya aislado devuelve la vista a todos. */
+window.toggleSel = function(ev, id){
+  const multiple = ev && (ev.metaKey || ev.ctrlKey || ev.shiftKey);
   const todos = partidosComp().map(m=>m.id);
-  if(!F.sel.size) F.sel = new Set(todos);          // primer clic parte de todos
-  F.sel.has(id) ? F.sel.delete(id) : F.sel.add(id);
-  if(F.sel.size===todos.length || F.sel.size===0) F.sel = new Set();
+  if(multiple){
+    if(!F.sel.size) F.sel = new Set(todos);
+    F.sel.has(id) ? F.sel.delete(id) : F.sel.add(id);
+    if(F.sel.size===todos.length || F.sel.size===0) F.sel = new Set();
+  } else {
+    F.sel = (F.sel.size===1 && F.sel.has(id)) ? new Set() : new Set([id]);
+  }
   guardarF(); renderCtl(); repaint();
 };
 function guardarF(){
-  localStorage.setItem('rl_est_f', JSON.stringify({comp:F.comp, ambito:F.ambito, agreg:F.agreg, perfil:F.perfil}));
+  localStorage.setItem('rl_est_f', JSON.stringify({comp:F.comp, ambito:F.ambito, agreg:F.agreg, bloque:F.bloque}));
 }
 
 /* ── ficha de dato ── */
@@ -1275,21 +1322,28 @@ function matriz(ms){
 /* ══════════════════════════════════════════════════════════════════════
    LECTURAS
    ══════════════════════════════════════════════════════════════════════ */
-window.setPerfil = function(p){ F.perfil=p; guardarF(); renderLecturas(); };
+window.setBloque = function(b){ F.bloque=b; guardarF(); renderLecturas(); };
 function renderLecturas(){
   const ms = partidos();
+  const items = lecturas(ms);
+  const cuenta = b => b==='todo' ? items.length : items.filter(i=>i.bloque===b).length;
   document.getElementById('lc-head').innerHTML = `<div class="hd">
       <div class="hd-t">Lecturas<em>.</em></div>
-      <div class="hd-s">${ms.length} partido${ms.length===1?'':'s'} en la selección</div>
+      <div class="hd-s">${items.length} lecturas · ${ms.length} partido${ms.length===1?'':'s'} en la selección</div>
     </div>
-    <div class="seg red" style="margin-bottom:18px">${PERFILES.map(([v,t])=>
-      `<button class="${F.perfil===v?'on':''}" onclick="setPerfil('${v}')">${t}</button>`).join('')}</div>`;
-  const body = document.getElementById('lc-body');
-  if(!ms.length && F.perfil!=='fisico'){ body.innerHTML = vacio(); return; }
+    <div class="seg red" style="margin-bottom:16px;flex-wrap:wrap">${BLOQUES.map(([v,t])=>{
+      const c = cuenta(v);
+      return `<button class="${F.bloque===v?'on':''}" ${c?'':'disabled style="opacity:.35"'}
+        onclick="setBloque('${v}')">${t}${c?` <span style="opacity:.55">${c}</span>`:''}</button>`;
+    }).join('')}</div>`;
 
-  const items = lecturas(ms, F.perfil);
-  let extra = '';
-  if(F.perfil==='entrenador' && ms.length){
+  const body = document.getElementById('lc-body');
+  const lista = F.bloque==='todo' ? items : items.filter(i=>i.bloque===F.bloque);
+
+  /* Cuadro de mando por fases: siempre visible cuando hay partidos, porque
+     es la foto de la que salen casi todas las lecturas. */
+  let panel = '';
+  if(ms.length){
     const A = agregar(ms,'rcp','media'), B = agregar(ms,'opp','media');
     const m = (k,l,d) => {
       const a = valorAgregado(A,k), b = valorAgregado(B,k);
@@ -1298,8 +1352,8 @@ function renderLecturas(){
       return `<div class="ph-m"><div class="ph-k">${l||etiquetaDe(k)}</div>
         <div class="ph-v">${fmt(a,d||0)}${sufijoDe(k)}<i class="${ico}">${ico==='up'?'▲':ico==='dn'?'▼':'='}</i></div></div>`;
     };
-    extra = `<div class="ph">
-      <div class="ph-c"><div class="ph-t">Construcción</div>
+    panel = `<div class="ph">
+      <div class="ph-c"><div class="ph-t">Creación</div>
         ${m('precPase')}${m('passes')}${m('passesPerAttack',null,1)}${m('atkPropio')}</div>
       <div class="ph-c"><div class="ph-t">Progresión</div>
         ${m('atkFinal')}${m('crosses')}${m('precCentro')}${m('receptions')}</div>
@@ -1308,14 +1362,18 @@ function renderLecturas(){
       <div class="ph-c"><div class="ph-t">Fase defensiva</div>
         ${m('interceptions')}${m('blocks')}${m('saves')}${m('fouls')}</div>
     </div>
-    <div class="nb">La flecha compara cada métrica con la del rival en los mismos partidos: ▲ estamos por encima en la dirección favorable, ▼ por debajo.</div>`;
+    <div class="nb">Medias por partido de la selección. La flecha compara con el rival en esos mismos partidos:
+      ▲ estamos por encima en la dirección favorable, ▼ por debajo.</div>`;
   }
-  body.innerHTML = extra + items.map((i,ix)=>`
-    <div class="ins ${i.tono}" style="animation-delay:${ix*45}ms">
+
+  body.innerHTML = panel + (lista.length ? lista.map((i,ix)=>`
+    <div class="ins ${i.tono}" style="animation-delay:${ix*40}ms">
       <span class="ins-tag">${i.tag}</span>
       <div class="ins-t">${i.titulo}</div>
       <div class="ins-b">${i.cuerpo}</div>
-    </div>`).join('');
+    </div>`).join('')
+    : `<div class="empty"><div class="empty-t">Sin lecturas en este bloque</div>
+       <div class="empty-s">Prueba con otro bloque o amplía la selección de partidos.</div></div>`);
 }
 
 /* ══════════════════════════════════════════════════════════════════════
