@@ -292,12 +292,11 @@ input,select,textarea{font-family:inherit;outline:none;}
   .pr-week{text-align:right;}
   .pr-week b{display:block;font-family:'Barlow Condensed',sans-serif;font-size:12pt;font-weight:800;}
   .pr-week span{font-family:'Barlow Condensed',sans-serif;font-size:7pt;letter-spacing:.22em;color:rgba(255,255,255,.5);}
-  .pr-kpis{display:flex;gap:1px;background:#d8d8d8;border:1px solid #d8d8d8;margin-bottom:13px;}
-  .pr-kpis div{flex:1;background:#fff;padding:7px 9px;}
-  .pr-kpis b{display:block;font-family:'Bebas Neue',sans-serif;font-size:19pt;line-height:1;}
-  .pr-kpis span{font-family:'Barlow Condensed',sans-serif;font-size:7pt;font-weight:700;letter-spacing:.13em;
-    text-transform:uppercase;color:#666;}
-  .pr-kpis .hi b{color:#e8192c;}
+  .pr-tot{display:flex;gap:16px;text-align:right;}
+  .pr-tot div b{display:block;font-family:'Bebas Neue',sans-serif;font-size:21pt;line-height:1;color:#e8192c;}
+  .pr-tot div.ok b{color:#fff;}
+  .pr-tot div span{font-family:'Barlow Condensed',sans-serif;font-size:7pt;font-weight:700;
+    letter-spacing:.19em;text-transform:uppercase;color:rgba(255,255,255,.5);}
   .pr-sec{font-family:'Barlow Condensed',sans-serif;font-size:8.5pt;font-weight:900;letter-spacing:.19em;
     text-transform:uppercase;border-bottom:1.5pt solid #0b0b0b;padding-bottom:3px;margin:13px 0 7px;}
   .pr-tbl{width:100%;border-collapse:collapse;font-size:8.5pt;}
@@ -312,6 +311,15 @@ input,select,textarea{font-family:inherit;outline:none;}
   .pr-tbl .ok{color:#15803d;}
   .pr-tbl .n{color:#888;font-size:7.5pt;}
   .pr-tbl .zero{color:#bbb;}
+  .pr-tbl.uni{margin-top:4px;}
+  .pr-tbl.uni th{padding:5px 6px;}
+  .pr-tbl.uni td{padding:4.5px 6px;vertical-align:top;border-bottom:.5pt solid #e4e4e4;}
+  .pr-tbl.uni td.nm{font-weight:700;white-space:nowrap;font-size:8.5pt;}
+  .pr-tbl.uni td.cl{line-height:1.5;}
+  .pr-tbl.uni td.eur{white-space:nowrap;font-size:9pt;}
+  .cc{display:inline-block;font-size:7.6pt;padding:.5px 5px;margin:0 3px 2px 0;border:.6pt solid #d5d5d5;}
+  .cc.pd{color:#b91c1c;border-color:#e8b4b4;font-weight:600;}
+  .cc.pg{color:#8a8a8a;border-color:#e2e2e2;}
   .pr-tbl tr.grp td{border-top:.8pt solid #c9c9c9;}
   .pr-tbl i{color:#c2410c;font-style:normal;font-size:7pt;}
   .pr-tbl tr.tot td{border-top:1.2pt solid #0b0b0b;font-weight:800;padding-top:5px;}
@@ -320,9 +328,7 @@ input,select,textarea{font-family:inherit;outline:none;}
   .pr-tbl td.mk-A{color:#b91c1c;font-weight:700;}
   .pr-tbl td.mk-J{color:#4338ca;font-weight:700;}
   .pr-leg{font-size:7.5pt;color:#777;margin-top:4px;}
-  .pr-two{display:flex;gap:16px;}
-  .pr-two>div{flex:1;}
-  .pr-none{font-size:8.5pt;color:#888;padding:7px 0;font-style:italic;}
+    .pr-none{font-size:8.5pt;color:#888;padding:7px 0;font-style:italic;}
   .pr-none.ok{color:#15803d;font-style:normal;}
   .pr-foot{display:flex;justify-content:space-between;margin-top:14px;padding-top:6px;
     border-top:.8pt solid #c9c9c9;font-family:'Barlow Condensed',sans-serif;font-size:7pt;
@@ -1749,46 +1755,46 @@ function renderWeek(){
    identidad del club. A4 vertical. */
 /* El parte que se cuelga en el vestuario NO lleva asistencia: es un
    documento que ven todos los jugadores y el registro de quién falta o
-   llega tarde es información de trabajo del cuerpo técnico. Solo salen
-   las cuentas del régimen de multas, que es lo que a cada uno le compete
-   comprobar. La asistencia sigue en pantalla para el staff. */
+   llega tarde es información de trabajo del cuerpo técnico.
+   Una sola tabla, una fila por jugador, para que quepa siempre en una
+   página: con 24 jugadores el alto es fijo, mientras que listar multa a
+   multa crecería sin control conforme avance la temporada.
+   Dentro de cada fila, los conceptos se agrupan por tipo y estado
+   («Retraso +5 min ×2 · 20€»), con lo pendiente destacado y lo ya
+   pagado en gris. */
 window.imprimirParte = function(){
-  const {multas, cuentas} = datosSemana();
   const jugadores = PLAYERS.filter(p=>p.active!==false);
   const nombreDe = pid => {
     const p = jugadores.find(x=>x.id===pid);
     if(p) return p.nick || p.n;
-    return (cuentas[pid] && cuentas[pid].nombre) || '—';
+    const f = FINES.find(x=>x.playerId===pid);
+    return (f && f.playerName) || '—';
   };
 
-  /* Estado de cuentas: todos los que tienen algún movimiento, con deuda
-     primero y de mayor a menor. */
-  const conMovimiento = Object.entries(cuentas)
-    .map(([pid,c])=>({pid, nombre:nombreDe(pid), ...c}))
-    .filter(c=>c.pendiente>0 || c.pagado>0)
+  /* Una entrada por jugador con movimiento, con sus conceptos agrupados */
+  const porJugador = {};
+  for(const f of FINES){
+    const j = porJugador[f.playerId] || (porJugador[f.playerId] =
+      {pid:f.playerId, nombre:nombreDe(f.playerId), pendiente:0, pagado:0, conceptos:{}});
+    const clave = (f.typeName||'Sin especificar') + '|' + (f.paid?'1':'0');
+    const c = j.conceptos[clave] || (j.conceptos[clave] =
+      {nombre:f.typeName||'Sin especificar', paid:!!f.paid, n:0, total:0, porDefinir:false});
+    c.n++; c.total += (f.amount||0);
+    if(f.pendingAmount) c.porDefinir = true;
+    if(f.paid) j.pagado += (f.amount||0); else j.pendiente += (f.amount||0);
+  }
+  const filas = Object.values(porJugador)
     .sort((a,b)=> b.pendiente-a.pendiente || b.pagado-a.pagado || a.nombre.localeCompare(b.nombre));
 
-  /* Detalle de lo que sigue debiéndose, agrupado por jugador: es lo que
-     evita discusiones sobre de dónde sale cada importe. */
-  const pendientes = FINES.filter(f=>!f.paid)
-    .sort((a,b)=> (a.playerName||'').localeCompare(b.playerName||'') || (a.date||'').localeCompare(b.date||''));
-
-  const pendTotal = conMovimiento.reduce((s,c)=>s+c.pendiente,0);
-  const pagTotal  = conMovimiento.reduce((s,c)=>s+c.pagado,0);
-  const genSem    = multas.reduce((s,f)=>s+(f.amount||0),0);
+  const pendTotal = filas.reduce((s,j)=>s+j.pendiente,0);
+  const pagTotal  = filas.reduce((s,j)=>s+j.pagado,0);
   const hoy = new Date();
-  const fmtE = n => n+'€';
 
-  let anterior = null;
-  const filasPend = pendientes.map(f=>{
-    const nuevo = f.playerName !== anterior;
-    anterior = f.playerName;
-    return `<tr${nuevo?' class="grp"':''}>
-      <td class="l">${nuevo ? (f.playerName||'—') : ''}</td>
-      <td class="l">${f.date||''}</td>
-      <td class="l">${f.typeName||''}${f.pendingAmount?' <i>(importe por definir)</i>':''}</td>
-      <td class="eur pend">${fmtE(f.amount||0)}</td></tr>`;
-  }).join('');
+  const listaConceptos = j => {
+    const cs = Object.values(j.conceptos).sort((a,b)=> (a.paid?1:0)-(b.paid?1:0) || b.total-a.total);
+    return cs.map(c=>`<span class="cc ${c.paid?'pg':'pd'}">${c.paid?'✓ ':''}${c.nombre}${
+      c.n>1?` ×${c.n}`:''} · ${c.total}€${c.porDefinir?' (por definir)':''}</span>`).join('');
+  };
 
   document.getElementById('print-sheet').innerHTML = `
     <div class="pr-head">
@@ -1797,51 +1803,34 @@ window.imprimirParte = function(){
         <div class="pr-title">RÉGIMEN DE MULTAS</div>
         <div class="pr-sub">Estado de cuentas · Primera plantilla</div>
       </div>
-      <div class="pr-week"><b>${etiquetaSemana(WEEK_MON)}</b><span>Semana</span></div>
+      <div class="pr-tot">
+        <div><b>${pendTotal}€</b><span>Pendiente</span></div>
+        <div class="ok"><b>${pagTotal}€</b><span>Pagado</span></div>
+      </div>
     </div>
 
-    <div class="pr-kpis">
-      <div><b>${fmtE(genSem)}</b><span>Generado esta semana</span></div>
-      <div><b>${multas.length}</b><span>Multas de la semana</span></div>
-      <div><b>${fmtE(pagTotal)}</b><span>Pagado acumulado</span></div>
-      <div class="hi"><b>${fmtE(pendTotal)}</b><span>Pendiente de pago</span></div>
-    </div>
-
-    <div class="pr-sec">Estado de cuentas por jugador</div>
-    ${conMovimiento.length ? `<table class="pr-tbl">
-      <thead><tr><th class="l">Jugador</th><th>Pendiente</th><th>Multas sin pagar</th><th>Pagado</th></tr></thead>
-      <tbody>${conMovimiento.map(c=>`<tr>
-        <td class="l">${c.nombre}</td>
-        <td class="eur ${c.pendiente?'pend':'zero'}">${c.pendiente?fmtE(c.pendiente):'—'}</td>
-        <td class="n">${c.nPend||'—'}</td>
-        <td class="eur ${c.pagado?'ok':'zero'}">${c.pagado?fmtE(c.pagado):'—'}</td></tr>`).join('')}
-        <tr class="tot"><td class="l">TOTAL</td>
-          <td class="eur pend">${fmtE(pendTotal)}</td>
-          <td class="n">${conMovimiento.reduce((s,c)=>s+c.nPend,0)}</td>
-          <td class="eur ok">${fmtE(pagTotal)}</td></tr>
-      </tbody></table>`
+    ${filas.length ? `<table class="pr-tbl uni">
+      <thead><tr>
+        <th class="l">Jugador</th>
+        <th class="l">Multas · concepto y estado</th>
+        <th>Pendiente</th><th>Pagado</th>
+      </tr></thead>
+      <tbody>${filas.map(j=>`<tr>
+        <td class="l nm">${j.nombre}</td>
+        <td class="l cl">${listaConceptos(j)}</td>
+        <td class="eur ${j.pendiente?'pend':'zero'}">${j.pendiente?j.pendiente+'€':'—'}</td>
+        <td class="eur ${j.pagado?'ok':'zero'}">${j.pagado?j.pagado+'€':'—'}</td>
+      </tr>`).join('')}
+      <tr class="tot"><td class="l">TOTAL</td><td></td>
+        <td class="eur pend">${pendTotal}€</td>
+        <td class="eur ok">${pagTotal}€</td></tr>
+      </tbody></table>
+      <div class="pr-leg"><b>✓</b> concepto ya abonado · el resto sigue pendiente de pago</div>`
       : `<div class="pr-none ok">Sin multas registradas: nadie debe nada.</div>`}
-
-    ${pendientes.length ? `<div class="pr-sec">Detalle de lo pendiente</div>
-      <table class="pr-tbl small">
-        <thead><tr><th class="l">Jugador</th><th class="l">Fecha</th><th class="l">Concepto</th><th>Importe</th></tr></thead>
-        <tbody>${filasPend}</tbody></table>`
-      : `<div class="pr-sec">Detalle de lo pendiente</div>
-         <div class="pr-none ok">No hay ninguna multa pendiente de pago.</div>`}
-
-    ${multas.length ? `<div class="pr-sec">Movimiento de la semana</div>
-      <table class="pr-tbl small">
-        <thead><tr><th class="l">Fecha</th><th class="l">Jugador</th><th class="l">Concepto</th><th>Importe</th><th>Estado</th></tr></thead>
-        <tbody>${multas.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(f=>`<tr>
-          <td class="l">${f.date||''}</td><td class="l">${f.playerName||''}</td>
-          <td class="l">${f.typeName||''}</td>
-          <td class="eur">${fmtE(f.amount||0)}</td>
-          <td class="${f.paid?'ok':'pend'}">${f.paid?'PAGADA':'PENDIENTE'}</td></tr>`).join('')}
-        </tbody></table>` : ''}
 
     <div class="pr-foot">
       <span>Racing Club Portuense · El Puerto de Santa María</span>
-      <span>Emitido el ${hoy.getDate()}/${hoy.getMonth()+1}/${hoy.getFullYear()}</span>
+      <span>Semana del ${etiquetaSemana(WEEK_MON)} · emitido el ${hoy.getDate()}/${hoy.getMonth()+1}/${hoy.getFullYear()}</span>
     </div>`;
   window.print();
 };
