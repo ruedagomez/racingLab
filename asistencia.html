@@ -270,6 +270,8 @@ input,select,textarea{font-family:inherit;outline:none;}
 .wk-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;font-size:11.5px;color:var(--mid);align-items:center;}
 .wk-legend span{display:flex;align-items:center;gap:6px;}
 .wk-legend i{font-style:normal;width:19px;height:19px;line-height:19px;}
+.wk-note{font-size:12px;color:var(--mid);background:var(--bg);border-left:3px solid var(--faint);
+  padding:9px 13px;margin-bottom:18px;line-height:1.55;}
 .wk-empty{padding:34px;text-align:center;color:var(--faint);border:1px dashed var(--bdr);background:var(--wh);}
 
 /* ══ HOJA IMPRIMIBLE (A4 vertical) ══ */
@@ -309,6 +311,9 @@ input,select,textarea{font-family:inherit;outline:none;}
   .pr-tbl .pend{color:#b91c1c;font-weight:700;}
   .pr-tbl .ok{color:#15803d;}
   .pr-tbl .n{color:#888;font-size:7.5pt;}
+  .pr-tbl .zero{color:#bbb;}
+  .pr-tbl tr.grp td{border-top:.8pt solid #c9c9c9;}
+  .pr-tbl i{color:#c2410c;font-style:normal;font-size:7pt;}
   .pr-tbl tr.tot td{border-top:1.2pt solid #0b0b0b;font-weight:800;padding-top:5px;}
   .pr-tbl td.mk-P{color:#15803d;font-weight:700;}
   .pr-tbl td.mk-R{color:#c2410c;font-weight:700;}
@@ -538,8 +543,10 @@ input,select,textarea{font-family:inherit;outline:none;}
       <div class="wk-label"><span id="wk-title">—</span><small id="wk-sub"></small></div>
       <button class="btn btn-ghost btn-sm" id="wk-next" onclick="semana(1)">Siguiente ›</button>
       <button class="btn btn-ghost btn-sm" onclick="semanaHoy()">Esta semana</button>
-      <button class="btn btn-primary btn-sm" onclick="imprimirParte()">⎙ Imprimir parte</button>
+      <button class="btn btn-primary btn-sm" onclick="imprimirParte()">⎙ Imprimir parte de multas</button>
     </div>
+    <div class="wk-note">La asistencia de abajo es <b>solo para el cuerpo técnico</b>: el parte que se imprime
+      para el vestuario contiene únicamente el estado de cuentas del régimen de multas.</div>
     <div id="wk-body"></div>
   </div>
 
@@ -1740,91 +1747,95 @@ function renderWeek(){
    Se construye en un contenedor aparte que solo existe al imprimir, para
    que el PDF salga limpio (sin barras de navegación ni botones) y con la
    identidad del club. A4 vertical. */
+/* El parte que se cuelga en el vestuario NO lleva asistencia: es un
+   documento que ven todos los jugadores y el registro de quién falta o
+   llega tarde es información de trabajo del cuerpo técnico. Solo salen
+   las cuentas del régimen de multas, que es lo que a cada uno le compete
+   comprobar. La asistencia sigue en pantalla para el staff. */
 window.imprimirParte = function(){
-  const {sesiones, multas, cuentas} = datosSemana();
+  const {multas, cuentas} = datosSemana();
   const jugadores = PLAYERS.filter(p=>p.active!==false);
-  const marcaC = (pid,s) => {
-    const r=(s.results||[]).find(x=>x.playerId===pid);
-    if(!r) return '·';
-    const st = r.status || (r.present?'presente':'ausencia');
-    return {presente:'P',retraso:'R',ausencia:'A',justificada:'J'}[st] || '·';
+  const nombreDe = pid => {
+    const p = jugadores.find(x=>x.id===pid);
+    if(p) return p.nick || p.n;
+    return (cuentas[pid] && cuentas[pid].nombre) || '—';
   };
-  const deudores = jugadores
-    .map(p=>({p, c:cuentas[p.id]}))
-    .filter(x=>x.c && x.c.pendiente>0)
-    .sort((a,b)=>b.c.pendiente-a.c.pendiente);
-  const pagadores = jugadores
-    .map(p=>({p, c:cuentas[p.id]}))
-    .filter(x=>x.c && x.c.pagado>0)
-    .sort((a,b)=>b.c.pagado-a.c.pagado);
-  const pendTotal = Object.values(cuentas).reduce((s,c)=>s+c.pendiente,0);
-  const pagTotal  = Object.values(cuentas).reduce((s,c)=>s+c.pagado,0);
+
+  /* Estado de cuentas: todos los que tienen algún movimiento, con deuda
+     primero y de mayor a menor. */
+  const conMovimiento = Object.entries(cuentas)
+    .map(([pid,c])=>({pid, nombre:nombreDe(pid), ...c}))
+    .filter(c=>c.pendiente>0 || c.pagado>0)
+    .sort((a,b)=> b.pendiente-a.pendiente || b.pagado-a.pagado || a.nombre.localeCompare(b.nombre));
+
+  /* Detalle de lo que sigue debiéndose, agrupado por jugador: es lo que
+     evita discusiones sobre de dónde sale cada importe. */
+  const pendientes = FINES.filter(f=>!f.paid)
+    .sort((a,b)=> (a.playerName||'').localeCompare(b.playerName||'') || (a.date||'').localeCompare(b.date||''));
+
+  const pendTotal = conMovimiento.reduce((s,c)=>s+c.pendiente,0);
+  const pagTotal  = conMovimiento.reduce((s,c)=>s+c.pagado,0);
   const genSem    = multas.reduce((s,f)=>s+(f.amount||0),0);
   const hoy = new Date();
+  const fmtE = n => n+'€';
 
-  const doc = document.getElementById('print-sheet');
-  doc.innerHTML = `
+  let anterior = null;
+  const filasPend = pendientes.map(f=>{
+    const nuevo = f.playerName !== anterior;
+    anterior = f.playerName;
+    return `<tr${nuevo?' class="grp"':''}>
+      <td class="l">${nuevo ? (f.playerName||'—') : ''}</td>
+      <td class="l">${f.date||''}</td>
+      <td class="l">${f.typeName||''}${f.pendingAmount?' <i>(importe por definir)</i>':''}</td>
+      <td class="eur pend">${fmtE(f.amount||0)}</td></tr>`;
+  }).join('');
+
+  document.getElementById('print-sheet').innerHTML = `
     <div class="pr-head">
       <div>
         <div class="pr-kicker">Racing Club Portuense · Documento interno de plantilla</div>
-        <div class="pr-title">PARTE SEMANAL</div>
-        <div class="pr-sub">Asistencia y régimen de multas · Primera plantilla</div>
+        <div class="pr-title">RÉGIMEN DE MULTAS</div>
+        <div class="pr-sub">Estado de cuentas · Primera plantilla</div>
       </div>
-      <div class="pr-week"><b>${etiquetaSemana(WEEK_MON)}</b><span>SEMANA</span></div>
+      <div class="pr-week"><b>${etiquetaSemana(WEEK_MON)}</b><span>Semana</span></div>
     </div>
 
     <div class="pr-kpis">
-      <div><b>${sesiones.length}</b><span>Sesiones</span></div>
-      <div><b>${genSem}€</b><span>Multas de la semana</span></div>
-      <div><b>${pagTotal}€</b><span>Pagado acumulado</span></div>
-      <div class="hi"><b>${pendTotal}€</b><span>Pendiente de pago</span></div>
+      <div><b>${fmtE(genSem)}</b><span>Generado esta semana</span></div>
+      <div><b>${multas.length}</b><span>Multas de la semana</span></div>
+      <div><b>${fmtE(pagTotal)}</b><span>Pagado acumulado</span></div>
+      <div class="hi"><b>${fmtE(pendTotal)}</b><span>Pendiente de pago</span></div>
     </div>
 
-    <div class="pr-sec">Asistencia de la semana</div>
-    ${sesiones.length ? `<table class="pr-tbl">
-      <thead><tr><th class="l">Jugador</th>
-        ${sesiones.map(s=>{const d=desdeIso(s.date);
-          return `<th>${DIAS_C[d.getDay()]}<br/>${d.getDate()}/${d.getMonth()+1}</th>`;}).join('')}
-        <th>Multas</th></tr></thead>
-      <tbody>${jugadores.map(p=>{
-        const eur = multas.filter(f=>f.playerId===p.id).reduce((s,f)=>s+(f.amount||0),0);
-        return `<tr><td class="l">${p.nick||p.n}</td>
-          ${sesiones.map(s=>{const m=marcaC(p.id,s);
-            return `<td class="mk-${m}">${m}</td>`;}).join('')}
-          <td class="eur">${eur?eur+'€':'—'}</td></tr>`;}).join('')}</tbody>
-    </table>
-    <div class="pr-leg">P Presente · R Retraso · A Ausencia · J Justificada · — Sin registro</div>`
-    : `<div class="pr-none">No hay sesiones registradas en esta semana.</div>`}
+    <div class="pr-sec">Estado de cuentas por jugador</div>
+    ${conMovimiento.length ? `<table class="pr-tbl">
+      <thead><tr><th class="l">Jugador</th><th>Pendiente</th><th>Multas sin pagar</th><th>Pagado</th></tr></thead>
+      <tbody>${conMovimiento.map(c=>`<tr>
+        <td class="l">${c.nombre}</td>
+        <td class="eur ${c.pendiente?'pend':'zero'}">${c.pendiente?fmtE(c.pendiente):'—'}</td>
+        <td class="n">${c.nPend||'—'}</td>
+        <td class="eur ${c.pagado?'ok':'zero'}">${c.pagado?fmtE(c.pagado):'—'}</td></tr>`).join('')}
+        <tr class="tot"><td class="l">TOTAL</td>
+          <td class="eur pend">${fmtE(pendTotal)}</td>
+          <td class="n">${conMovimiento.reduce((s,c)=>s+c.nPend,0)}</td>
+          <td class="eur ok">${fmtE(pagTotal)}</td></tr>
+      </tbody></table>`
+      : `<div class="pr-none ok">Sin multas registradas: nadie debe nada.</div>`}
 
-    <div class="pr-two">
-      <div>
-        <div class="pr-sec">Pendiente de pago</div>
-        ${deudores.length ? `<table class="pr-tbl small">
-          <tbody>${deudores.map(x=>`<tr><td class="l">${x.p.nick||x.p.n}</td>
-            <td class="eur pend">${x.c.pendiente}€</td>
-            <td class="n">${x.c.nPend} multa${x.c.nPend>1?'s':''}</td></tr>`).join('')}
-            <tr class="tot"><td class="l">TOTAL</td><td class="eur pend">${pendTotal}€</td><td></td></tr>
-          </tbody></table>`
-          : `<div class="pr-none ok">Nadie tiene multas pendientes.</div>`}
-      </div>
-      <div>
-        <div class="pr-sec">Ya pagado</div>
-        ${pagadores.length ? `<table class="pr-tbl small">
-          <tbody>${pagadores.map(x=>`<tr><td class="l">${x.p.nick||x.p.n}</td>
-            <td class="eur ok">${x.c.pagado}€</td><td></td></tr>`).join('')}
-            <tr class="tot"><td class="l">TOTAL</td><td class="eur ok">${pagTotal}€</td><td></td></tr>
-          </tbody></table>`
-          : `<div class="pr-none">Todavía no hay multas pagadas.</div>`}
-      </div>
-    </div>
+    ${pendientes.length ? `<div class="pr-sec">Detalle de lo pendiente</div>
+      <table class="pr-tbl small">
+        <thead><tr><th class="l">Jugador</th><th class="l">Fecha</th><th class="l">Concepto</th><th>Importe</th></tr></thead>
+        <tbody>${filasPend}</tbody></table>`
+      : `<div class="pr-sec">Detalle de lo pendiente</div>
+         <div class="pr-none ok">No hay ninguna multa pendiente de pago.</div>`}
 
-    ${multas.length ? `<div class="pr-sec">Detalle de multas de la semana</div>
+    ${multas.length ? `<div class="pr-sec">Movimiento de la semana</div>
       <table class="pr-tbl small">
         <thead><tr><th class="l">Fecha</th><th class="l">Jugador</th><th class="l">Concepto</th><th>Importe</th><th>Estado</th></tr></thead>
         <tbody>${multas.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(f=>`<tr>
           <td class="l">${f.date||''}</td><td class="l">${f.playerName||''}</td>
           <td class="l">${f.typeName||''}</td>
-          <td class="eur">${f.amount||0}€</td>
+          <td class="eur">${fmtE(f.amount||0)}</td>
           <td class="${f.paid?'ok':'pend'}">${f.paid?'PAGADA':'PENDIENTE'}</td></tr>`).join('')}
         </tbody></table>` : ''}
 
