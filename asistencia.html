@@ -249,6 +249,81 @@ input,select,textarea{font-family:inherit;outline:none;}
   .main{padding-bottom:64px;} /* deja hueco para que la barra inferior no tape contenido */
 }
 @media(max-width:600px){.page{padding:18px 14px 36px;}.topbar{padding:0 16px;}.form-row{grid-template-columns:1fr;}}
+
+/* ══ PARTE SEMANAL ══ */
+.wk-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:20px;padding-bottom:14px;
+  border-bottom:1px solid var(--bdr);}
+.wk-label{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;letter-spacing:.03em;
+  min-width:210px;text-align:center;}
+.wk-label small{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:400;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--r);}
+.wk-tbl th.c,.wk-tbl td.c{text-align:center;}
+.wk-tbl th.c small{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:400;color:var(--faint);}
+.wk-tbl td.mono,.wk-tbl .mono{font-family:'JetBrains Mono',monospace;font-size:12px;}
+.mk{display:inline-block;width:21px;height:21px;line-height:21px;text-align:center;border-radius:3px;
+  font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;}
+.mk.p{background:var(--fit-bg);color:var(--fit);}
+.mk.r{background:var(--warn-bg);color:var(--warn);}
+.mk.a{background:var(--inj-bg);color:var(--inj);}
+.mk.j{background:#eef2ff;color:#4338ca;}
+.mk.nd{background:var(--bg);color:var(--faint);}
+.wk-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;font-size:11.5px;color:var(--mid);align-items:center;}
+.wk-legend span{display:flex;align-items:center;gap:6px;}
+.wk-legend i{font-style:normal;width:19px;height:19px;line-height:19px;}
+.wk-empty{padding:34px;text-align:center;color:var(--faint);border:1px dashed var(--bdr);background:var(--wh);}
+
+/* ══ HOJA IMPRIMIBLE (A4 vertical) ══ */
+#print-sheet{display:none;}
+@media print{
+  @page{size:A4 portrait;margin:11mm 12mm;}
+  .sidebar,.mobnav,.topbar,.page,.overlay,.toast,.wk-nav{display:none !important;}
+  html,body{height:auto;background:#fff;}
+  .app{display:block;height:auto;overflow:visible;}
+  #print-sheet{display:block;color:#111;font-family:'Barlow',sans-serif;}
+  .pr-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;
+    background:#0b0b0b;color:#fff;padding:11px 14px;margin-bottom:11px;}
+  .pr-kicker{font-family:'Barlow Condensed',sans-serif;font-size:7.5pt;font-weight:700;letter-spacing:.22em;
+    text-transform:uppercase;color:#e8192c;}
+  .pr-title{font-family:'Bebas Neue',sans-serif;font-size:26pt;line-height:.92;letter-spacing:1px;}
+  .pr-sub{font-family:'Barlow Condensed',sans-serif;font-size:8pt;letter-spacing:.16em;text-transform:uppercase;
+    color:rgba(255,255,255,.6);}
+  .pr-week{text-align:right;}
+  .pr-week b{display:block;font-family:'Barlow Condensed',sans-serif;font-size:12pt;font-weight:800;}
+  .pr-week span{font-family:'Barlow Condensed',sans-serif;font-size:7pt;letter-spacing:.22em;color:rgba(255,255,255,.5);}
+  .pr-kpis{display:flex;gap:1px;background:#d8d8d8;border:1px solid #d8d8d8;margin-bottom:13px;}
+  .pr-kpis div{flex:1;background:#fff;padding:7px 9px;}
+  .pr-kpis b{display:block;font-family:'Bebas Neue',sans-serif;font-size:19pt;line-height:1;}
+  .pr-kpis span{font-family:'Barlow Condensed',sans-serif;font-size:7pt;font-weight:700;letter-spacing:.13em;
+    text-transform:uppercase;color:#666;}
+  .pr-kpis .hi b{color:#e8192c;}
+  .pr-sec{font-family:'Barlow Condensed',sans-serif;font-size:8.5pt;font-weight:900;letter-spacing:.19em;
+    text-transform:uppercase;border-bottom:1.5pt solid #0b0b0b;padding-bottom:3px;margin:13px 0 7px;}
+  .pr-tbl{width:100%;border-collapse:collapse;font-size:8.5pt;}
+  .pr-tbl.small{font-size:8pt;}
+  .pr-tbl th{background:#f1f1f0;font-family:'Barlow Condensed',sans-serif;font-size:7.5pt;font-weight:800;
+    letter-spacing:.09em;text-transform:uppercase;padding:4px 5px;text-align:center;border-bottom:.8pt solid #c9c9c9;}
+  .pr-tbl td{padding:3.4px 5px;text-align:center;border-bottom:.5pt solid #ececec;}
+  .pr-tbl th.l,.pr-tbl td.l{text-align:left;}
+  .pr-tbl td.l{font-weight:600;}
+  .pr-tbl .eur{font-family:'JetBrains Mono',monospace;font-weight:500;}
+  .pr-tbl .pend{color:#b91c1c;font-weight:700;}
+  .pr-tbl .ok{color:#15803d;}
+  .pr-tbl .n{color:#888;font-size:7.5pt;}
+  .pr-tbl tr.tot td{border-top:1.2pt solid #0b0b0b;font-weight:800;padding-top:5px;}
+  .pr-tbl td.mk-P{color:#15803d;font-weight:700;}
+  .pr-tbl td.mk-R{color:#c2410c;font-weight:700;}
+  .pr-tbl td.mk-A{color:#b91c1c;font-weight:700;}
+  .pr-tbl td.mk-J{color:#4338ca;font-weight:700;}
+  .pr-leg{font-size:7.5pt;color:#777;margin-top:4px;}
+  .pr-two{display:flex;gap:16px;}
+  .pr-two>div{flex:1;}
+  .pr-none{font-size:8.5pt;color:#888;padding:7px 0;font-style:italic;}
+  .pr-none.ok{color:#15803d;font-style:normal;}
+  .pr-foot{display:flex;justify-content:space-between;margin-top:14px;padding-top:6px;
+    border-top:.8pt solid #c9c9c9;font-family:'Barlow Condensed',sans-serif;font-size:7pt;
+    letter-spacing:.16em;text-transform:uppercase;color:#999;}
+  .pr-tbl tr{page-break-inside:avoid;}
+}
 </style>
 </head>
 <body>
@@ -268,6 +343,7 @@ input,select,textarea{font-family:inherit;outline:none;}
     <div class="sb-section">Asistencia</div>
     <div class="nav-item active" onclick="nav('p-register',this)"><span class="nav-icon">📷</span>Registrar</div>
     <div class="nav-item" onclick="nav('p-history',this)"><span class="nav-icon">◫</span>Historial</div>
+    <div class="nav-item" onclick="nav('p-week',this)"><span class="nav-icon">▤</span>Parte semanal</div>
     <!-- Zonas/Vision retirado — ver nota en el JS junto a checkZonesState() -->
     <!-- <div class="nav-item" onclick="nav('p-setup',this)"><span class="nav-icon">◈</span>Configurar zonas</div> -->
     <div class="sb-section">Multas</div>
@@ -287,6 +363,7 @@ input,select,textarea{font-family:inherit;outline:none;}
 <nav class="mobnav">
   <div class="mobnav-item active" onclick="nav('p-register',this)"><span class="nav-icon">📷</span><small>Registrar</small></div>
   <div class="mobnav-item" onclick="nav('p-history',this)"><span class="nav-icon">◫</span><small>Historial</small></div>
+  <div class="mobnav-item" onclick="nav('p-week',this)"><span class="nav-icon">▤</span><small>Semana</small></div>
   <div class="mobnav-item" onclick="nav('p-fines',this)"><span class="nav-icon">◉</span><small>Registro</small><span class="mobnav-badge" id="unpaid-badge-m">0</span></div>
   <div class="mobnav-item" onclick="nav('p-fine-types',this)"><span class="nav-icon">◐</span><small>Catálogo</small></div>
   <div class="mobnav-item" onclick="nav('p-dashboard',this)"><span class="nav-icon">◧</span><small>Dashboard</small></div>
@@ -450,6 +527,22 @@ input,select,textarea{font-family:inherit;outline:none;}
   </div>
 
   <!-- DASHBOARD -->
+  <!-- ══ PARTE SEMANAL ══ -->
+  <div class="page" id="p-week">
+    <div class="sh">
+      <div class="st">Parte Semanal</div>
+      <div class="sc" id="wk-meta"></div>
+    </div>
+    <div class="wk-nav">
+      <button class="btn btn-ghost btn-sm" onclick="semana(-1)">‹ Anterior</button>
+      <div class="wk-label"><span id="wk-title">—</span><small id="wk-sub"></small></div>
+      <button class="btn btn-ghost btn-sm" id="wk-next" onclick="semana(1)">Siguiente ›</button>
+      <button class="btn btn-ghost btn-sm" onclick="semanaHoy()">Esta semana</button>
+      <button class="btn btn-primary btn-sm" onclick="imprimirParte()">⎙ Imprimir parte</button>
+    </div>
+    <div id="wk-body"></div>
+  </div>
+
   <div class="page" id="p-dashboard">
     <div class="sh"><div class="st">Dashboard Multas</div><div class="sc" id="dash-meta"></div></div>
     <div class="kpi-grid" id="dash-kpis"></div>
@@ -755,7 +848,8 @@ async function syncCatalog() {
 const PAGE_TITLES = {
   'p-register':'Registrar Asistencia','p-history':'Historial',
   'p-setup':'Configurar Zonas','p-fines':'Registro de Multas',
-  'p-fine-types':'Catálogo de Multas','p-dashboard':'Dashboard Multas'
+  'p-fine-types':'Catálogo de Multas','p-dashboard':'Dashboard Multas',
+  'p-week':'Parte Semanal'
 };
 window.nav = function(id, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -778,6 +872,7 @@ function renderPage(id) {
   if(id === 'p-fines')      renderFinesTable(currentFineTab);
   if(id === 'p-fine-types') renderFineTypes();
   if(id === 'p-dashboard')  renderDashboard();
+  if(id === 'p-week')       renderWeek();
 }
 
 /* ── REGISTER ── */
@@ -1506,6 +1601,240 @@ window.showToast = function(msg, type='ok') {
   clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.remove(),3200);
 };
 
+/* ══════════════════════════════════════════════════════════════════════
+   PARTE SEMANAL
+   Semanas de lunes a domingo. El parte se imprime los lunes para el
+   vestuario: recoge la asistencia de la semana, las multas generadas en
+   ella y el estado de cuentas acumulado de cada jugador (lo pagado y lo
+   que sigue debiendo), que es lo que de verdad interesa colgar.
+   ══════════════════════════════════════════════════════════════════════ */
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const DIAS_C = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+/* Lunes de la semana a la que pertenece una fecha (ISO: la semana empieza
+   en lunes, y el domingo cierra la del lunes anterior, no abre otra). */
+function lunesDe(d){
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const dow = (x.getDay() + 6) % 7;          // 0 = lunes … 6 = domingo
+  x.setDate(x.getDate() - dow);
+  return x;
+}
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const desdeIso = s => { const [y,m,d]=String(s).split('-').map(Number); return new Date(y,m-1,d); };
+function rangoSemana(lun){
+  const dom = new Date(lun); dom.setDate(dom.getDate()+6);
+  return {ini:lun, fin:dom, isoIni:iso(lun), isoFin:iso(dom)};
+}
+function etiquetaSemana(lun){
+  const {ini,fin} = rangoSemana(lun);
+  const mismoMes = ini.getMonth()===fin.getMonth();
+  return mismoMes
+    ? `${ini.getDate()} – ${fin.getDate()} ${MESES[fin.getMonth()]} ${fin.getFullYear()}`
+    : `${ini.getDate()} ${MESES[ini.getMonth()]} – ${fin.getDate()} ${MESES[fin.getMonth()]} ${fin.getFullYear()}`;
+}
+let WEEK_MON = lunesDe(new Date());
+
+window.semana = function(delta){
+  const d = new Date(WEEK_MON); d.setDate(d.getDate()+delta*7);
+  WEEK_MON = d; renderWeek();
+};
+window.semanaHoy = function(){ WEEK_MON = lunesDe(new Date()); renderWeek(); };
+
+/* Datos de la semana activa */
+function datosSemana(){
+  const {isoIni, isoFin} = rangoSemana(WEEK_MON);
+  const enRango = f => f >= isoIni && f <= isoFin;
+  const sesiones = ATTENDANCE.filter(s => enRango(s.date)).sort((a,b)=>a.date.localeCompare(b.date));
+  const multas   = FINES.filter(f => f.date && enRango(f.date));
+  /* Estado de cuentas: acumulado de toda la temporada, no solo de la
+     semana. En el vestuario lo que importa es cuánto debe cada uno. */
+  const cuentas = {};
+  for(const f of FINES){
+    const c = cuentas[f.playerId] || (cuentas[f.playerId] = {nombre:f.playerName, pagado:0, pendiente:0, nPend:0});
+    if(f.paid) c.pagado += (f.amount||0);
+    else { c.pendiente += (f.amount||0); c.nPend++; }
+    if(f.playerName) c.nombre = f.playerName;
+  }
+  return {sesiones, multas, cuentas, isoIni, isoFin};
+}
+
+function renderWeek(){
+  const {sesiones, multas, cuentas} = datosSemana();
+  const esActual = iso(WEEK_MON) === iso(lunesDe(new Date()));
+  document.getElementById('wk-title').textContent = etiquetaSemana(WEEK_MON);
+  document.getElementById('wk-sub').textContent = esActual ? 'Semana en curso' : '';
+  document.getElementById('wk-next').disabled = false;
+  document.getElementById('wk-meta').textContent =
+    `${sesiones.length} ${sesiones.length===1?'sesión':'sesiones'} · ${multas.length} multa${multas.length===1?'':'s'} esta semana`;
+
+  const gen  = multas.reduce((s,f)=>s+(f.amount||0),0);
+  const pagS = multas.filter(f=>f.paid).reduce((s,f)=>s+(f.amount||0),0);
+  const pendTotal = Object.values(cuentas).reduce((s,c)=>s+c.pendiente,0);
+  const pagTotal  = Object.values(cuentas).reduce((s,c)=>s+c.pagado,0);
+
+  /* Asistencia de la semana por jugador */
+  const jugadores = PLAYERS.filter(p=>p.active!==false);
+  const marca = (pid, s) => {
+    const r = (s.results||[]).find(x=>x.playerId===pid);
+    if(!r) return {c:'·', k:'nd', t:'Sin registro'};
+    const st = r.status || (r.present?'presente':'ausencia');
+    return {presente:{c:'P',k:'p',t:'Presente'}, retraso:{c:'R',k:'r',t:'Retraso'},
+            ausencia:{c:'A',k:'a',t:'Ausencia'}, justificada:{c:'J',k:'j',t:'Justificada'}}[st]
+           || {c:'·',k:'nd',t:st};
+  };
+
+  let tabla = '';
+  if(!sesiones.length){
+    tabla = `<div class="wk-empty">No hay sesiones registradas en esta semana.</div>`;
+  } else {
+    tabla = `<div class="tbl-wrap"><table class="tbl wk-tbl">
+      <thead><tr><th>Jugador</th>
+        ${sesiones.map(s=>{ const d=desdeIso(s.date);
+          return `<th class="c" title="${s.date}">${DIAS_C[d.getDay()]}<br/><small>${d.getDate()}/${d.getMonth()+1}</small></th>`;}).join('')}
+        <th class="c">Multas semana</th><th class="c">Pendiente total</th></tr></thead>
+      <tbody>${jugadores.map(p=>{
+        const eur = multas.filter(f=>f.playerId===p.id).reduce((s,f)=>s+(f.amount||0),0);
+        const c = cuentas[p.id];
+        return `<tr>
+          <td class="nm">${p.nick||p.n}</td>
+          ${sesiones.map(s=>{ const m=marca(p.id,s);
+            return `<td class="c"><span class="mk ${m.k}" title="${m.t}">${m.c}</span></td>`;}).join('')}
+          <td class="c mono">${eur?eur+'€':'·'}</td>
+          <td class="c mono" style="${c&&c.pendiente?'color:var(--inj);font-weight:600':''}">${c&&c.pendiente?c.pendiente+'€':'·'}</td>
+        </tr>`;}).join('')}</tbody>
+    </table></div>`;
+  }
+
+  const detalle = multas.length ? `
+    <div class="card" style="margin-top:18px">
+      <div class="card-title">Multas generadas esta semana</div>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Fecha</th><th>Jugador</th><th>Concepto</th><th>Importe</th><th>Estado</th></tr></thead>
+        <tbody>${multas.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(f=>`<tr>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint)">${f.date||''}</td>
+          <td class="nm">${f.playerName||''}</td>
+          <td>${f.typeName||''}${f.pendingAmount?' <span class="pill pill-amber">importe a definir</span>':''}</td>
+          <td class="mono">${f.amount||0}€</td>
+          <td>${f.paid?'<span class="pill pill-green">Pagada</span>':'<span class="pill pill-red">Pendiente</span>'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>` : '';
+
+  document.getElementById('wk-body').innerHTML = `
+    <div class="dash-grid" style="margin-bottom:20px">
+      <div class="kpi"><div class="kv">${sesiones.length}</div><div class="kl">Sesiones</div></div>
+      <div class="kpi"><div class="kv">${gen}€</div><div class="kl">Multas de la semana</div></div>
+      <div class="kpi"><div class="kv green">${pagTotal}€</div><div class="kl">Pagado (total)</div></div>
+      <div class="kpi"><div class="kv red">${pendTotal}€</div><div class="kl">Pendiente (total)</div></div>
+    </div>
+    ${tabla}
+    ${detalle}
+    <div class="wk-legend">
+      <span><i class="mk p">P</i> Presente</span><span><i class="mk r">R</i> Retraso</span>
+      <span><i class="mk a">A</i> Ausencia</span><span><i class="mk j">J</i> Justificada</span>
+      <span><i class="mk nd">·</i> Sin registro</span>
+    </div>`;
+}
+
+/* ── Hoja imprimible ──────────────────────────────────────────────────
+   Se construye en un contenedor aparte que solo existe al imprimir, para
+   que el PDF salga limpio (sin barras de navegación ni botones) y con la
+   identidad del club. A4 vertical. */
+window.imprimirParte = function(){
+  const {sesiones, multas, cuentas} = datosSemana();
+  const jugadores = PLAYERS.filter(p=>p.active!==false);
+  const marcaC = (pid,s) => {
+    const r=(s.results||[]).find(x=>x.playerId===pid);
+    if(!r) return '·';
+    const st = r.status || (r.present?'presente':'ausencia');
+    return {presente:'P',retraso:'R',ausencia:'A',justificada:'J'}[st] || '·';
+  };
+  const deudores = jugadores
+    .map(p=>({p, c:cuentas[p.id]}))
+    .filter(x=>x.c && x.c.pendiente>0)
+    .sort((a,b)=>b.c.pendiente-a.c.pendiente);
+  const pagadores = jugadores
+    .map(p=>({p, c:cuentas[p.id]}))
+    .filter(x=>x.c && x.c.pagado>0)
+    .sort((a,b)=>b.c.pagado-a.c.pagado);
+  const pendTotal = Object.values(cuentas).reduce((s,c)=>s+c.pendiente,0);
+  const pagTotal  = Object.values(cuentas).reduce((s,c)=>s+c.pagado,0);
+  const genSem    = multas.reduce((s,f)=>s+(f.amount||0),0);
+  const hoy = new Date();
+
+  const doc = document.getElementById('print-sheet');
+  doc.innerHTML = `
+    <div class="pr-head">
+      <div>
+        <div class="pr-kicker">Racing Club Portuense · Documento interno de plantilla</div>
+        <div class="pr-title">PARTE SEMANAL</div>
+        <div class="pr-sub">Asistencia y régimen de multas · Primera plantilla</div>
+      </div>
+      <div class="pr-week"><b>${etiquetaSemana(WEEK_MON)}</b><span>SEMANA</span></div>
+    </div>
+
+    <div class="pr-kpis">
+      <div><b>${sesiones.length}</b><span>Sesiones</span></div>
+      <div><b>${genSem}€</b><span>Multas de la semana</span></div>
+      <div><b>${pagTotal}€</b><span>Pagado acumulado</span></div>
+      <div class="hi"><b>${pendTotal}€</b><span>Pendiente de pago</span></div>
+    </div>
+
+    <div class="pr-sec">Asistencia de la semana</div>
+    ${sesiones.length ? `<table class="pr-tbl">
+      <thead><tr><th class="l">Jugador</th>
+        ${sesiones.map(s=>{const d=desdeIso(s.date);
+          return `<th>${DIAS_C[d.getDay()]}<br/>${d.getDate()}/${d.getMonth()+1}</th>`;}).join('')}
+        <th>Multas</th></tr></thead>
+      <tbody>${jugadores.map(p=>{
+        const eur = multas.filter(f=>f.playerId===p.id).reduce((s,f)=>s+(f.amount||0),0);
+        return `<tr><td class="l">${p.nick||p.n}</td>
+          ${sesiones.map(s=>{const m=marcaC(p.id,s);
+            return `<td class="mk-${m}">${m}</td>`;}).join('')}
+          <td class="eur">${eur?eur+'€':'—'}</td></tr>`;}).join('')}</tbody>
+    </table>
+    <div class="pr-leg">P Presente · R Retraso · A Ausencia · J Justificada · — Sin registro</div>`
+    : `<div class="pr-none">No hay sesiones registradas en esta semana.</div>`}
+
+    <div class="pr-two">
+      <div>
+        <div class="pr-sec">Pendiente de pago</div>
+        ${deudores.length ? `<table class="pr-tbl small">
+          <tbody>${deudores.map(x=>`<tr><td class="l">${x.p.nick||x.p.n}</td>
+            <td class="eur pend">${x.c.pendiente}€</td>
+            <td class="n">${x.c.nPend} multa${x.c.nPend>1?'s':''}</td></tr>`).join('')}
+            <tr class="tot"><td class="l">TOTAL</td><td class="eur pend">${pendTotal}€</td><td></td></tr>
+          </tbody></table>`
+          : `<div class="pr-none ok">Nadie tiene multas pendientes.</div>`}
+      </div>
+      <div>
+        <div class="pr-sec">Ya pagado</div>
+        ${pagadores.length ? `<table class="pr-tbl small">
+          <tbody>${pagadores.map(x=>`<tr><td class="l">${x.p.nick||x.p.n}</td>
+            <td class="eur ok">${x.c.pagado}€</td><td></td></tr>`).join('')}
+            <tr class="tot"><td class="l">TOTAL</td><td class="eur ok">${pagTotal}€</td><td></td></tr>
+          </tbody></table>`
+          : `<div class="pr-none">Todavía no hay multas pagadas.</div>`}
+      </div>
+    </div>
+
+    ${multas.length ? `<div class="pr-sec">Detalle de multas de la semana</div>
+      <table class="pr-tbl small">
+        <thead><tr><th class="l">Fecha</th><th class="l">Jugador</th><th class="l">Concepto</th><th>Importe</th><th>Estado</th></tr></thead>
+        <tbody>${multas.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(f=>`<tr>
+          <td class="l">${f.date||''}</td><td class="l">${f.playerName||''}</td>
+          <td class="l">${f.typeName||''}</td>
+          <td class="eur">${f.amount||0}€</td>
+          <td class="${f.paid?'ok':'pend'}">${f.paid?'PAGADA':'PENDIENTE'}</td></tr>`).join('')}
+        </tbody></table>` : ''}
+
+    <div class="pr-foot">
+      <span>Racing Club Portuense · El Puerto de Santa María</span>
+      <span>Emitido el ${hoy.getDate()}/${hoy.getMonth()+1}/${hoy.getFullYear()}</span>
+    </div>`;
+  window.print();
+};
+
 /* ── INIT ── */
 loadPlayers();
 startListeners();
@@ -1515,5 +1844,6 @@ document.getElementById('reg-date-label').textContent =
 setSynced(false);
 
 </script>
+<div id="print-sheet"></div>
 </body>
 </html>
