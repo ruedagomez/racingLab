@@ -551,8 +551,9 @@ input,select,textarea{font-family:inherit;outline:none;}
       <button class="btn btn-ghost btn-sm" onclick="semanaHoy()">Esta semana</button>
       <button class="btn btn-primary btn-sm" onclick="imprimirParte()">⎙ Imprimir parte de multas</button>
     </div>
-    <div class="wk-note">La asistencia de abajo es <b>solo para el cuerpo técnico</b>: el parte que se imprime
-      para el vestuario contiene únicamente el estado de cuentas del régimen de multas.</div>
+    <div class="wk-note">El parte impreso recoge <b>solo las multas registradas en esta semana</b>, con su estado
+      de pago actual: imprimir una semana pasada nunca arrastra lo ocurrido después. La asistencia y el acumulado
+      son <b>solo para el cuerpo técnico</b> y no salen en la hoja del vestuario.</div>
     <div id="wk-body"></div>
   </div>
 
@@ -1680,10 +1681,11 @@ function renderWeek(){
   document.getElementById('wk-meta').textContent =
     `${sesiones.length} ${sesiones.length===1?'sesión':'sesiones'} · ${multas.length} multa${multas.length===1?'':'s'} esta semana`;
 
-  const gen  = multas.reduce((s,f)=>s+(f.amount||0),0);
-  const pagS = multas.filter(f=>f.paid).reduce((s,f)=>s+(f.amount||0),0);
+  /* De la semana: lo que sale impreso. Acumulado: contexto para el staff. */
+  const genSem  = multas.reduce((s,f)=>s+(f.amount||0),0);
+  const pendSem = multas.filter(f=>!f.paid).reduce((s,f)=>s+(f.amount||0),0);
+  const pagSem  = multas.filter(f=>f.paid).reduce((s,f)=>s+(f.amount||0),0);
   const pendTotal = Object.values(cuentas).reduce((s,c)=>s+c.pendiente,0);
-  const pagTotal  = Object.values(cuentas).reduce((s,c)=>s+c.pagado,0);
 
   /* Asistencia de la semana por jugador */
   const jugadores = PLAYERS.filter(p=>p.active!==false);
@@ -1735,10 +1737,11 @@ function renderWeek(){
 
   document.getElementById('wk-body').innerHTML = `
     <div class="dash-grid" style="margin-bottom:20px">
-      <div class="kpi"><div class="kv">${sesiones.length}</div><div class="kl">Sesiones</div></div>
-      <div class="kpi"><div class="kv">${gen}€</div><div class="kl">Multas de la semana</div></div>
-      <div class="kpi"><div class="kv green">${pagTotal}€</div><div class="kl">Pagado (total)</div></div>
-      <div class="kpi"><div class="kv red">${pendTotal}€</div><div class="kl">Pendiente (total)</div></div>
+      <div class="kpi"><div class="kv">${sesiones.length}</div><div class="kl">Sesiones de la semana</div></div>
+      <div class="kpi"><div class="kv">${genSem}€</div><div class="kl">Multas de la semana</div></div>
+      <div class="kpi"><div class="kv red">${pendSem}€</div><div class="kl">Pendiente de la semana</div></div>
+      <div class="kpi"><div class="kv green">${pagSem}€</div><div class="kl">Pagado de la semana</div></div>
+      <div class="kpi"><div class="kv" style="color:var(--faint)">${pendTotal}€</div><div class="kl">Pendiente acumulado</div></div>
     </div>
     ${tabla}
     ${detalle}
@@ -1756,24 +1759,29 @@ function renderWeek(){
 /* El parte que se cuelga en el vestuario NO lleva asistencia: es un
    documento que ven todos los jugadores y el registro de quién falta o
    llega tarde es información de trabajo del cuerpo técnico.
-   Una sola tabla, una fila por jugador, para que quepa siempre en una
-   página: con 24 jugadores el alto es fijo, mientras que listar multa a
-   multa crecería sin control conforme avance la temporada.
-   Dentro de cada fila, los conceptos se agrupan por tipo y estado
-   («Retraso +5 min ×2 · 20€»), con lo pendiente destacado y lo ya
-   pagado en gris. */
+
+   Solo salen las multas REGISTRADAS EN LA SEMANA que se imprime, por
+   fecha de la infracción. Imprimir el parte de la semana pasada no puede
+   arrastrar lo ocurrido después: cada hoja es la foto de su semana y
+   sigue siendo válida aunque se imprima más tarde. El estado (pagada o
+   pendiente) sí es el actual, que es lo que hay que reclamar.
+
+   Una sola tabla, una fila por jugador, para que quepa en una página.
+   Dentro de cada fila los conceptos se agrupan por tipo y estado
+   («Retraso +5 min ×2 · 20€»), con lo pendiente destacado. */
 window.imprimirParte = function(){
+  const {multas, isoIni, isoFin} = datosSemana();
   const jugadores = PLAYERS.filter(p=>p.active!==false);
   const nombreDe = pid => {
     const p = jugadores.find(x=>x.id===pid);
     if(p) return p.nick || p.n;
-    const f = FINES.find(x=>x.playerId===pid);
+    const f = multas.find(x=>x.playerId===pid);
     return (f && f.playerName) || '—';
   };
 
-  /* Una entrada por jugador con movimiento, con sus conceptos agrupados */
+  /* Agrupado por jugador y, dentro, por concepto y estado */
   const porJugador = {};
-  for(const f of FINES){
+  for(const f of multas){
     const j = porJugador[f.playerId] || (porJugador[f.playerId] =
       {pid:f.playerId, nombre:nombreDe(f.playerId), pendiente:0, pagado:0, conceptos:{}});
     const clave = (f.typeName||'Sin especificar') + '|' + (f.paid?'1':'0');
@@ -1790,18 +1798,17 @@ window.imprimirParte = function(){
   const pagTotal  = filas.reduce((s,j)=>s+j.pagado,0);
   const hoy = new Date();
 
-  const listaConceptos = j => {
-    const cs = Object.values(j.conceptos).sort((a,b)=> (a.paid?1:0)-(b.paid?1:0) || b.total-a.total);
-    return cs.map(c=>`<span class="cc ${c.paid?'pg':'pd'}">${c.paid?'✓ ':''}${c.nombre}${
+  const listaConceptos = j => Object.values(j.conceptos)
+    .sort((a,b)=> (a.paid?1:0)-(b.paid?1:0) || b.total-a.total)
+    .map(c=>`<span class="cc ${c.paid?'pg':'pd'}">${c.paid?'✓ ':''}${c.nombre}${
       c.n>1?` ×${c.n}`:''} · ${c.total}€${c.porDefinir?' (por definir)':''}</span>`).join('');
-  };
 
   document.getElementById('print-sheet').innerHTML = `
     <div class="pr-head">
       <div>
         <div class="pr-kicker">Racing Club Portuense · Documento interno de plantilla</div>
-        <div class="pr-title">RÉGIMEN DE MULTAS</div>
-        <div class="pr-sub">Estado de cuentas · Primera plantilla</div>
+        <div class="pr-title">PARTE SEMANAL DE MULTAS</div>
+        <div class="pr-sub">${etiquetaSemana(WEEK_MON)} · del ${isoIni.split('-').reverse().join('/')} al ${isoFin.split('-').reverse().join('/')}</div>
       </div>
       <div class="pr-tot">
         <div><b>${pendTotal}€</b><span>Pendiente</span></div>
@@ -1812,7 +1819,7 @@ window.imprimirParte = function(){
     ${filas.length ? `<table class="pr-tbl uni">
       <thead><tr>
         <th class="l">Jugador</th>
-        <th class="l">Multas · concepto y estado</th>
+        <th class="l">Multas de la semana · concepto y estado</th>
         <th>Pendiente</th><th>Pagado</th>
       </tr></thead>
       <tbody>${filas.map(j=>`<tr>
@@ -1821,16 +1828,18 @@ window.imprimirParte = function(){
         <td class="eur ${j.pendiente?'pend':'zero'}">${j.pendiente?j.pendiente+'€':'—'}</td>
         <td class="eur ${j.pagado?'ok':'zero'}">${j.pagado?j.pagado+'€':'—'}</td>
       </tr>`).join('')}
-      <tr class="tot"><td class="l">TOTAL</td><td></td>
+      <tr class="tot"><td class="l">TOTAL SEMANA</td><td></td>
         <td class="eur pend">${pendTotal}€</td>
         <td class="eur ok">${pagTotal}€</td></tr>
       </tbody></table>
-      <div class="pr-leg"><b>✓</b> concepto ya abonado · el resto sigue pendiente de pago</div>`
-      : `<div class="pr-none ok">Sin multas registradas: nadie debe nada.</div>`}
+      <div class="pr-leg"><b>✓</b> ya abonada · el resto sigue pendiente de pago.
+        Esta hoja recoge únicamente las multas registradas entre el
+        ${isoIni.split('-').reverse().join('/')} y el ${isoFin.split('-').reverse().join('/')}.</div>`
+      : `<div class="pr-none ok">Ninguna multa registrada en esta semana.</div>`}
 
     <div class="pr-foot">
       <span>Racing Club Portuense · El Puerto de Santa María</span>
-      <span>Semana del ${etiquetaSemana(WEEK_MON)} · emitido el ${hoy.getDate()}/${hoy.getMonth()+1}/${hoy.getFullYear()}</span>
+      <span>Emitido el ${hoy.getDate()}/${hoy.getMonth()+1}/${hoy.getFullYear()}</span>
     </div>`;
   window.print();
 };
