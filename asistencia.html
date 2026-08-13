@@ -270,6 +270,18 @@ input,select,textarea{font-family:inherit;outline:none;}
 .wk-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;font-size:11.5px;color:var(--mid);align-items:center;}
 .wk-legend span{display:flex;align-items:center;gap:6px;}
 .wk-legend i{font-style:normal;width:19px;height:19px;line-height:19px;}
+.fine-row{cursor:pointer;transition:background .12s;}
+.fine-row:hover{background:var(--r2);}
+.has-note{margin-left:6px;color:var(--r);font-size:11px;}
+.fd-top{display:flex;align-items:center;gap:16px;padding-bottom:15px;margin-bottom:16px;border-bottom:1px solid var(--bdr);}
+.fd-amount{font-family:'Bebas Neue',sans-serif;font-size:46px;line-height:1;color:var(--r);}
+.fd-amount.ok{color:var(--fit);}
+.fd-amount small{font-size:20px;color:var(--faint);}
+.fd-meta{flex:1;min-width:0;}
+.fd-concept{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;line-height:1.2;}
+.fd-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.fd-date{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);margin-top:6px;}
+.fd-hint{font-size:11px;color:var(--faint);margin-top:5px;}
 .wk-note{font-size:12px;color:var(--mid);background:var(--bg);border-left:3px solid var(--faint);
   padding:9px 13px;margin-bottom:18px;line-height:1.55;}
 .wk-empty{padding:34px;text-align:center;color:var(--faint);border:1px dashed var(--bdr);background:var(--wh);}
@@ -551,9 +563,10 @@ input,select,textarea{font-family:inherit;outline:none;}
       <button class="btn btn-ghost btn-sm" onclick="semanaHoy()">Esta semana</button>
       <button class="btn btn-primary btn-sm" onclick="imprimirParte()">⎙ Imprimir parte de multas</button>
     </div>
-    <div class="wk-note">El parte impreso recoge <b>solo las multas registradas en esta semana</b>, con su estado
-      de pago actual: imprimir una semana pasada nunca arrastra lo ocurrido después. La asistencia y el acumulado
-      son <b>solo para el cuerpo técnico</b> y no salen en la hoja del vestuario.</div>
+    <div class="wk-note">El parte impreso recoge <b>solo las multas de esta semana que siguen pendientes de pago</b>:
+      imprimir una semana pasada nunca arrastra lo ocurrido después, y lo ya abonado no aparece.
+      La asistencia, lo cobrado y el acumulado son <b>solo para el cuerpo técnico</b>.
+      Pulsa cualquier multa para ver su ficha, editarla o dejar un comentario.</div>
     <div id="wk-body"></div>
   </div>
 
@@ -616,6 +629,15 @@ input,select,textarea{font-family:inherit;outline:none;}
       <button class="btn btn-ghost" onclick="closeModal('modal-fine')">Cancelar</button>
       <button class="btn btn-primary" onclick="addFine()">Registrar</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE DE MULTA -->
+<div class="overlay" id="modal-fine-detail" onclick="overlayClose(event,'modal-fine-detail')">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head"><h3 id="fd-title">Multa</h3><button class="modal-close" onclick="closeModal('modal-fine-detail')">×</button></div>
+    <div id="fd-body"></div>
+    <div class="modal-foot" id="fd-foot"></div>
   </div>
 </div>
 
@@ -1370,16 +1392,17 @@ function renderFinesTable(tab) {
   if(tab==='paid')    fines = fines.filter(f=>f.paid);
   document.getElementById('fines-count').textContent = FINES.length+' multas · '+FINES.filter(f=>!f.paid).length+' pendientes';
   document.getElementById('fines-tbody').innerHTML = fines.length
-    ? fines.map(f=>`<tr>
+    ? fines.map(f=>`<tr class="fine-row" onclick="openFine('${f.id}')" title="Ver ficha de la multa">
         <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint)">${f.date||''}</td>
-        <td class="nm">${f.playerName}</td>
+        <td class="nm">${f.playerName}${f.notes?'<span class="has-note" title="Tiene comentario">✎</span>':''}</td>
         <td><span class="pill pill-gray">${f.typeName}</span>${f.auto?'<span class="pill pill-amber" style="margin-left:4px;">Auto</span>':''}</td>
         <td style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--r)">${f.amount}€</td>
         <td>${f.recurrent==='si'?'<span class="pill pill-amber">Sí</span>':'<span style="color:var(--faint);font-size:12px">No</span>'}</td>
         <td>${f.paid?'<span class="pill pill-green">Pagada</span>':'<span class="pill pill-red">Pendiente</span>'}</td>
-        <td><div style="display:flex;gap:4px;">
-          ${!f.paid?`<button class="btn btn-ghost btn-sm" onclick="markPaid('${f.id}')">✓</button>`:''}
-          <button class="btn btn-ghost btn-sm" style="color:var(--inj)" onclick="deleteFine('${f.id}')">✕</button>
+        <td><div style="display:flex;gap:4px;" onclick="event.stopPropagation()">
+          ${!f.paid?`<button class="btn btn-ghost btn-sm" title="Marcar pagada" onclick="markPaid('${f.id}')">✓</button>`:''}
+          <button class="btn btn-ghost btn-sm" title="Ver ficha" onclick="openFine('${f.id}')">⋯</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--inj)" title="Eliminar" onclick="deleteFine('${f.id}')">✕</button>
         </div></td>
       </tr>`).join('')
     : '<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--faint)">Sin multas</td></tr>';
@@ -1394,6 +1417,130 @@ window.filterFines = function(tab, el) {
 window.markPaid = async function(id) {
   await updateDoc(doc(db,'fines',id), { paid:true });
   showToast('Multa marcada como pagada','ok');
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   FICHA INDIVIDUAL DE MULTA
+   Toda multa es consultable y editable después de registrarse: importe,
+   fecha, concepto, estado y comentario. El comentario ya se guardaba al
+   dar de alta la multa, pero no había forma de leerlo ni de cambiarlo
+   una vez creada — este es el hueco que cierra esta ficha.
+   ══════════════════════════════════════════════════════════════════════ */
+let fineDetailId = null;
+
+window.openFine = function(id){
+  const f = FINES.find(x=>x.id===id);
+  if(!f){ showToast('No encuentro esa multa','err'); return; }
+  fineDetailId = id;
+  const p = PLAYERS.find(x=>x.id===f.playerId);
+  const dm = s => String(s||'').split('-').reverse().join('/');
+  const tipoActual = FINE_TYPES.find(t=>t.id===f.typeId);
+
+  document.getElementById('fd-title').textContent = (p ? (p.nick||p.n) : f.playerName||'Multa');
+
+  document.getElementById('fd-body').innerHTML = `
+    <div class="fd-top">
+      <div class="fd-amount ${f.paid?'ok':''}">${f.amount||0}<small>€</small></div>
+      <div class="fd-meta">
+        <div class="fd-concept">${f.typeName||'Sin especificar'}</div>
+        <div class="fd-tags">
+          ${f.paid?'<span class="pill pill-green">Pagada</span>':'<span class="pill pill-red">Pendiente de pago</span>'}
+          ${f.auto?'<span class="pill pill-amber">Automática</span>':'<span class="pill pill-gray">Manual</span>'}
+          ${f.recurrent==='si'?'<span class="pill pill-amber">Recurrente</span>':''}
+          ${f.pendingAmount?'<span class="pill pill-amber">Importe por definir</span>':''}
+        </div>
+        <div class="fd-date">Registrada el ${dm(f.date)}</div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Concepto</label>
+        <select class="form-control" id="fd-type">
+          ${FINE_TYPES.map(t=>`<option value="${t.id}" ${t.id===f.typeId?'selected':''}>${t.name}</option>`).join('')}
+          ${tipoActual?'':`<option value="${f.typeId||''}" selected>${f.typeName||'—'} (fuera del catálogo)</option>`}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Importe (€)</label>
+        <input type="number" class="form-control" id="fd-amount" step="0.5" min="0" value="${f.amount??''}"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Fecha</label>
+        <input type="date" class="form-control" id="fd-date" value="${f.date||''}"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">¿Recurrente?</label>
+        <select class="form-control" id="fd-recurrent">
+          <option value="no" ${f.recurrent!=='si'?'selected':''}>No</option>
+          <option value="si" ${f.recurrent==='si'?'selected':''}>Sí</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Comentario</label>
+      <textarea class="form-control" id="fd-notes" rows="3"
+        placeholder="Contexto, acuerdos con el jugador, motivo de la sanción…">${f.notes||''}</textarea>
+      <div class="fd-hint">Visible solo para el cuerpo técnico: no sale en el parte impreso.</div>
+    </div>`;
+
+  document.getElementById('fd-foot').innerHTML = `
+    <button class="btn btn-ghost" style="color:var(--inj)" onclick="deleteFineFromDetail()">Eliminar</button>
+    <span style="flex:1"></span>
+    <button class="btn btn-ghost" onclick="togglePaid()">${f.paid?'Marcar pendiente':'✓ Marcar pagada'}</button>
+    <button class="btn btn-primary" onclick="saveFine()">Guardar cambios</button>`;
+  openModal('modal-fine-detail');
+};
+
+window.saveFine = async function(){
+  if(!fineDetailId) return;
+  const f = FINES.find(x=>x.id===fineDetailId);
+  if(!f) return;
+  const raw = document.getElementById('fd-amount').value.trim();
+  const amount = raw==='' ? null : parseFloat(raw);
+  if(raw!=='' && (isNaN(amount)||amount<0)){ showToast('Importe no válido','err'); return; }
+  const date = document.getElementById('fd-date').value;
+  if(!date){ showToast('La fecha es obligatoria','err'); return; }
+  const tid = document.getElementById('fd-type').value;
+  const t = FINE_TYPES.find(x=>x.id===tid);
+  try{
+    await updateDoc(doc(db,'fines',fineDetailId), {
+      typeId: tid,
+      typeName: t ? t.name : (f.typeName||'—'),
+      amount: amount===null ? 0 : amount,
+      /* Deja de estar "por definir" en cuanto se le pone un importe */
+      pendingAmount: amount===null || amount===0 ? !!f.pendingAmount : false,
+      date,
+      recurrent: document.getElementById('fd-recurrent').value,
+      notes: document.getElementById('fd-notes').value.trim(),
+      updatedAt: serverTimestamp()
+    });
+    closeModal('modal-fine-detail');
+    showToast('Multa actualizada','ok');
+  }catch(e){ console.error('[saveFine]', e); showToast('No se pudo guardar','err'); }
+};
+
+window.togglePaid = async function(){
+  if(!fineDetailId) return;
+  const f = FINES.find(x=>x.id===fineDetailId);
+  if(!f) return;
+  try{
+    await updateDoc(doc(db,'fines',fineDetailId), {paid: !f.paid, updatedAt: serverTimestamp()});
+    showToast(f.paid ? 'Marcada como pendiente' : 'Marcada como pagada','ok');
+    closeModal('modal-fine-detail');
+  }catch(e){ console.error('[togglePaid]', e); showToast('No se pudo actualizar','err'); }
+};
+
+window.deleteFineFromDetail = async function(){
+  if(!fineDetailId) return;
+  if(!confirm('¿Eliminar esta multa? No se puede deshacer.')) return;
+  try{
+    await deleteDoc(doc(db,'fines',fineDetailId));
+    closeModal('modal-fine-detail');
+    showToast('Multa eliminada');
+  }catch(e){ console.error('[deleteFine]', e); showToast('No se pudo eliminar','err'); }
 };
 
 window.deleteFine = async function(id) {
@@ -1725,9 +1872,9 @@ function renderWeek(){
       <div class="card-title">Multas generadas esta semana</div>
       <div class="tbl-wrap"><table class="tbl">
         <thead><tr><th>Fecha</th><th>Jugador</th><th>Concepto</th><th>Importe</th><th>Estado</th></tr></thead>
-        <tbody>${multas.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(f=>`<tr>
+        <tbody>${multas.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(f=>`<tr class="fine-row" onclick="openFine('${f.id}')" title="Ver ficha de la multa">
           <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint)">${f.date||''}</td>
-          <td class="nm">${f.playerName||''}</td>
+          <td class="nm">${f.playerName||''}${f.notes?'<span class="has-note" title="Tiene comentario">✎</span>':''}</td>
           <td>${f.typeName||''}${f.pendingAmount?' <span class="pill pill-amber">importe a definir</span>':''}</td>
           <td class="mono">${f.amount||0}€</td>
           <td>${f.paid?'<span class="pill pill-green">Pagada</span>':'<span class="pill pill-red">Pendiente</span>'}</td>
@@ -1760,17 +1907,14 @@ function renderWeek(){
    documento que ven todos los jugadores y el registro de quién falta o
    llega tarde es información de trabajo del cuerpo técnico.
 
-   Solo salen las multas REGISTRADAS EN LA SEMANA que se imprime, por
-   fecha de la infracción. Imprimir el parte de la semana pasada no puede
-   arrastrar lo ocurrido después: cada hoja es la foto de su semana y
-   sigue siendo válida aunque se imprima más tarde. El estado (pagada o
-   pendiente) sí es el actual, que es lo que hay que reclamar.
-
-   Una sola tabla, una fila por jugador, para que quepa en una página.
-   Dentro de cada fila los conceptos se agrupan por tipo y estado
-   («Retraso +5 min ×2 · 20€»), con lo pendiente destacado. */
+   Solo salen las multas REGISTRADAS EN LA SEMANA que se imprime y que
+   siguen PENDIENTES DE PAGO. Dos razones: imprimir una semana pasada no
+   puede arrastrar lo ocurrido después, y el cartel es un recordatorio de
+   lo que hay que abonar — lo ya pagado no pinta nada ahí. El detalle
+   completo, incluido lo cobrado, queda en pantalla para el staff. */
 window.imprimirParte = function(){
   const {multas, isoIni, isoFin} = datosSemana();
+  const pendientes = multas.filter(f=>!f.paid);
   const jugadores = PLAYERS.filter(p=>p.active!==false);
   const nombreDe = pid => {
     const p = jugadores.find(x=>x.id===pid);
@@ -1778,64 +1922,61 @@ window.imprimirParte = function(){
     const f = multas.find(x=>x.playerId===pid);
     return (f && f.playerName) || '—';
   };
+  const dm = s => String(s||'').split('-').reverse().join('/');
 
-  /* Agrupado por jugador y, dentro, por concepto y estado */
+  /* Agrupado por jugador y, dentro, por concepto */
   const porJugador = {};
-  for(const f of multas){
+  for(const f of pendientes){
     const j = porJugador[f.playerId] || (porJugador[f.playerId] =
-      {pid:f.playerId, nombre:nombreDe(f.playerId), pendiente:0, pagado:0, conceptos:{}});
-    const clave = (f.typeName||'Sin especificar') + '|' + (f.paid?'1':'0');
+      {pid:f.playerId, nombre:nombreDe(f.playerId), total:0, n:0, conceptos:{}});
+    const clave = f.typeName || 'Sin especificar';
     const c = j.conceptos[clave] || (j.conceptos[clave] =
-      {nombre:f.typeName||'Sin especificar', paid:!!f.paid, n:0, total:0, porDefinir:false});
+      {nombre:clave, n:0, total:0, porDefinir:false});
     c.n++; c.total += (f.amount||0);
     if(f.pendingAmount) c.porDefinir = true;
-    if(f.paid) j.pagado += (f.amount||0); else j.pendiente += (f.amount||0);
+    j.total += (f.amount||0); j.n++;
   }
   const filas = Object.values(porJugador)
-    .sort((a,b)=> b.pendiente-a.pendiente || b.pagado-a.pagado || a.nombre.localeCompare(b.nombre));
-
-  const pendTotal = filas.reduce((s,j)=>s+j.pendiente,0);
-  const pagTotal  = filas.reduce((s,j)=>s+j.pagado,0);
+    .sort((a,b)=> b.total-a.total || a.nombre.localeCompare(b.nombre));
+  const total = filas.reduce((s,j)=>s+j.total,0);
   const hoy = new Date();
 
   const listaConceptos = j => Object.values(j.conceptos)
-    .sort((a,b)=> (a.paid?1:0)-(b.paid?1:0) || b.total-a.total)
-    .map(c=>`<span class="cc ${c.paid?'pg':'pd'}">${c.paid?'✓ ':''}${c.nombre}${
-      c.n>1?` ×${c.n}`:''} · ${c.total}€${c.porDefinir?' (por definir)':''}</span>`).join('');
+    .sort((a,b)=> b.total-a.total)
+    .map(c=>`<span class="cc pd">${c.nombre}${c.n>1?` ×${c.n}`:''} · ${c.total}€${
+      c.porDefinir?' (por definir)':''}</span>`).join('');
 
   document.getElementById('print-sheet').innerHTML = `
     <div class="pr-head">
       <div>
         <div class="pr-kicker">Racing Club Portuense · Documento interno de plantilla</div>
-        <div class="pr-title">PARTE SEMANAL DE MULTAS</div>
-        <div class="pr-sub">${etiquetaSemana(WEEK_MON)} · del ${isoIni.split('-').reverse().join('/')} al ${isoFin.split('-').reverse().join('/')}</div>
+        <div class="pr-title">MULTAS PENDIENTES</div>
+        <div class="pr-sub">${etiquetaSemana(WEEK_MON)} · del ${dm(isoIni)} al ${dm(isoFin)}</div>
       </div>
       <div class="pr-tot">
-        <div><b>${pendTotal}€</b><span>Pendiente</span></div>
-        <div class="ok"><b>${pagTotal}€</b><span>Pagado</span></div>
+        <div><b>${total}€</b><span>Pendiente de pago</span></div>
       </div>
     </div>
 
     ${filas.length ? `<table class="pr-tbl uni">
       <thead><tr>
         <th class="l">Jugador</th>
-        <th class="l">Multas de la semana · concepto y estado</th>
-        <th>Pendiente</th><th>Pagado</th>
+        <th class="l">Concepto</th>
+        <th>Multas</th><th>Importe</th>
       </tr></thead>
       <tbody>${filas.map(j=>`<tr>
         <td class="l nm">${j.nombre}</td>
         <td class="l cl">${listaConceptos(j)}</td>
-        <td class="eur ${j.pendiente?'pend':'zero'}">${j.pendiente?j.pendiente+'€':'—'}</td>
-        <td class="eur ${j.pagado?'ok':'zero'}">${j.pagado?j.pagado+'€':'—'}</td>
+        <td class="n">${j.n}</td>
+        <td class="eur pend">${j.total}€</td>
       </tr>`).join('')}
-      <tr class="tot"><td class="l">TOTAL SEMANA</td><td></td>
-        <td class="eur pend">${pendTotal}€</td>
-        <td class="eur ok">${pagTotal}€</td></tr>
+      <tr class="tot"><td class="l">TOTAL</td><td></td>
+        <td class="n">${filas.reduce((s,j)=>s+j.n,0)}</td>
+        <td class="eur pend">${total}€</td></tr>
       </tbody></table>
-      <div class="pr-leg"><b>✓</b> ya abonada · el resto sigue pendiente de pago.
-        Esta hoja recoge únicamente las multas registradas entre el
-        ${isoIni.split('-').reverse().join('/')} y el ${isoFin.split('-').reverse().join('/')}.</div>`
-      : `<div class="pr-none ok">Ninguna multa registrada en esta semana.</div>`}
+      <div class="pr-leg">Multas registradas entre el ${dm(isoIni)} y el ${dm(isoFin)} que siguen
+        pendientes de pago. Lo ya abonado no figura en esta hoja.</div>`
+      : `<div class="pr-none ok">Ninguna multa pendiente de esta semana.</div>`}
 
     <div class="pr-foot">
       <span>Racing Club Portuense · El Puerto de Santa María</span>
