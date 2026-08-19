@@ -273,6 +273,10 @@ input,select,textarea{font-family:inherit;outline:none;}
 .fine-row{cursor:pointer;transition:background .12s;}
 .fine-row:hover{background:var(--r2);}
 .has-note{margin-left:6px;color:var(--r);font-size:11px;}
+.pill-dark{background:var(--blk);color:var(--wh);}
+.st-tag{display:inline-block;margin-left:6px;padding:1px 5px;background:var(--blk);color:var(--wh);
+  font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:800;letter-spacing:.1em;
+  border-radius:2px;vertical-align:middle;}
 .fd-top{display:flex;align-items:center;gap:16px;padding-bottom:15px;margin-bottom:16px;border-bottom:1px solid var(--bdr);}
 .fd-amount{font-family:'Bebas Neue',sans-serif;font-size:46px;line-height:1;color:var(--r);}
 .fd-amount.ok{color:var(--fit);}
@@ -332,6 +336,8 @@ input,select,textarea{font-family:inherit;outline:none;}
   .cc{display:inline-block;font-size:7.6pt;padding:.5px 5px;margin:0 3px 2px 0;border:.6pt solid #d5d5d5;}
   .cc.pd{color:#b91c1c;border-color:#e8b4b4;font-weight:600;}
   .cc.pg{color:#8a8a8a;border-color:#e2e2e2;}
+  .pr-tbl .ct{font-style:normal;font-size:6.5pt;font-weight:800;letter-spacing:.1em;
+    background:#0b0b0b;color:#fff;padding:.5px 3px;margin-left:4px;vertical-align:middle;}
   .pr-tbl tr.grp td{border-top:.8pt solid #c9c9c9;}
   .pr-tbl i{color:#c2410c;font-style:normal;font-size:7pt;}
   .pr-tbl tr.tot td{border-top:1.2pt solid #0b0b0b;font-weight:800;padding-top:5px;}
@@ -795,6 +801,45 @@ function loadPlayers() {
     PLAYERS = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.active !== false);
   });
 }
+
+/* ── CUERPO TÉCNICO ──────────────────────────────────────────────────
+   El régimen de multas contempla la conducta antideportiva hacia el
+   cuerpo técnico, y el staff también incurre en retrasos o en dejar el
+   vestuario desordenado: hacen falta en el selector de multas.
+   Se leen de la colección 'staff' (la que mantiene el módulo Cuerpo
+   Técnico). Si esa colección está vacía o no responde, se usa la misma
+   lista fija que el selector de usuario de entrenamientos.html, para no
+   quedarse sin poder registrar una multa — pero nunca se escribe nada
+   en Firestore desde aquí: el alta de personal es de su módulo.
+   El id lleva el prefijo 'st_' para que no pueda chocar con un playerId
+   aunque coincidan los identificadores de ambas colecciones. */
+const STAFF_FALLBACK = ['Bruno Herrero','Pedro Ríos','Alejandro García','Alejandro Aguilera',
+  'Carlos Rueda','Borja Domínguez','Javier Romero','Ramón Herrera','Delegado'];
+let STAFF = [];
+function loadStaff() {
+  onSnapshot(collection(db, 'staff'), snap => {
+    const docs = snap.docs.map(d => ({ id:'st_'+d.id, ...d.data() }))
+      .filter(s => s.active !== false)
+      .map(s => ({ id:s.id, nick: s.nick || s.nombre || s.name || s.n || '—',
+                   rol: s.rol || s.role || s.cargo || '' }));
+    STAFF = docs.length ? docs : staffPorDefecto();
+  }, err => {
+    console.warn('[staff] no disponible, se usa la lista local:', err);
+    STAFF = staffPorDefecto();
+  });
+}
+function staffPorDefecto(){
+  return STAFF_FALLBACK.map((n,i)=>({id:'st_local'+i, nick:n, rol:''}));
+}
+/* Nombre de cualquier persona sancionable, sea jugador o staff */
+function personaDe(id){
+  const p = PLAYERS.find(x=>x.id===id);
+  if(p) return {nombre:p.nick||p.n, dorsal:p.d, esStaff:false};
+  const s = STAFF.find(x=>x.id===id);
+  if(s) return {nombre:s.nick, dorsal:null, esStaff:true, rol:s.rol};
+  return null;
+}
+const esStaffId = id => String(id||'').startsWith('st_');
 
 /* ── FIRESTORE LISTENERS ── */
 function startListeners() {
@@ -1394,7 +1439,7 @@ function renderFinesTable(tab) {
   document.getElementById('fines-tbody').innerHTML = fines.length
     ? fines.map(f=>`<tr class="fine-row" onclick="openFine('${f.id}')" title="Ver ficha de la multa">
         <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint)">${f.date||''}</td>
-        <td class="nm">${f.playerName}${f.notes?'<span class="has-note" title="Tiene comentario">✎</span>':''}</td>
+        <td class="nm">${f.playerName}${f.esStaff?'<span class="st-tag">CT</span>':''}${f.notes?'<span class="has-note" title="Tiene comentario">✎</span>':''}</td>
         <td><span class="pill pill-gray">${f.typeName}</span>${f.auto?'<span class="pill pill-amber" style="margin-left:4px;">Auto</span>':''}</td>
         <td style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--r)">${f.amount}€</td>
         <td>${f.recurrent==='si'?'<span class="pill pill-amber">Sí</span>':'<span style="color:var(--faint);font-size:12px">No</span>'}</td>
@@ -1445,6 +1490,7 @@ window.openFine = function(id){
         <div class="fd-concept">${f.typeName||'Sin especificar'}</div>
         <div class="fd-tags">
           ${f.paid?'<span class="pill pill-green">Pagada</span>':'<span class="pill pill-red">Pendiente de pago</span>'}
+          ${f.esStaff?'<span class="pill pill-dark">Cuerpo técnico</span>':''}
           ${f.auto?'<span class="pill pill-amber">Automática</span>':'<span class="pill pill-gray">Manual</span>'}
           ${f.recurrent==='si'?'<span class="pill pill-amber">Recurrente</span>':''}
           ${f.pendingAmount?'<span class="pill pill-amber">Importe por definir</span>':''}
@@ -1551,8 +1597,14 @@ window.deleteFine = async function(id) {
 
 function populateFineModals() {
   document.getElementById('af-player').innerHTML =
-    '<option value="">— Jugador —</option>'+
-    PLAYERS.sort((a,b)=>a.d-b.d).map(p=>`<option value="${p.id}">${p.d?p.d+' · ':''}${p.nick}</option>`).join('');
+    '<option value="">— Selecciona —</option>'+
+    '<optgroup label="Jugadores">'+
+    PLAYERS.slice().sort((a,b)=>(a.d||99)-(b.d||99))
+      .map(p=>`<option value="${p.id}">${p.d?p.d+' · ':''}${p.nick}</option>`).join('')+
+    '</optgroup>'+
+    (STAFF.length ? '<optgroup label="Cuerpo técnico">'+
+      STAFF.map(s=>`<option value="${s.id}">${s.nick}${s.rol?' · '+s.rol:''}</option>`).join('')+
+      '</optgroup>' : '');
   document.getElementById('af-type').innerHTML =
     '<option value="">— Tipo —</option>'+
     FINE_TYPES.map(t=>`<option value="${t.id}">${t.name} (${t.amount}€)</option>`).join('');
@@ -1576,10 +1628,11 @@ window.addFine = async function() {
   const amount = parseFloat(document.getElementById('af-amount').value);
   const date   = document.getElementById('af-date').value;
   if(!pid||!tid||!date||isNaN(amount)){showToast('Rellena todos los campos','err');return;}
-  const p = PLAYERS.find(pl=>pl.id===pid);
+  const persona = personaDe(pid);
   const t = FINE_TYPES.find(ft=>ft.id===tid);
   await addDoc(collection(db,'fines'), {
-    playerId:p?.id||pid, playerName:p?.nick||'—',
+    playerId:pid, playerName:persona?persona.nombre:'—',
+    esStaff: esStaffId(pid),
     typeId:tid, typeName:t?.name||'—',
     amount, date,
     recurrent: document.getElementById('af-recurrent').value,
@@ -1698,11 +1751,12 @@ function renderDashboard() {
     <div class="kpi"><div class="kv green">${paid.toFixed(0)}€</div><div class="kl">Recaudado</div></div>
     <div class="kpi"><div class="kv">${total.toFixed(0)}€</div><div class="kl">Total generado</div></div>
     <div class="kpi"><div class="kv amber">${FINES.filter(f=>!f.paid).length}</div><div class="kl">Pendientes</div></div>
+    <div class="kpi"><div class="kv">${FINES.filter(f=>f.esStaff).reduce((s,f)=>s+(f.amount||0),0)}€</div><div class="kl">Del cuerpo técnico</div></div>
   `;
   // By player
   const pm={};
   FINES.forEach(f=>{
-    if(!pm[f.playerId]) pm[f.playerId]={name:f.playerName,total:0,pending:0,paid:0,count:0};
+    if(!pm[f.playerId]) pm[f.playerId]={name:f.playerName,esStaff:!!f.esStaff,total:0,pending:0,paid:0,count:0};
     pm[f.playerId].total+=f.amount; pm[f.playerId].count++;
     if(f.paid) pm[f.playerId].paid+=f.amount; else pm[f.playerId].pending+=f.amount;
   });
@@ -1710,7 +1764,7 @@ function renderDashboard() {
   const maxP=ps[0]?.pending||1;
   document.getElementById('debt-chart').innerHTML = ps.length
     ? ps.slice(0,8).map(p=>`<div class="bar-row">
-        <div class="bar-lbl">${p.name}</div>
+        <div class="bar-lbl">${p.name}${p.esStaff?'<span class="st-tag">CT</span>':''}</div>
         <div class="bar-track"><div class="bar-fill" style="width:${p.pending/maxP*100}%"></div></div>
         <div class="bar-val">${p.pending.toFixed(0)}€</div>
       </div>`).join('')
@@ -1874,11 +1928,28 @@ function renderWeek(){
         <thead><tr><th>Fecha</th><th>Jugador</th><th>Concepto</th><th>Importe</th><th>Estado</th></tr></thead>
         <tbody>${multas.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(f=>`<tr class="fine-row" onclick="openFine('${f.id}')" title="Ver ficha de la multa">
           <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint)">${f.date||''}</td>
-          <td class="nm">${f.playerName||''}${f.notes?'<span class="has-note" title="Tiene comentario">✎</span>':''}</td>
+          <td class="nm">${f.playerName||''}${f.esStaff?'<span class="st-tag">CT</span>':''}${f.notes?'<span class="has-note" title="Tiene comentario">✎</span>':''}</td>
           <td>${f.typeName||''}${f.pendingAmount?' <span class="pill pill-amber">importe a definir</span>':''}</td>
           <td class="mono">${f.amount||0}€</td>
           <td>${f.paid?'<span class="pill pill-green">Pagada</span>':'<span class="pill pill-red">Pendiente</span>'}</td>
         </tr>`).join('')}</tbody>
+      </table></div>
+    </div>` : '';
+
+  const multasStaff = multas.filter(f=>f.esStaff);
+  const bloqueStaff = multasStaff.length ? `
+    <div class="card" style="margin-top:18px">
+      <div class="card-title">Cuerpo técnico · multas de la semana</div>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Fecha</th><th>Persona</th><th>Concepto</th><th>Importe</th><th>Estado</th></tr></thead>
+        <tbody>${multasStaff.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(f=>`
+          <tr class="fine-row" onclick="openFine('${f.id}')" title="Ver ficha de la multa">
+            <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint)">${f.date||''}</td>
+            <td class="nm">${f.playerName||''}${f.notes?'<span class="has-note">✎</span>':''}</td>
+            <td>${f.typeName||''}</td>
+            <td class="mono">${f.amount||0}€</td>
+            <td>${f.paid?'<span class="pill pill-green">Pagada</span>':'<span class="pill pill-red">Pendiente</span>'}</td>
+          </tr>`).join('')}</tbody>
       </table></div>
     </div>` : '';
 
@@ -1891,6 +1962,7 @@ function renderWeek(){
       <div class="kpi"><div class="kv" style="color:var(--faint)">${pendTotal}€</div><div class="kl">Pendiente acumulado</div></div>
     </div>
     ${tabla}
+    ${bloqueStaff}
     ${detalle}
     <div class="wk-legend">
       <span><i class="mk p">P</i> Presente</span><span><i class="mk r">R</i> Retraso</span>
@@ -1917,8 +1989,8 @@ window.imprimirParte = function(){
   const pendientes = multas.filter(f=>!f.paid);
   const jugadores = PLAYERS.filter(p=>p.active!==false);
   const nombreDe = pid => {
-    const p = jugadores.find(x=>x.id===pid);
-    if(p) return p.nick || p.n;
+    const per = personaDe(pid);
+    if(per) return per.nombre;
     const f = multas.find(x=>x.playerId===pid);
     return (f && f.playerName) || '—';
   };
@@ -1928,7 +2000,7 @@ window.imprimirParte = function(){
   const porJugador = {};
   for(const f of pendientes){
     const j = porJugador[f.playerId] || (porJugador[f.playerId] =
-      {pid:f.playerId, nombre:nombreDe(f.playerId), total:0, n:0, conceptos:{}});
+      {pid:f.playerId, nombre:nombreDe(f.playerId), esStaff:!!f.esStaff, total:0, n:0, conceptos:{}});
     const clave = f.typeName || 'Sin especificar';
     const c = j.conceptos[clave] || (j.conceptos[clave] =
       {nombre:clave, n:0, total:0, porDefinir:false});
@@ -1965,7 +2037,7 @@ window.imprimirParte = function(){
         <th>Multas</th><th>Importe</th>
       </tr></thead>
       <tbody>${filas.map(j=>`<tr>
-        <td class="l nm">${j.nombre}</td>
+        <td class="l nm">${j.nombre}${j.esStaff?'<i class="ct">CT</i>':''}</td>
         <td class="l cl">${listaConceptos(j)}</td>
         <td class="n">${j.n}</td>
         <td class="eur pend">${j.total}€</td>
@@ -1987,6 +2059,7 @@ window.imprimirParte = function(){
 
 /* ── INIT ── */
 loadPlayers();
+loadStaff();
 startListeners();
 initRegister();
 document.getElementById('reg-date-label').textContent =
