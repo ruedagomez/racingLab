@@ -362,6 +362,16 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
   .ab-edit-grid{grid-template-columns:1fr;}
   .ab-pitch-wrap{position:static;max-width:560px;margin:0 auto;}
 }
+.el-draw{text-align:center;margin-bottom:14px;background:var(--bg);padding:10px;}
+.el-draw img{max-width:100%;max-height:230px;}
+.el-tags{display:flex;gap:5px;flex-wrap:wrap;min-height:24px;align-items:center;}
+.el-tag button{background:none;border:none;color:inherit;cursor:pointer;margin-left:4px;font-size:12px;padding:0;}
+.el-note{font-size:11.5px;color:var(--mid);background:var(--bg);border-left:3px solid var(--faint);
+  padding:9px 12px;margin-top:12px;line-height:1.5;}
+.edit-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  background:var(--warn-bg);border-left:3px solid var(--warn);color:var(--warn);
+  padding:10px 14px;margin-bottom:14px;font-size:13px;line-height:1.5;}
+.edit-banner b{font-weight:700;}
 </style>
 </head>
 <body>
@@ -421,6 +431,7 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
   <!-- REGISTER -->
   <div class="page active" id="p-register">
     <div class="sh"><div class="st">Nueva Sesión</div><div class="sc" id="reg-date-lbl"></div></div>
+    <div class="edit-banner" id="edit-banner" style="display:none"></div>
     <!-- Upload -->
     <div style="margin-bottom:14px;">
       <div class="upload-area" id="upload-drop">
@@ -783,6 +794,17 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
 </div>
 
 <!-- SAVE TO LIBRARY MODAL -->
+<div class="overlay" id="modal-edit-lib" onclick="overlayClose(event,'modal-edit-lib')">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-head"><h3>Editar ejercicio</h3><button class="modal-close" onclick="closeModal('modal-edit-lib')">×</button></div>
+    <div id="el-body"></div>
+    <div class="modal-foot" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bdr);display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn btn-ghost" onclick="closeModal('modal-edit-lib')">Cancelar</button>
+      <button class="btn btn-green" onclick="saveLibItem()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="modal-save-lib" onclick="overlayClose(event,'modal-save-lib')">
   <div class="modal save-lib">
     <div class="modal-head"><h3>Guardar en librería</h3><button class="modal-close" onclick="closeModal('modal-save-lib')">×</button></div>
@@ -1293,17 +1315,119 @@ window.saveSession=async function(){
   };
 
   try{
-    await addDoc(collection(db,'trainingSessions'),data);
-    showToast('Sesión guardada ✓','ok');
-    // Offer to save exercises to library
-    const tasksWithContent=tasks.filter(t=>t.tipo);
-    if(tasksWithContent.length) showSaveToLibModal(tasksWithContent);
-    else resetRegister();
+    if(editSessionId){
+      /* Edición: se conserva quién la subió y cuándo, y se registra
+         quién la ha modificado por última vez. */
+      delete data.createdAt;
+      delete data.uploadedBy;
+      data.updatedBy = currentUser;
+      data.updatedAt = serverTimestamp();
+      await updateDoc(doc(db,'trainingSessions',editSessionId), data);
+      editSessionId = null;
+      modoEdicion(false);
+      showToast('Sesión actualizada ✓','ok');
+      resetRegister();
+      nav('p-history');
+    } else {
+      await addDoc(collection(db,'trainingSessions'),data);
+      showToast('Sesión guardada ✓','ok');
+      // Offer to save exercises to library
+      const tasksWithContent=tasks.filter(t=>t.tipo);
+      if(tasksWithContent.length) showSaveToLibModal(tasksWithContent);
+      else resetRegister();
+    }
   }catch(e){
     console.error(e);
     showToast('Error al guardar en Firebase: '+e.message,'err');
   }
   btn.textContent='💾 Guardar sesión'; btn.disabled=false;
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   EDICIÓN DE SESIONES YA SUBIDAS
+   Hasta ahora una sesión guardada solo se podía ver o mandar a la
+   papelera: un dato mal metido obligaba a borrarla y rehacerla entera.
+   La edición reutiliza el mismo formulario de registro (no duplica
+   interfaz), lo rellena con la sesión y, al guardar, hace updateDoc
+   sobre el documento existente en vez de crear uno nuevo.
+   ══════════════════════════════════════════════════════════════════════ */
+let editSessionId = null;
+
+window.editSession = function(id){
+  const s = sessions.find(x=>x.id===id) || trash.find(x=>x.id===id);
+  if(!s){ showToast('No encuentro esa sesión','err'); return; }
+  closeModal('modal-detail');
+  editSessionId = id;
+
+  /* Cabecera del formulario */
+  const set = (elId, v) => { const el=document.getElementById(elId); if(el) el.value = v??''; };
+  set('f-fecha', s.date);
+  set('f-temp', s.temporada);
+  set('f-meso', s.mesociclo);
+  set('f-micro', s.microciclo);
+  set('f-sesion', s.sesion);
+  set('f-notas', s.notas);
+  set('f-rpe', s.rpe);
+  set('f-dur', s.duracion);
+  set('f-jug', s.jugadores);
+  set('pf-desc', s.prePF?.desc);
+  set('pf-dur', s.prePF?.duracion);
+  set('pf-int', s.prePF?.intensidad);
+
+  /* Foto de la hoja de sesión: se conserva la que ya tuviera */
+  sessionPhotoUrl = s.photoUrl || null;
+  const cont = document.getElementById('reg-photo-container');
+  if(cont) cont.innerHTML = sessionPhotoUrl
+    ? `<img src="${sessionPhotoUrl}" alt=""/>`
+    : '<div class="reg-photo-ph">📋</div>';
+  const ext = document.getElementById('photo-ext-link');
+  if(ext) ext.style.display = sessionPhotoUrl ? '' : 'none';
+
+  /* Tareas: se crean tantas tarjetas como tenga la sesión (mínimo 4) */
+  const tareas = s.tasks || [];
+  numTasks = Math.max(4, tareas.length);
+  taskTags.length = 0; taskDrawings.length = 0;
+  for(let i=0;i<numTasks;i++){
+    taskTags[i] = new Set(tareas[i]?.tags || []);
+    /* El prefijo __url__ marca un dibujo que ya está en Cloudinary: así
+       saveSession no vuelve a subirlo ni lo pierde al reguardar. */
+    taskDrawings[i] = tareas[i]?.drawingUrl ? '__url__'+tareas[i].drawingUrl : null;
+  }
+  renderTaskForms();
+  tareas.forEach((t,i)=>{
+    set(`t${i}-tipo`, t.tipo);
+    set(`t${i}-normas`, t.normas);
+    set(`t${i}-incidir`, t.incidirEn);
+    set(`t${i}-variantes`, t.variantes);
+    set(`t${i}-grupos`, t.grupos);
+    set(`t${i}-tarea`, t.tarea);
+  });
+
+  modoEdicion(true, s);
+  nav('p-register');
+  window.scrollTo({top:0, behavior:'smooth'});
+  showToast('Editando la sesión del '+(s.date||''),'ok');
+};
+
+/* Cambia la interfaz de registro entre "nueva sesión" y "editando" */
+function modoEdicion(on, s){
+  const banner = document.getElementById('edit-banner');
+  if(banner){
+    banner.style.display = on ? '' : 'none';
+    if(on) banner.innerHTML =
+      `<span><b>Editando</b> la sesión del ${s?.date||''}${s?.uploadedBy?' · subida por '+s.uploadedBy:''}.
+       Los cambios sustituirán a los actuales.</span>
+       <button class="btn btn-ghost btn-sm" onclick="cancelarEdicion()">Cancelar edición</button>`;
+  }
+  const btn = document.getElementById('btn-save');
+  if(btn) btn.textContent = on ? '💾 Guardar cambios' : '💾 Guardar sesión';
+}
+
+window.cancelarEdicion = function(){
+  editSessionId = null;
+  modoEdicion(false);
+  resetRegister();
+  showToast('Edición cancelada');
 };
 
 /* ── SAVE TO LIBRARY ── */
@@ -1492,6 +1616,7 @@ function renderHistory(){
           </div>
           <div class="hist-actions">
             <button class="btn btn-ghost btn-sm" onclick="openDetail('${s.id}')" title="Ver detalle">👁</button>
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editSession('${s.id}')" title="Editar sesión">✎</button>
             <button class="btn btn-red btn-sm" onclick="moveToTrash('${s.id}')" title="Eliminar">🗑</button>
           </div>
         </div>`;
@@ -1594,12 +1719,89 @@ function renderLibrary(){
             <div class="lib-card-tipo">${e.tipo||'Sin tipo'}</div>
             <div class="lib-card-tags">${(e.tags||[]).map(t=>`<span class="hist-tag">${t}</span>`).join('')}</div>
             <div style="display:flex;gap:5px;margin-top:8px;">
-              <button class="btn btn-ghost btn-sm" onclick="deleteLibItem('${e.id}')" style="color:#dc2626">🗑</button>
+              <button class="btn btn-ghost btn-sm" onclick="editLibItem('${e.id}')" title="Editar ejercicio">✎ Editar</button>
+              <button class="btn btn-ghost btn-sm" onclick="deleteLibItem('${e.id}')" style="color:#dc2626" title="Eliminar">🗑</button>
             </div>
           </div>
         </div>`).join('')
     : '<div style="color:var(--faint);font-size:13px;padding:24px;">La librería está vacía. Guarda ejercicios al finalizar una sesión.</div>';
 }
+/* ══════════════════════════════════════════════════════════════════════
+   EDICIÓN DE EJERCICIOS DE LA LIBRERÍA
+   Un ejercicio guardado solo se podía borrar. Al editarlo aquí, cambia
+   también en futuras sesiones que lo carguen, pero NO en las sesiones ya
+   guardadas: aquellas copiaron el texto en su momento y siguen siendo el
+   registro fiel de lo que se entrenó ese día.
+   ══════════════════════════════════════════════════════════════════════ */
+let editLibId = null;
+
+window.editLibItem = function(id){
+  const e = library.find(x=>x.id===id);
+  if(!e){ showToast('No encuentro ese ejercicio','err'); return; }
+  editLibId = id;
+  libTags = new Set(e.tags||[]);
+  document.getElementById('el-body').innerHTML = `
+    ${e.drawingUrl?`<div class="el-draw"><img src="${e.drawingUrl}" alt=""/></div>`:''}
+    <div class="form-group">
+      <label class="form-label">Tipo de tarea</label>
+      <input class="form-control" id="el-tipo" list="tipo-vocab-list" value="${(e.tipo||'').replace(/"/g,'&quot;')}"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Etiquetas</label>
+      <div class="el-tags" id="el-tags"></div>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <input class="form-control" id="el-newtag" placeholder="Añadir etiqueta y pulsar Enter"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();addLibTag()}"/>
+        <button class="btn btn-ghost btn-sm" onclick="addLibTag()">+</button>
+      </div>
+    </div>
+    <div class="task-cols">
+      <div class="task-field"><label>Normas</label><textarea id="el-normas">${e.normas||''}</textarea></div>
+      <div class="task-field"><label>Incidir en</label><textarea id="el-incidir">${e.incidirEn||''}</textarea></div>
+      <div class="task-field"><label>Variantes</label><textarea id="el-variantes">${e.variantes||''}</textarea></div>
+      <div class="task-field"><label>Grupos / Jugadores</label><textarea id="el-grupos">${e.grupos||''}</textarea></div>
+      <div class="task-field full"><label>Descripción</label><textarea id="el-tarea">${e.tarea||''}</textarea></div>
+    </div>
+    <div class="el-note">Los cambios afectan a la librería y a las sesiones futuras que carguen este ejercicio.
+      Las sesiones ya guardadas conservan el texto con el que se registraron.</div>`;
+  renderLibTags();
+  openModal('modal-edit-lib');
+};
+
+let libTags = new Set();
+function renderLibTags(){
+  const cont = document.getElementById('el-tags');
+  if(!cont) return;
+  cont.innerHTML = libTags.size
+    ? [...libTags].map(t=>`<span class="hist-tag el-tag">${t}<button onclick="delLibTag('${t.replace(/'/g,"\\'")}')">×</button></span>`).join('')
+    : '<span style="font-size:12px;color:var(--faint)">Sin etiquetas</span>';
+}
+window.addLibTag = function(){
+  const inp = document.getElementById('el-newtag');
+  const v = (inp.value||'').trim();
+  if(!v) return;
+  libTags.add(v); inp.value=''; renderLibTags();
+};
+window.delLibTag = function(t){ libTags.delete(t); renderLibTags(); };
+
+window.saveLibItem = async function(){
+  if(!editLibId) return;
+  const val = id => (document.getElementById(id)?.value||'').trim();
+  const tipo = val('el-tipo');
+  if(!tipo){ showToast('El tipo de tarea es obligatorio','err'); return; }
+  try{
+    await updateDoc(doc(db,'exerciseLibrary',editLibId), {
+      tipo, tags:[...libTags],
+      normas:val('el-normas'), incidirEn:val('el-incidir'), variantes:val('el-variantes'),
+      grupos:val('el-grupos'), tarea:val('el-tarea'),
+      updatedBy:currentUser, updatedAt:serverTimestamp()
+    });
+    closeModal('modal-edit-lib');
+    editLibId = null;
+    showToast('Ejercicio actualizado','ok');
+  }catch(e){ console.error('[saveLibItem]',e); showToast('No se pudo guardar','err'); }
+};
+
 window.deleteLibItem=async function(id){
   if(!confirm('¿Eliminar este ejercicio de la librería?')) return;
   await deleteDoc(doc(db,'exerciseLibrary',id));showToast('Eliminado de la librería');
