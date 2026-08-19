@@ -115,6 +115,11 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
 .task-tipo-input{flex:1;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--txt);background:transparent;border:none;padding:0;letter-spacing:.04em;}
 .task-tipo-input::placeholder{color:var(--faint);}
 .task-body{padding:12px;}
+.task-meta-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.task-meta-input{width:100%;background:var(--bg);border:1.5px solid var(--bdr);border-radius:4px;
+  color:var(--txt);padding:6px 9px;font-family:'JetBrains Mono',monospace;font-size:12px;
+  transition:border-color .18s;}
+.task-meta-input:focus{border-color:var(--r);}
 .task-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
 .task-field label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:4px;}
 .task-field textarea{width:100%;background:var(--bg);border:1.5px solid var(--bdr);border-radius:4px;color:var(--txt);padding:6px 9px;font-size:12px;resize:vertical;min-height:54px;transition:border-color .18s;line-height:1.5;}
@@ -176,6 +181,7 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
 .dt-num{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--r);line-height:1;}
 .dt-tipo{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--txt);}
 .dt-body{padding:12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.dt-meta{display:flex;gap:10px;margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mid);white-space:nowrap;}
 .dt-f{font-size:12px;}
 .dt-f.full{grid-column:1/-1;}
 .dt-lbl{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:3px;}
@@ -192,6 +198,7 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
 .lib-card-img img{width:100%;height:100%;object-fit:cover;display:block;}
 .lib-card-body{padding:10px 12px;}
 .lib-card-tipo{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--txt);margin-bottom:4px;}
+.lib-card-meta{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--mid);margin-bottom:6px;}
 .lib-card-tags{display:flex;gap:4px;flex-wrap:wrap;}
 
 /* DASHBOARD */
@@ -284,7 +291,7 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
   .sidebar{display:none;}
   .page{padding:16px 12px 40px;}
   .hdr-grid{grid-template-columns:1fr 1fr;}
-  .task-cols,.prepf-grid,.dt-body{grid-template-columns:1fr;}
+  .task-cols,.task-meta-row,.prepf-grid,.dt-body{grid-template-columns:1fr;}
   .mobtopuser{display:flex;}
   .mobnav{
     display:flex; position:fixed; left:0; right:0; bottom:0; z-index:80;
@@ -906,6 +913,12 @@ function taskCardHTML(i){
       ${i>=4?`<button class="btn btn-ghost btn-sm" onclick="removeTask(${i})" style="color:#dc2626;padding:3px 7px;">✕</button>`:''}
     </div>
     <div class="task-body">
+      <div class="task-meta-row">
+        <div class="task-field"><label>Espacio</label>
+          <input class="task-meta-input" id="t${i}-espacio" type="text" placeholder="Campo completo, medio campo, 20x20m…"/></div>
+        <div class="task-field"><label>Tiempo</label>
+          <input class="task-meta-input" id="t${i}-tiempo" type="text" placeholder="15min, 3x6min…"/></div>
+      </div>
       <div class="task-cols">
         <div class="task-field"><label>Normas</label><textarea id="t${i}-normas" placeholder="—"></textarea></div>
         <div class="task-field"><label>Incidir en</label><textarea id="t${i}-incidir" placeholder="—"></textarea></div>
@@ -1001,6 +1014,8 @@ window.loadFromLib=function(libId){
   const i=libPickerTaskIdx;
   const f=id=>document.getElementById(id);
   if(f(`t${i}-tipo`)) f(`t${i}-tipo`).value=e.tipo||'';
+  if(f(`t${i}-espacio`)) f(`t${i}-espacio`).value=e.espacio||'';
+  if(f(`t${i}-tiempo`)) f(`t${i}-tiempo`).value=e.tiempo||'';
   if(f(`t${i}-normas`)) f(`t${i}-normas`).value=e.normas||'';
   if(f(`t${i}-incidir`)) f(`t${i}-incidir`).value=e.incidirEn||'';
   if(f(`t${i}-variantes`)) f(`t${i}-variantes`).value=e.variantes||'';
@@ -1264,7 +1279,9 @@ window.saveSession=async function(){
     const card=document.getElementById('task-card-'+i); if(!card) continue;
     const tipo=document.getElementById(`t${i}-tipo`)?.value||'';
     const tags=[...taskTags[i]];
-    if(!tipo&&!tags.length&&!taskDrawings[i]) continue;
+    const espacioV=document.getElementById(`t${i}-espacio`)?.value||'';
+    const tiempoV=document.getElementById(`t${i}-tiempo`)?.value||'';
+    if(!tipo&&!tags.length&&!taskDrawings[i]&&!espacioV&&!tiempoV) continue;
 
     let drawUrl=null;
     const drawSrc=taskDrawings[i];
@@ -1284,6 +1301,8 @@ window.saveSession=async function(){
 
     tasks.push({
       num:i+1,tipo,tags,drawingUrl:drawUrl||null,
+      espacio:espacioV,
+      tiempo:tiempoV,
       normas:document.getElementById(`t${i}-normas`)?.value||'',
       incidirEn:document.getElementById(`t${i}-incidir`)?.value||'',
       variantes:document.getElementById(`t${i}-variantes`)?.value||'',
@@ -1396,6 +1415,8 @@ window.editSession = function(id){
   renderTaskForms();
   tareas.forEach((t,i)=>{
     set(`t${i}-tipo`, t.tipo);
+    set(`t${i}-espacio`, t.espacio);
+    set(`t${i}-tiempo`, t.tiempo);
     set(`t${i}-normas`, t.normas);
     set(`t${i}-incidir`, t.incidirEn);
     set(`t${i}-variantes`, t.variantes);
@@ -1453,6 +1474,7 @@ window.doSaveToLib=async function(tasks){
     try{
       await addDoc(collection(db,'exerciseLibrary'),{
         tipo:t.tipo,tags:t.tags||[],
+        espacio:t.espacio||'',tiempo:t.tiempo||'',
         normas:t.normas||'',incidirEn:t.incidirEn||'',variantes:t.variantes||'',
         grupos:t.grupos||'',tarea:t.tarea||'',
         drawingUrl:t.drawingUrl||null,
@@ -1682,7 +1704,9 @@ window.openDetail=function(id){
   // Tasks
   document.getElementById('detail-tasks').innerHTML=(s.tasks||[]).map(t=>`
     <div class="dt">
-      <div class="dt-head"><div class="dt-num">T${t.num}</div><div class="dt-tipo">${t.tipo||'—'}</div></div>
+      <div class="dt-head"><div class="dt-num">T${t.num}</div><div class="dt-tipo">${t.tipo||'—'}</div>
+        ${(t.espacio||t.tiempo)?`<div class="dt-meta">${t.espacio?`<span>📍 ${t.espacio}</span>`:''}${t.tiempo?`<span>⏱ ${t.tiempo}</span>`:''}</div>`:''}
+      </div>
       <div class="dt-body">
         ${t.tags?.length?`<div class="dt-f full"><div class="dt-lbl">Etiquetas</div><div class="dt-tags">${t.tags.map(tg=>`<span class="dt-tag">${tg}</span>`).join('')}</div></div>`:''}
         ${t.normas?`<div class="dt-f"><div class="dt-lbl">Normas</div><div class="dt-val">${t.normas}</div></div>`:''}
@@ -1746,6 +1770,12 @@ window.editLibItem = function(id){
       <label class="form-label">Tipo de tarea</label>
       <input class="form-control" id="el-tipo" list="tipo-vocab-list" value="${(e.tipo||'').replace(/"/g,'&quot;')}"/>
     </div>
+    <div class="task-meta-row">
+      <div class="task-field"><label>Espacio</label>
+        <input class="task-meta-input" id="el-espacio" type="text" value="${(e.espacio||'').replace(/"/g,'&quot;')}" placeholder="Campo completo, medio campo, 20x20m…"/></div>
+      <div class="task-field"><label>Tiempo</label>
+        <input class="task-meta-input" id="el-tiempo" type="text" value="${(e.tiempo||'').replace(/"/g,'&quot;')}" placeholder="15min, 3x6min…"/></div>
+    </div>
     <div class="form-group">
       <label class="form-label">Etiquetas</label>
       <div class="el-tags" id="el-tags"></div>
@@ -1792,6 +1822,7 @@ window.saveLibItem = async function(){
   try{
     await updateDoc(doc(db,'exerciseLibrary',editLibId), {
       tipo, tags:[...libTags],
+      espacio:val('el-espacio'), tiempo:val('el-tiempo'),
       normas:val('el-normas'), incidirEn:val('el-incidir'), variantes:val('el-variantes'),
       grupos:val('el-grupos'), tarea:val('el-tarea'),
       updatedBy:currentUser, updatedAt:serverTimestamp()
