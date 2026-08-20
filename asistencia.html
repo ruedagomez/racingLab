@@ -1182,6 +1182,11 @@ window.saveSession = async function() {
   resetReg();
   showToast(editingSessionId ? `Sesión actualizada · ${finesCreated} multa(s) vigente(s)`
                               : `Sesión guardada · ${finesCreated} multa(s) generada(s)`,'ok');
+  /* Solo suena al registrar la sesión por primera vez. Al editar una ya
+     existente, esas multas se borran y se recrean según el marcado
+     actual (arriba, "Reconciliar multas"): sonar en cada reguardado de
+     una sesión antigua sería ruido, no un hecho nuevo. */
+  if(!editingSessionId && finesCreated>0) playFineSound();
 };
 
 window.resetReg = function() {
@@ -1642,6 +1647,7 @@ window.addFine = async function() {
   });
   closeModal('modal-fine');
   showToast('Multa registrada','ok');
+  playFineSound();
 };
 
 /* ── FINE TYPES ── */
@@ -1807,6 +1813,21 @@ window.openModal = function(id) {
 };
 window.closeModal  = id => document.getElementById(id).classList.remove('open');
 window.overlayClose = (e,id) => { if(e.target.classList.contains('overlay')) closeModal(id); };
+
+/* Sonido de multa registrada. Se reproduce SIEMPRE dentro de un gesto
+   del usuario (clic en "Registrar multa" o en "Guardar sesión"), así que
+   los navegadores no lo bloquean por autoplay. Si aun así fallara —audio
+   silenciado por el sistema, pestaña en segundo plano, etc.— se ignora
+   sin romper el registro de la multa: el sonido es un extra, nunca debe
+   impedir que la multa se guarde. */
+function playFineSound(){
+  try{
+    const a = document.getElementById('fine-sound');
+    if(!a) return;
+    a.currentTime = 0;
+    a.play().catch(()=>{});
+  }catch(e){}
+}
 
 let toastTimer = null;
 window.showToast = function(msg, type='ok') {
@@ -2068,5 +2089,7 @@ setSynced(false);
 
 </script>
 <div id="print-sheet"></div>
+<audio id="fine-sound" preload="auto"
+  src="https://res.cloudinary.com/dprtymvge/video/upload/v1787208155/cash_kn4iwr.mp3"></audio>
 </body>
 </html>
