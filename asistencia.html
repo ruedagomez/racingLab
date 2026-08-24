@@ -279,6 +279,7 @@ input,select,textarea{font-family:inherit;outline:none;}
   border-radius:2px;vertical-align:middle;}
 .fd-top{display:flex;align-items:center;gap:16px;padding-bottom:15px;margin-bottom:16px;border-bottom:1px solid var(--bdr);}
 .fd-amount{font-family:'Bebas Neue',sans-serif;font-size:46px;line-height:1;color:var(--r);}
+.fd-amount-old{font-size:22px;color:var(--faint);text-decoration:line-through;margin-right:8px;}
 .fd-amount.ok{color:var(--fit);}
 .fd-amount small{font-size:20px;color:var(--faint);}
 .fd-meta{flex:1;min-width:0;}
@@ -289,6 +290,12 @@ input,select,textarea{font-family:inherit;outline:none;}
 .wk-note{font-size:12px;color:var(--mid);background:var(--bg);border-left:3px solid var(--faint);
   padding:9px 13px;margin-bottom:18px;line-height:1.55;}
 .wk-empty{padding:34px;text-align:center;color:var(--faint);border:1px dashed var(--bdr);background:var(--wh);}
+.wk-arrastre{border-color:var(--inj)!important;border-width:1.5px!important;}
+.wk-arrastre .card-title{color:var(--inj);}
+.wk-arrastre-note{font-size:12px;color:var(--mid);line-height:1.5;margin-bottom:10px;}
+.fine-row.recargo{background:var(--inj-bg);}
+.wk-old{color:var(--faint);text-decoration:line-through;font-size:11px;}
+.wk-doble{color:var(--inj);}
 
 /* ══ HOJA IMPRIMIBLE (A4 vertical) ══ */
 #print-sheet{display:none;}
@@ -346,6 +353,18 @@ input,select,textarea{font-family:inherit;outline:none;}
   .pr-tbl td.mk-A{color:#b91c1c;font-weight:700;}
   .pr-tbl td.mk-J{color:#4338ca;font-weight:700;}
   .pr-leg{font-size:7.5pt;color:#777;margin-top:4px;}
+  .pr-sec2{font-family:'Barlow Condensed',sans-serif;font-size:8.5pt;font-weight:900;letter-spacing:.19em;
+    text-transform:uppercase;border-bottom:1.5pt solid #0b0b0b;padding-bottom:3px;margin:14px 0 7px;}
+  .pr-warn{border:1.4pt solid #b91c1c;background:#fef2f2;padding:6px 9px;margin-bottom:6px;}
+  .pr-warn-t{font-family:'Barlow Condensed',sans-serif;font-size:9pt;font-weight:900;letter-spacing:.06em;
+    text-transform:uppercase;color:#b91c1c;}
+  .pr-warn-s{font-size:7.5pt;color:#7a1c1c;margin-top:2px;line-height:1.4;}
+  .pr-tbl.doble{border:1.2pt solid #b91c1c;}
+  .pr-tbl.doble thead th{background:#b91c1c;color:#fff;}
+  .pr-tbl.doble tr.tot td{border-top:1.2pt solid #b91c1c;}
+  .cc.doble{color:#b91c1c;border-color:#b91c1c;font-weight:800;background:#fef2f2;}
+  .cc.doble s{color:#999;font-weight:400;}
+  .pr-allok{font-size:9pt;color:#15803d;font-weight:700;padding:8px 0;}
     .pr-none{font-size:8.5pt;color:#888;padding:7px 0;font-style:italic;}
   .pr-none.ok{color:#15803d;font-style:normal;}
   .pr-foot{display:flex;justify-content:space-between;margin-top:14px;padding-top:6px;
@@ -1446,7 +1465,7 @@ function renderFinesTable(tab) {
         <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint)">${f.date||''}</td>
         <td class="nm">${f.playerName}${f.esStaff?'<span class="st-tag">CT</span>':''}${f.notes?'<span class="has-note" title="Tiene comentario">✎</span>':''}</td>
         <td><span class="pill pill-gray">${f.typeName}</span>${f.auto?'<span class="pill pill-amber" style="margin-left:4px;">Auto</span>':''}</td>
-        <td style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--r)">${f.amount}€</td>
+        <td style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--r)">${f.amount}€${f.recargado?' <span class="pill pill-red" style="font-size:9px;vertical-align:middle">×2</span>':''}</td>
         <td>${f.recurrent==='si'?'<span class="pill pill-amber">Sí</span>':'<span style="color:var(--faint);font-size:12px">No</span>'}</td>
         <td>${f.paid?'<span class="pill pill-green">Pagada</span>':'<span class="pill pill-red">Pendiente</span>'}</td>
         <td><div style="display:flex;gap:4px;" onclick="event.stopPropagation()">
@@ -1490,11 +1509,14 @@ window.openFine = function(id){
 
   document.getElementById('fd-body').innerHTML = `
     <div class="fd-top">
-      <div class="fd-amount ${f.paid?'ok':''}">${f.amount||0}<small>€</small></div>
+      <div class="fd-amount ${f.paid?'ok':''}">
+        ${f.recargado?`<span class="fd-amount-old">${f.amountBase}€</span>`:''}${f.amount||0}<small>€</small>
+      </div>
       <div class="fd-meta">
         <div class="fd-concept">${f.typeName||'Sin especificar'}</div>
         <div class="fd-tags">
           ${f.paid?'<span class="pill pill-green">Pagada</span>':'<span class="pill pill-red">Pendiente de pago</span>'}
+          ${f.recargado?'<span class="pill pill-red">×2 Recargo aplicado</span>':''}
           ${f.esStaff?'<span class="pill pill-dark">Cuerpo técnico</span>':''}
           ${f.auto?'<span class="pill pill-amber">Automática</span>':'<span class="pill pill-gray">Manual</span>'}
           ${f.recurrent==='si'?'<span class="pill pill-amber">Recurrente</span>':''}
@@ -1540,9 +1562,38 @@ window.openFine = function(id){
   document.getElementById('fd-foot').innerHTML = `
     <button class="btn btn-ghost" style="color:var(--inj)" onclick="deleteFineFromDetail()">Eliminar</button>
     <span style="flex:1"></span>
+    ${!f.paid ? `<button class="btn btn-ghost" style="color:var(--inj)" onclick="toggleRecargo()">
+      ${f.recargado?'Quitar recargo':'⚠ Aplicar recargo ×2'}</button>` : ''}
     <button class="btn btn-ghost" onclick="togglePaid()">${f.paid?'Marcar pendiente':'✓ Marcar pagada'}</button>
     <button class="btn btn-primary" onclick="saveFine()">Guardar cambios</button>`;
   openModal('modal-fine-detail');
+};
+
+/* Aplicar/quitar el recargo por impago. Es SIEMPRE una decisión manual:
+   nada dobla un importe sin que Carlos lo confirme aquí. amountBase
+   conserva el importe original para poder deshacerlo sin perder el dato. */
+window.toggleRecargo = async function(){
+  if(!fineDetailId) return;
+  const f = FINES.find(x=>x.id===fineDetailId);
+  if(!f || f.paid) return;
+  try{
+    if(f.recargado){
+      await updateDoc(doc(db,'fines',fineDetailId), {
+        amount: f.amountBase ?? f.amount, recargado:false, updatedAt: serverTimestamp()
+      });
+      showToast('Recargo retirado','ok');
+    }else{
+      if(!confirm(`¿Doblar esta multa de ${f.amount}€ a ${(f.amount||0)*2}€ por impago?`)) return;
+      await updateDoc(doc(db,'fines',fineDetailId), {
+        amountBase: f.amount||0, amount: (f.amount||0)*2, recargado:true, updatedAt: serverTimestamp()
+      });
+      showToast('Recargo aplicado · ahora cuesta el doble','ok');
+    }
+    /* Se cierra en vez de reabrir con los mismos datos: el listener de
+       Firestore tarda un instante en traer el cambio, y reabrir antes
+       mostraría el importe viejo durante ese instante. */
+    closeModal('modal-fine-detail');
+  }catch(e){ console.error('[toggleRecargo]', e); showToast('No se pudo aplicar el recargo','err'); }
 };
 
 window.saveFine = async function(){
@@ -1870,6 +1921,23 @@ function etiquetaSemana(lun){
 }
 let WEEK_MON = lunesDe(new Date());
 
+/* ══════════ RECARGO POR IMPAGO ══════════
+   Nada de esto es automático: Carlos decide, multa por multa, si pasa a
+   costar el doble. La acción vive en la ficha de cada multa
+   (window.toggleRecargo). Al aplicarlo:
+     · amountBase guarda el importe original (para poder deshacerlo)
+     · amount pasa a ser el importe real a cobrar, ya doblado
+     · recargado:true queda marcado para el aviso visual
+   Como el importe real se dobla EN EL DATO, no en la vista, toda la
+   plataforma lo ve igual: la ficha del jugador, el dashboard, el parte
+   impreso y el módulo Estadísticas. No hay dos números distintos del
+   mismo hecho en sitios distintos. */
+function semanaMondayDe(fechaIso){ return lunesDe(desdeIso(fechaIso)); }
+function semanasDeRetraso(fechaIso, refMonday){
+  const ms = refMonday - semanaMondayDe(fechaIso);
+  return Math.round(ms / (7*86400000));
+}
+
 window.semana = function(delta){
   const d = new Date(WEEK_MON); d.setDate(d.getDate()+delta*7);
   WEEK_MON = d; renderWeek();
@@ -1882,8 +1950,20 @@ function datosSemana(){
   const enRango = f => f >= isoIni && f <= isoFin;
   const sesiones = ATTENDANCE.filter(s => enRango(s.date)).sort((a,b)=>a.date.localeCompare(b.date));
   const multas   = FINES.filter(f => f.date && enRango(f.date));
+
+  /* Arrastradas: pendientes de CUALQUIER semana anterior a la que se está
+     viendo. El importe (f.amount) ya es el real a cobrar — si Carlos
+     aplicó el recargo desde la ficha de la multa, ya viene doblado; no
+     se recalcula nada aquí. Se ordenan de más antigua a más reciente. */
+  const arrastradas = FINES
+    .filter(f => f.date && f.date < isoIni && !f.paid)
+    .map(f => ({...f, weeksAgo: semanasDeRetraso(f.date, WEEK_MON)}))
+    .sort((a,b)=> b.weeksAgo-a.weeksAgo || a.date.localeCompare(b.date));
+
   /* Estado de cuentas: acumulado de toda la temporada, no solo de la
-     semana. En el vestuario lo que importa es cuánto debe cada uno. */
+     semana, y SIN recargo (es el importe base real de cada multa, el que
+     usa el resto de la plataforma). En el vestuario lo que importa es
+     cuánto debe cada uno hoy. */
   const cuentas = {};
   for(const f of FINES){
     const c = cuentas[f.playerId] || (cuentas[f.playerId] = {nombre:f.playerName, pagado:0, pendiente:0, nPend:0});
@@ -1891,17 +1971,18 @@ function datosSemana(){
     else { c.pendiente += (f.amount||0); c.nPend++; }
     if(f.playerName) c.nombre = f.playerName;
   }
-  return {sesiones, multas, cuentas, isoIni, isoFin};
+  return {sesiones, multas, arrastradas, cuentas, isoIni, isoFin};
 }
 
 function renderWeek(){
-  const {sesiones, multas, cuentas} = datosSemana();
+  const {sesiones, multas, arrastradas, cuentas} = datosSemana();
   const esActual = iso(WEEK_MON) === iso(lunesDe(new Date()));
   document.getElementById('wk-title').textContent = etiquetaSemana(WEEK_MON);
   document.getElementById('wk-sub').textContent = esActual ? 'Semana en curso' : '';
   document.getElementById('wk-next').disabled = false;
   document.getElementById('wk-meta').textContent =
-    `${sesiones.length} ${sesiones.length===1?'sesión':'sesiones'} · ${multas.length} multa${multas.length===1?'':'s'} esta semana`;
+    `${sesiones.length} ${sesiones.length===1?'sesión':'sesiones'} · ${multas.length} multa${multas.length===1?'':'s'} esta semana` +
+    (arrastradas.length ? ` · ${arrastradas.length} arrastrada${arrastradas.length===1?'':'s'}` : '');
 
   /* De la semana: lo que sale impreso. Acumulado: contexto para el staff. */
   const genSem  = multas.reduce((s,f)=>s+(f.amount||0),0);
@@ -1941,6 +2022,27 @@ function renderWeek(){
         </tr>`;}).join('')}</tbody>
     </table></div>`;
   }
+
+  const bloqueArrastradas = arrastradas.length ? `
+    <div class="card wk-arrastre" style="margin-top:18px">
+      <div class="card-title">⚠ Pendientes de semanas anteriores</div>
+      <div class="wk-arrastre-note">
+        Estas multas siguen sin pagar y saldrán en el parte impreso. Entra en cada una y pulsa
+        <b>«Aplicar recargo»</b> si decides que pase a costar el doble por no haberse pagado a tiempo.
+      </div>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Desde</th><th>Jugador</th><th>Concepto</th><th>Importe</th><th></th></tr></thead>
+        <tbody>${arrastradas.map(f=>`<tr class="fine-row ${f.recargado?'recargo':''}" onclick="openFine('${f.id}')" title="Ver ficha de la multa">
+          <td class="mono" style="font-size:11px;color:var(--faint)">hace ${f.weeksAgo} sem.</td>
+          <td class="nm">${f.playerName||''}${f.esStaff?'<span class="st-tag">CT</span>':''}${f.notes?'<span class="has-note">✎</span>':''}</td>
+          <td>${f.typeName||''}${f.pendingAmount?' <span class="pill pill-amber">importe a definir</span>':''}</td>
+          <td class="mono">${f.recargado
+            ? `<span class="wk-old">${f.amountBase}€</span> <b class="wk-doble">${f.amount}€</b>`
+            : `${f.amount}€`}</td>
+          <td>${f.recargado?'<span class="pill pill-red">×2 recargo</span>':''}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>` : '';
 
   const detalle = multas.length ? `
     <div class="card" style="margin-top:18px">
@@ -1983,6 +2085,7 @@ function renderWeek(){
       <div class="kpi"><div class="kv" style="color:var(--faint)">${pendTotal}€</div><div class="kl">Pendiente acumulado</div></div>
     </div>
     ${tabla}
+    ${bloqueArrastradas}
     ${bloqueStaff}
     ${detalle}
     <div class="wk-legend">
@@ -2006,18 +2109,18 @@ function renderWeek(){
    lo que hay que abonar — lo ya pagado no pinta nada ahí. El detalle
    completo, incluido lo cobrado, queda en pantalla para el staff. */
 window.imprimirParte = function(){
-  const {multas, isoIni, isoFin} = datosSemana();
+  const {multas, arrastradas, isoIni, isoFin} = datosSemana();
   const pendientes = multas.filter(f=>!f.paid);
-  const jugadores = PLAYERS.filter(p=>p.active!==false);
   const nombreDe = pid => {
     const per = personaDe(pid);
     if(per) return per.nombre;
-    const f = multas.find(x=>x.playerId===pid);
+    const f = [...multas,...arrastradas].find(x=>x.playerId===pid);
     return (f && f.playerName) || '—';
   };
   const dm = s => String(s||'').split('-').reverse().join('/');
 
-  /* Agrupado por jugador y, dentro, por concepto */
+  /* Tabla 1: multas nacidas ESTA semana, agrupadas por jugador y concepto,
+     al importe base — todavía no les toca recargo. */
   const porJugador = {};
   for(const f of pendientes){
     const j = porJugador[f.playerId] || (porJugador[f.playerId] =
@@ -2031,13 +2134,41 @@ window.imprimirParte = function(){
   }
   const filas = Object.values(porJugador)
     .sort((a,b)=> b.total-a.total || a.nombre.localeCompare(b.nombre));
-  const total = filas.reduce((s,j)=>s+j.total,0);
-  const hoy = new Date();
+  const totalSemana = filas.reduce((s,j)=>s+j.total,0);
 
   const listaConceptos = j => Object.values(j.conceptos)
     .sort((a,b)=> b.total-a.total)
     .map(c=>`<span class="cc pd">${c.nombre}${c.n>1?` ×${c.n}`:''} · ${c.total}€${
       c.porDefinir?' (por definir)':''}</span>`).join('');
+
+  /* Tabla 2: arrastradas de semanas anteriores. El importe de cada una
+     (f.amount) ya es el real a cobrar: si Carlos aplicó el recargo desde
+     la ficha de la multa, ya viene doblado — aquí no se recalcula nada,
+     solo se agrupa y se resalta lo que lleva recargo (f.recargado).
+     Se agrupa por jugador+concepto+si lleva recargo, para no mezclar en
+     una misma línea una multa que ya dobla con otra que todavía no. */
+  const porJugadorArr = {};
+  for(const f of arrastradas){
+    const j = porJugadorArr[f.playerId] || (porJugadorArr[f.playerId] =
+      {pid:f.playerId, nombre:nombreDe(f.playerId), esStaff:!!f.esStaff, total:0, n:0, conceptos:{}});
+    const clave = (f.typeName||'Sin especificar') + '|' + (f.recargado?'r':'n');
+    const c = j.conceptos[clave] || (j.conceptos[clave] =
+      {nombre:f.typeName||'Sin especificar', n:0, base:0, total:0, recargado:!!f.recargado, porDefinir:false});
+    c.n++; c.base += (f.recargado ? (f.amountBase??f.amount) : f.amount); c.total += (f.amount||0);
+    if(f.pendingAmount) c.porDefinir = true;
+    j.total += (f.amount||0); j.n++;
+  }
+  const filasArr = Object.values(porJugadorArr)
+    .sort((a,b)=> b.total-a.total || a.nombre.localeCompare(b.nombre));
+  const totalArrastre = filasArr.reduce((s,j)=>s+j.total,0);
+  const totalGeneral = totalSemana + totalArrastre;
+
+  const listaConceptosArr = j => Object.values(j.conceptos)
+    .sort((a,b)=> b.recargado-a.recargado || b.total-a.total)
+    .map(c=>`<span class="cc ${c.recargado?'pd doble':'pd'}">${c.nombre}${c.n>1?` ×${c.n}`:''} · ${
+      c.recargado ? `<s>${c.base}€</s> ${c.total}€ ⚠×2` : `${c.total}€`}${
+      c.porDefinir?' (por definir)':''}</span>`).join('');
+  const hoy = new Date();
 
   document.getElementById('print-sheet').innerHTML = `
     <div class="pr-head">
@@ -2047,10 +2178,29 @@ window.imprimirParte = function(){
         <div class="pr-sub">${etiquetaSemana(WEEK_MON)} · del ${dm(isoIni)} al ${dm(isoFin)}</div>
       </div>
       <div class="pr-tot">
-        <div><b>${total}€</b><span>Pendiente de pago</span></div>
+        <div><b>${totalGeneral}€</b><span>Pendiente de pago</span></div>
       </div>
     </div>
 
+    ${filasArr.length ? `<div class="pr-warn">
+        <div class="pr-warn-t">⚠ Arrastradas de semanas anteriores</div>
+        <div class="pr-warn-s">Las marcadas con ⚠×2 llevan aplicado el recargo por impago acordado con el
+          cuerpo técnico. El resto sigue al importe original, pendiente de pago.</div>
+      </div>
+      <table class="pr-tbl uni doble">
+        <thead><tr><th class="l">Jugador</th><th class="l">Concepto</th><th>Multas</th><th>Importe</th></tr></thead>
+        <tbody>${filasArr.map(j=>`<tr>
+          <td class="l nm">${j.nombre}${j.esStaff?'<i class="ct">CT</i>':''}</td>
+          <td class="l cl">${listaConceptosArr(j)}</td>
+          <td class="n">${j.n}</td>
+          <td class="eur pend">${j.total}€</td>
+        </tr>`).join('')}
+        <tr class="tot"><td class="l">SUBTOTAL ARRASTRE</td><td></td>
+          <td class="n">${filasArr.reduce((s,j)=>s+j.n,0)}</td>
+          <td class="eur pend">${totalArrastre}€</td></tr>
+        </tbody></table>` : ''}
+
+    <div class="pr-sec2">Multas de esta semana</div>
     ${filas.length ? `<table class="pr-tbl uni">
       <thead><tr>
         <th class="l">Jugador</th>
@@ -2063,13 +2213,15 @@ window.imprimirParte = function(){
         <td class="n">${j.n}</td>
         <td class="eur pend">${j.total}€</td>
       </tr>`).join('')}
-      <tr class="tot"><td class="l">TOTAL</td><td></td>
+      <tr class="tot"><td class="l">TOTAL SEMANA</td><td></td>
         <td class="n">${filas.reduce((s,j)=>s+j.n,0)}</td>
-        <td class="eur pend">${total}€</td></tr>
+        <td class="eur pend">${totalSemana}€</td></tr>
       </tbody></table>
       <div class="pr-leg">Multas registradas entre el ${dm(isoIni)} y el ${dm(isoFin)} que siguen
         pendientes de pago. Lo ya abonado no figura en esta hoja.</div>`
-      : `<div class="pr-none ok">Ninguna multa pendiente de esta semana.</div>`}
+      : `<div class="pr-none ok">Ninguna multa nueva pendiente de esta semana.</div>`}
+
+    ${(!filas.length && !filasArr.length) ? `<div class="pr-allok">✓ Sin nada pendiente de pago</div>` : ''}
 
     <div class="pr-foot">
       <span>Racing Club Portuense · El Puerto de Santa María</span>
