@@ -172,6 +172,8 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
 .detail-wrap.active{display:block;animation:fadeIn .3s ease;}
 .detail-topbar{height:50px;background:rgba(11,11,11,.96);border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;padding:0 36px;position:sticky;top:58px;z-index:20;backdrop-filter:blur(10px);}
 .detail-back{display:flex;align-items:center;gap:6px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);cursor:pointer;background:none;border:none;padding:0;transition:color .2s;}
+.detail-edit-btn{display:flex;align-items:center;gap:6px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff;cursor:pointer;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:4px;padding:6px 14px;margin-left:16px;transition:background .2s;}
+.detail-edit-btn:hover{background:rgba(255,255,255,.18);}
 .detail-back:hover{color:var(--r);}
 .detail-back svg{width:10px;height:10px;stroke:currentColor;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round;}
 .detail-layout{display:grid;grid-template-columns:1fr 260px;gap:18px;padding:22px 36px 56px;}
@@ -533,6 +535,7 @@ textarea.form-control{resize:vertical;min-height:60px;line-height:1.5;}
         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Historial
       </button>
       <div style="margin-left:auto;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.2)" id="detail-topbar-title"></div>
+      <button class="detail-edit-btn" onclick="editSession(currentDetailId)" title="Editar esta sesión">✎ Editar</button>
     </div>
     <div class="detail-layout">
       <div id="detail-tasks"></div>
@@ -1375,7 +1378,15 @@ let editSessionId = null;
 window.editSession = function(id){
   const s = sessions.find(x=>x.id===id) || trash.find(x=>x.id===id);
   if(!s){ showToast('No encuentro esa sesión','err'); return; }
-  closeModal('modal-detail');
+  /* El detalle es una página propia (detail-wrap), no un modal: no existe
+     ningún #modal-detail que cerrar. La línea anterior intentaba cerrar
+     un elemento inexistente y lanzaba una excepción ahí mismo, cortando
+     la función antes de rellenar nada del formulario — así se accedía al
+     botón "Editar" pero no pasaba nada. detail-wrap tampoco lleva la
+     clase .page, así que nav() no la oculta por sí sola: hay que
+     quitarle 'active' aquí explícitamente o quedaría superpuesta sobre
+     el formulario de registro. */
+  document.getElementById('detail-wrap')?.classList.remove('active');
   editSessionId = id;
 
   /* Cabecera del formulario */
@@ -1680,8 +1691,10 @@ window.permanentDelete=async function(id){
 };
 
 /* ── DETAIL ── */
+let currentDetailId = null;
 window.openDetail=function(id){
   const s=sessions.find(s=>s.id===id); if(!s) return;
+  currentDetailId = id;
   document.getElementById('detail-topbar-title').textContent=fmtDate(s.date)+(s.sesion?' · Sesión '+s.sesion:'');
   // Sidebar
   const mrow=(l,v)=>v?`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(226,226,226,.5);font-size:12px;"><span style="color:var(--mid)">${l}</span><span style="font-weight:600">${v}</span></div>`:'';
