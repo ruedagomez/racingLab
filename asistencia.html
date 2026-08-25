@@ -195,6 +195,7 @@ input,select,textarea{font-family:inherit;outline:none;}
 /* DASHBOARD */
 .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
 .player-fine-card{background:var(--wh);border:1px solid var(--bdr);border-radius:6px;padding:16px;border-left:3px solid transparent;transition:all .2s;}
+.player-fine-card.pfc-recargo{border-left-color:var(--inj);background:var(--inj-bg);}
 .player-fine-card:hover{border-left-color:var(--r);box-shadow:0 6px 18px rgba(0,0,0,.07);}
 .pfc-name{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px;}
 .pfc-total{font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--r);line-height:1;}
@@ -204,6 +205,8 @@ input,select,textarea{font-family:inherit;outline:none;}
 .bar-lbl{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;width:160px;color:var(--mid);flex-shrink:0;font-size:11px;}
 .bar-track{flex:1;height:7px;background:var(--bg);border-radius:4px;overflow:hidden;}
 .bar-fill{height:100%;background:var(--r);border-radius:4px;transition:width .6s;}
+.bar-fill-recargo{background:repeating-linear-gradient(135deg,var(--inj) 0 6px,#7a1c1c 6px 12px)!important;}
+.reg-old{font-size:12px;color:var(--faint);text-decoration:line-through;font-weight:400;}
 .bar-val{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mid);width:48px;text-align:right;flex-shrink:0;}
 
 /* MODAL */
@@ -1465,7 +1468,7 @@ function renderFinesTable(tab) {
         <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint)">${f.date||''}</td>
         <td class="nm">${f.playerName}${f.esStaff?'<span class="st-tag">CT</span>':''}${f.notes?'<span class="has-note" title="Tiene comentario">✎</span>':''}</td>
         <td><span class="pill pill-gray">${f.typeName}</span>${f.auto?'<span class="pill pill-amber" style="margin-left:4px;">Auto</span>':''}</td>
-        <td style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--r)">${f.amount}€${f.recargado?' <span class="pill pill-red" style="font-size:9px;vertical-align:middle">×2</span>':''}</td>
+        <td style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--r)">${f.recargado?`<span class="reg-old">${f.amountBase}€</span> `:''}${f.amount}€${f.recargado?' <span class="pill pill-red" style="font-size:9px;vertical-align:middle">×2</span>':''}</td>
         <td>${f.recurrent==='si'?'<span class="pill pill-amber">Sí</span>':'<span style="color:var(--faint);font-size:12px">No</span>'}</td>
         <td>${f.paid?'<span class="pill pill-green">Pagada</span>':'<span class="pill pill-red">Pendiente</span>'}</td>
         <td><div style="display:flex;gap:4px;" onclick="event.stopPropagation()">
@@ -1802,50 +1805,81 @@ function renderDashboard() {
   const total   = FINES.reduce((s,f)=>s+f.amount,0);
   const paid    = FINES.filter(f=>f.paid).reduce((s,f)=>s+f.amount,0);
   const pending = total-paid;
+  /* Recargos: cuánto de lo pendiente es "extra" por no haber pagado a
+     tiempo (amount - amountBase de las que están recargadas Y siguen sin
+     pagar). Es la señal de impago crónico que el dashboard no mostraba. */
+  const recargoPend = FINES.filter(f=>f.recargado && !f.paid)
+    .reduce((s,f)=>s+((f.amount||0)-(f.amountBase??f.amount)),0);
+  const nRecargoPend = FINES.filter(f=>f.recargado && !f.paid).length;
+
   document.getElementById('dash-meta').textContent = FINES.length+' multas registradas';
   document.getElementById('dash-kpis').innerHTML = `
     <div class="kpi"><div class="kv red">${pending.toFixed(0)}€</div><div class="kl">Pendiente</div></div>
     <div class="kpi"><div class="kv green">${paid.toFixed(0)}€</div><div class="kl">Recaudado</div></div>
     <div class="kpi"><div class="kv">${total.toFixed(0)}€</div><div class="kl">Total generado</div></div>
     <div class="kpi"><div class="kv amber">${FINES.filter(f=>!f.paid).length}</div><div class="kl">Pendientes</div></div>
+    <div class="kpi"><div class="kv" style="color:${nRecargoPend?'var(--inj)':'inherit'}">${nRecargoPend}</div>
+      <div class="kl">Con recargo ×2${recargoPend?' · +'+recargoPend.toFixed(0)+'€':''}</div></div>
     <div class="kpi"><div class="kv">${FINES.filter(f=>f.esStaff).reduce((s,f)=>s+(f.amount||0),0)}€</div><div class="kl">Del cuerpo técnico</div></div>
   `;
-  // By player
+  // By player — se guarda también cuántas de sus multas pendientes llevan recargo
   const pm={};
   FINES.forEach(f=>{
-    if(!pm[f.playerId]) pm[f.playerId]={name:f.playerName,esStaff:!!f.esStaff,total:0,pending:0,paid:0,count:0};
+    if(!pm[f.playerId]) pm[f.playerId]={name:f.playerName,esStaff:!!f.esStaff,total:0,pending:0,paid:0,count:0,recargoPend:0,nRecargoPend:0};
     pm[f.playerId].total+=f.amount; pm[f.playerId].count++;
-    if(f.paid) pm[f.playerId].paid+=f.amount; else pm[f.playerId].pending+=f.amount;
+    if(f.paid) pm[f.playerId].paid+=f.amount;
+    else{
+      pm[f.playerId].pending+=f.amount;
+      if(f.recargado){
+        pm[f.playerId].recargoPend += (f.amount||0)-(f.amountBase??f.amount);
+        pm[f.playerId].nRecargoPend++;
+      }
+    }
   });
   const ps=Object.values(pm).sort((a,b)=>b.pending-a.pending);
   const maxP=ps[0]?.pending||1;
   document.getElementById('debt-chart').innerHTML = ps.length
     ? ps.slice(0,8).map(p=>`<div class="bar-row">
-        <div class="bar-lbl">${p.name}${p.esStaff?'<span class="st-tag">CT</span>':''}</div>
-        <div class="bar-track"><div class="bar-fill" style="width:${p.pending/maxP*100}%"></div></div>
+        <div class="bar-lbl">${p.name}${p.esStaff?'<span class="st-tag">CT</span>':''}${
+          p.nRecargoPend?` <span class="pill pill-red" style="font-size:9px">×2</span>`:''}</div>
+        <div class="bar-track"><div class="bar-fill${p.nRecargoPend?' bar-fill-recargo':''}" style="width:${p.pending/maxP*100}%"></div></div>
         <div class="bar-val">${p.pending.toFixed(0)}€</div>
       </div>`).join('')
     : '<div style="color:var(--faint);font-size:13px">Sin datos</div>';
-  // By type
+
+  /* By type — el recargo NO se mezcla dentro del tipo original (inflaría
+     silenciosamente "cuánto cuesta ese concepto"): cada multa aporta su
+     importe BASE al tipo, y si tiene recargo, el extra se acumula aparte
+     en una barra propia "⚠ Recargo por impago". Así se ve cuánto cuesta
+     cada concepto en origen y cuánto se ha generado solo por no pagar. */
   const tm={};
-  FINES.forEach(f=>{ if(!tm[f.typeName]) tm[f.typeName]=0; tm[f.typeName]+=f.amount; });
+  let extraRecargo=0;
+  FINES.forEach(f=>{
+    const base = f.recargado ? (f.amountBase??f.amount) : f.amount;
+    if(!tm[f.typeName]) tm[f.typeName]=0;
+    tm[f.typeName]+=base;
+    if(f.recargado) extraRecargo += (f.amount||0)-(f.amountBase??f.amount);
+  });
   const ts=Object.entries(tm).sort((a,b)=>b[1]-a[1]);
-  const maxT=ts[0]?.[1]||1;
+  if(extraRecargo>0) ts.push(['⚠ Recargo por impago', extraRecargo]);
+  const maxT=Math.max(...ts.map(t=>t[1]),1);
   document.getElementById('type-chart').innerHTML = ts.length
     ? ts.map(([n,a])=>`<div class="bar-row">
         <div class="bar-lbl">${n}</div>
-        <div class="bar-track"><div class="bar-fill" style="width:${a/maxT*100}%;background:var(--warn)"></div></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${a/maxT*100}%;background:${n.startsWith('⚠')?'var(--inj)':'var(--warn)'}"></div></div>
         <div class="bar-val">${a.toFixed(0)}€</div>
       </div>`).join('')
     : '<div style="color:var(--faint);font-size:13px">Sin datos</div>';
+
   // Cards
   document.getElementById('fine-cards').innerHTML = ps.length
     ? ps.map(p=>{
         const pct=p.total>0?Math.round(p.paid/p.total*100):0;
-        return `<div class="player-fine-card">
-          <div class="pfc-name">${p.name}</div>
+        return `<div class="player-fine-card${p.nRecargoPend?' pfc-recargo':''}">
+          <div class="pfc-name">${p.name}${p.nRecargoPend?' <span class="pill pill-red" style="font-size:9px">×2</span>':''}</div>
           <div class="pfc-total">${p.pending.toFixed(0)}€</div>
-          <div style="font-size:11px;color:var(--mid);margin-top:2px">${p.count} multa(s) · ${pct}% pagado</div>
+          <div style="font-size:11px;color:var(--mid);margin-top:2px">${p.count} multa(s) · ${pct}% pagado${
+            p.nRecargoPend?` · <span style="color:var(--inj)">+${p.recargoPend.toFixed(0)}€ de recargo</span>`:''}</div>
           <div class="pfc-bar"><div class="pfc-bar-fill" style="width:${pct}%"></div></div>
         </div>`;
       }).join('')
