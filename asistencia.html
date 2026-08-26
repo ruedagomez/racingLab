@@ -1494,6 +1494,12 @@ window.filterFines = function(tab, el) {
 };
 
 window.markPaid = async function(id) {
+  /* El sonido se dispara ANTES del await a Firestore, no después: si se
+     espera a que el guardado confirme, la latencia de red puede consumir
+     la ventana de "gesto de usuario" que el navegador exige para permitir
+     reproducir audio, y el sonido se perdería en silencio pese a que el
+     pago sí se registre. */
+  playPaidSound();
   await updateDoc(doc(db,'fines',id), { paid:true });
   showToast('Multa marcada como pagada','ok');
 };
@@ -1638,6 +1644,8 @@ window.togglePaid = async function(){
   if(!fineDetailId) return;
   const f = FINES.find(x=>x.id===fineDetailId);
   if(!f) return;
+  const pasaAPagada = !f.paid;   // solo suena al COBRAR, no al desmarcar por error
+  if(pasaAPagada) playPaidSound();   // antes del await, mismo motivo que en markPaid
   try{
     await updateDoc(doc(db,'fines',fineDetailId), {paid: !f.paid, updatedAt: serverTimestamp()});
     showToast(f.paid ? 'Marcada como pendiente' : 'Marcada como pagada','ok');
@@ -1915,6 +1923,19 @@ window.overlayClose = (e,id) => { if(e.target.classList.contains('overlay')) clo
 function playFineSound(){
   try{
     const a = document.getElementById('fine-sound');
+    if(!a) return;
+    a.currentTime = 0;
+    a.play().catch(()=>{});
+  }catch(e){}
+}
+/* Sonido de PAGO registrado (distinto del de multa nueva). Mismo criterio
+   de seguridad: si falla, no rompe el registro del pago. El elemento
+   lleva DOS fuentes (mp3 primero, ogg de respaldo) porque Safari/WebKit
+   no decodifica el contenedor Ogg — sin el mp3, el audio simplemente no
+   sonaría nunca en Safari, sin ningún error visible. */
+function playPaidSound(){
+  try{
+    const a = document.getElementById('paid-sound');
     if(!a) return;
     a.currentTime = 0;
     a.play().catch(()=>{});
@@ -2284,5 +2305,9 @@ setSynced(false);
 <div id="print-sheet"></div>
 <audio id="fine-sound" preload="auto"
   src="https://res.cloudinary.com/dprtymvge/video/upload/v1787208155/cash_kn4iwr.mp3"></audio>
+<audio id="paid-sound" preload="auto">
+  <source src="https://res.cloudinary.com/dprtymvge/video/upload/v1787739836/pago_multa_mp3.mp3" type="audio/mpeg"/>
+  <source src="https://res.cloudinary.com/dprtymvge/video/upload/v1787739286/pago_multa.ogg" type="audio/ogg"/>
+</audio>
 </body>
 </html>
