@@ -402,24 +402,29 @@ const PASS_HASH = '401fde9cce4cbc36ab385715ead5a7cd8be898ab07368c4303d7cc5ff8543
 const ANALISTA = 'Carlos Rueda';
 
 /* Rivales Grupo X (mismos ids que tercera.html / colección rivals) */
+/* color: color principal de la camiseta de local, para el campograma del rival.
+   Verificado por fuente (web oficial/Wikipedia) donde se indica; el resto se
+   deja en '' a propósito — sin dato fiable, pitchSvg() usa el rojo por
+   defecto en vez de arriesgar un color inventado. Rellénalos aquí cuando
+   los confirmes: es el único sitio que hay que tocar. */
 const CLUBS = [
-  { id:'san-roque',    lpId:'181',   name:'San Roque de Lepe',    short:'SRL', city:'Lepe',                      stadium:'Ciudad de Lepe' },
-  { id:'xerez-dfc',    lpId:'12717', name:'Xerez DFC',            short:'XDF', city:'Jerez de la Frontera',      stadium:'Chapín' },
-  { id:'onubense',     lpId:'362',   name:'Atlético Onubense',    short:'AON', city:'Huelva',                    stadium:'Ciudad Deportiva Decano' },
-  { id:'cadiz-b',      lpId:'163',   name:'Cádiz CF Mirandilla',  short:'CDZ', city:'Cádiz',                     stadium:'El Rosal' },
-  { id:'pozoblanco',   lpId:'21',    name:'CD Pozoblanco',        short:'POZ', city:'Pozoblanco',                stadium:'Municipal Pozoblanco' },
-  { id:'ceuta-b',      lpId:'13159', name:'AD Ceuta FC B',        short:'CEU', city:'Ceuta',                     stadium:'José Martínez Pirri' },
-  { id:'bollullos',    lpId:'582',   name:'Bollullos CF',         short:'BCF', city:'Bollullos Par del Condado', stadium:'Eloy Ávila Cano' },
-  { id:'puente-genil', lpId:'2224',  name:'Salerm Puente Genil',  short:'SPG', city:'Puente Genil',              stadium:'Manuel Polinario' },
-  { id:'dos-hermanas', lpId:'34672', name:'Dos Hermanas CF 1971', short:'DH71',city:'Dos Hermanas',              stadium:'Miguel Román' },
-  { id:'egabrense',    lpId:'23',    name:'Egabrense',            short:'EGA', city:'Cabra',                     stadium:'Antonio Povedano' },
-  { id:'linense',      lpId:'580',   name:'RB Linense',           short:'RBL', city:'La Línea de la Concepción', stadium:'Ciudad de La Línea' },
-  { id:'tomares',      lpId:'199',   name:'UD Tomares',           short:'TOM', city:'Tomares',                   stadium:'San Sebastián' },
-  { id:'utrera',       lpId:'201',   name:'CD Utrera',            short:'UTR', city:'Utrera',                    stadium:'San Juan Bosco' },
-  { id:'chiclana',     lpId:'170',   name:'Chiclana CF',          short:'CHI', city:'Chiclana de la Frontera',   stadium:'Municipal de Chiclana' },
-  { id:'conil',        lpId:'313',   name:'Conil CF',             short:'CNL', city:'Conil de la Frontera',      stadium:'José Antonio Pérez Ureba' },
-  { id:'cordoba-b',    lpId:'472',   name:'Córdoba CF B',         short:'COR', city:'Córdoba',                   stadium:'Ciudad Deportiva CCF' },
-  { id:'betis-c',      lpId:'517',   name:'Real Betis C',         short:'RBC', city:'Sevilla',                   stadium:'Luis del Sol' },
+  { id:'san-roque',    lpId:'181',   name:'San Roque de Lepe',    short:'SRL', city:'Lepe',                      stadium:'Ciudad de Lepe',              color:'#f0c419' }, // gualdinegro (rayas amarillo/negro) — verificado (futbolme/web oficial)
+  { id:'xerez-dfc',    lpId:'12717', name:'Xerez DFC',            short:'XDF', city:'Jerez de la Frontera',      stadium:'Chapín',                      color:'#1a56db' }, // azul, pantalón blanco — verificado (web oficial/Wikipedia)
+  { id:'onubense',     lpId:'362',   name:'Atlético Onubense',    short:'AON', city:'Huelva',                    stadium:'Ciudad Deportiva Decano',     color:'' }, // sin verificar
+  { id:'cadiz-b',      lpId:'163',   name:'Cádiz CF Mirandilla',  short:'CDZ', city:'Cádiz',                     stadium:'El Rosal',                    color:'' }, // sin verificar
+  { id:'pozoblanco',   lpId:'21',    name:'CD Pozoblanco',        short:'POZ', city:'Pozoblanco',                stadium:'Municipal Pozoblanco',        color:'' }, // sin verificar
+  { id:'ceuta-b',      lpId:'13159', name:'AD Ceuta FC B',        short:'CEU', city:'Ceuta',                     stadium:'José Martínez Pirri',         color:'' }, // sin verificar
+  { id:'bollullos',    lpId:'582',   name:'Bollullos CF',         short:'BCF', city:'Bollullos Par del Condado', stadium:'Eloy Ávila Cano',             color:'' }, // sin verificar
+  { id:'puente-genil', lpId:'2224',  name:'Salerm Puente Genil',  short:'SPG', city:'Puente Genil',              stadium:'Manuel Polinario',            color:'' }, // sin verificar
+  { id:'dos-hermanas', lpId:'34672', name:'Dos Hermanas CF 1971', short:'DH71',city:'Dos Hermanas',              stadium:'Miguel Román',                color:'' }, // sin verificar
+  { id:'egabrense',    lpId:'23',    name:'Egabrense',            short:'EGA', city:'Cabra',                     stadium:'Antonio Povedano',            color:'' }, // sin verificar
+  { id:'linense',      lpId:'580',   name:'RB Linense',           short:'RBL', city:'La Línea de la Concepción', stadium:'Ciudad de La Línea',          color:'' }, // sin verificar
+  { id:'tomares',      lpId:'199',   name:'UD Tomares',           short:'TOM', city:'Tomares',                   stadium:'San Sebastián',               color:'' }, // sin verificar
+  { id:'utrera',       lpId:'201',   name:'CD Utrera',            short:'UTR', city:'Utrera',                    stadium:'San Juan Bosco',              color:'' }, // sin verificar
+  { id:'chiclana',     lpId:'170',   name:'Chiclana CF',          short:'CHI', city:'Chiclana de la Frontera',   stadium:'Municipal de Chiclana',       color:'' }, // sin verificar
+  { id:'conil',        lpId:'313',   name:'Conil CF',             short:'CNL', city:'Conil de la Frontera',      stadium:'José Antonio Pérez Ureba',    color:'' }, // sin verificar
+  { id:'cordoba-b',    lpId:'472',   name:'Córdoba CF B',         short:'COR', city:'Córdoba',                   stadium:'Ciudad Deportiva CCF',        color:'' }, // sin verificar
+  { id:'betis-c',      lpId:'517',   name:'Real Betis C',         short:'RBC', city:'Sevilla',                   stadium:'Luis del Sol',                color:'' }, // sin verificar
 ];
 const clubById = id => CLUBS.find(c=>c.id===id) || null;
 
@@ -825,8 +830,13 @@ const tramosToLines = t => (t?.gf||zeros6()).map((v,i)=>`${v} | ${(t?.gc||zeros6
 /* Convocatorias: bloques separados por línea en blanco.
    Cabecera: J28 | C | V | 3-1 | Montilla | 4-2-3-1   (sistema opcional)
    Jugadores: "13 Ortiz Muñoz"  ·  ">76" sale al 76  ·  "<62" entra al 62
-   "--" separa titulares de suplentes. Orden de titulares = colocación en el
-   campograma: portero primero, luego líneas de atrás hacia delante. */
+   Posición opcional al final, tras "|": "13 Ortiz Muñoz | POR" — ver
+   POSICIONES más abajo para los códigos. Si ningún titular lleva posición,
+   se colocan por orden (portero primero, luego líneas de atrás hacia
+   delante) como hasta ahora. En cuanto uno la lleva, el campograma pasa a
+   colocar a TODOS por su etiqueta — así se pueden dibujar formas no
+   uniformes (rombos, etc.) que el reparto automático por líneas no soporta.
+   "--" separa titulares de suplentes. */
 function parseConvocatorias(txt){
   return txt.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean).map(b=>{
     const lines = b.split('\n').map(s=>s.trim()).filter(Boolean);
@@ -836,15 +846,18 @@ function parseConvocatorias(txt){
     let mode='titulares';
     lines.slice(1).forEach(l=>{
       if(/^-{2,}$/.test(l)){ mode='suplentes'; return; }
-      const m = l.match(/^(\d+)\s+(.+?)(?:\s*([<>])\s*(\d+)\s*)?$/);
-      if(m) c[mode].push({ dorsal:m[1], nombre:m[2], cambio:m[3]||'', min:m[4]||'' });
+      let pos='', core=l;
+      const pipeIdx = l.lastIndexOf('|');
+      if(pipeIdx>-1){ pos = l.slice(pipeIdx+1).trim().toUpperCase(); core = l.slice(0,pipeIdx).trim(); }
+      const m = core.match(/^(\d+)\s+(.+?)(?:\s*([<>])\s*(\d+)\s*)?$/);
+      if(m) c[mode].push({ dorsal:m[1], nombre:m[2], cambio:m[3]||'', min:m[4]||'', pos });
     });
     return c;
   });
 }
 function convocatoriasToText(arr){
   return (arr||[]).map(c=>{
-    const pl = p => `${p.dorsal} ${p.nombre}${p.cambio?` ${p.cambio}${p.min}`:''}`;
+    const pl = p => `${p.dorsal} ${p.nombre}${p.cambio?` ${p.cambio}${p.min}`:''}${p.pos?` | ${p.pos}`:''}`;
     const head = [c.jornada,c.cond,c.res,c.marcador,c.rival,c.sistema].filter((x,i)=>i<5||x).join(' | ');
     return [head, ...c.titulares.map(pl), '--', ...c.suplentes.map(pl)].join('\n');
   }).join('\n\n');
@@ -852,24 +865,68 @@ function convocatoriasToText(arr){
 
 /* ══════════ CAMPOGRAMA SVG ══════════ */
 const PITCH_BG = `<rect width="300" height="420" rx="6" fill="#1a6b34"/><rect x="10" y="10" width="280" height="400" rx="2" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><line x1="10" y1="210" x2="290" y2="210" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><circle cx="150" cy="210" r="40" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><circle cx="150" cy="210" r="2.5" fill="rgba(255,255,255,.75)"/><rect x="70" y="10" width="160" height="60" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><rect x="110" y="10" width="80" height="22" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1"/><path d="M 103 70 A 40 40 0 0 0 197 70" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><rect x="70" y="350" width="160" height="60" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><rect x="110" y="388" width="80" height="22" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1"/><path d="M 103 350 A 40 40 0 0 1 197 350" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/>`;
-function pitchSvg(conv){
+/* Coordenadas fijas por posición sobre el viewBox 300×420 (ataque hacia
+   arriba, y menor = más adelantado). Cada código es una demarcación real,
+   no una casilla de una rejilla — por eso soporta formas no uniformes
+   (rombos, etc.) que el reparto automático por líneas no puede dibujar. */
+const POSICIONES = {
+  POR:{x:150,y:390,label:'Portero'},
+  LI :{x:45, y:330,label:'Lateral izquierdo'},        CI :{x:115,y:330,label:'Central izquierdo'},
+  CD :{x:185,y:330,label:'Central derecho'},          LD :{x:255,y:330,label:'Lateral derecho'},
+  CDI:{x:90, y:330,label:'Central izq. (línea de 3)'},LIB:{x:150,y:330,label:'Central eje (línea de 3)'},CDD:{x:210,y:330,label:'Central der. (línea de 3)'},
+  CAI:{x:30, y:265,label:'Carrilero izquierdo'},      CAD:{x:270,y:265,label:'Carrilero derecho'},
+  PIV:{x:150,y:265,label:'Pivote único'},
+  PIVI:{x:110,y:265,label:'Pivote izquierdo'},        PIVD:{x:190,y:265,label:'Pivote derecho'},
+  MI :{x:60, y:205,label:'Interior izquierdo'},       MC :{x:150,y:205,label:'Mediocentro'},         MD :{x:240,y:205,label:'Interior derecho'},
+  BI :{x:65, y:195,label:'Banda izquierda'},          BD :{x:235,y:195,label:'Banda derecha'},
+  MP :{x:150,y:150,label:'Mediapunta / enganche'},
+  EI :{x:40, y:110,label:'Extremo izquierdo'},        ED :{x:260,y:110,label:'Extremo derecho'},
+  DC :{x:150,y:70, label:'Delantero centro'},
+  DCI:{x:105,y:70, label:'Delantero izquierdo'},      DCD:{x:195,y:70, label:'Delantero derecho'},
+};
+function textColorFor(hex){
+  const h = (hex||'').replace('#','');
+  if(h.length!==6) return '#fff';
+  const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
+  const lum = (0.299*r + 0.587*g + 0.114*b)/255;
+  return lum > 0.62 ? '#111' : '#fff';
+}
+function pitchSvg(conv, rivalColor){
   const tit = conv.titulares || [];
   if(tit.length !== 11 || !conv.sistema) return '';
-  const lines = conv.sistema.replace(/^1-/,'').split('-').map(Number).filter(n=>n>0);
-  if(lines.reduce((a,b)=>a+b,0) !== 10) return '';
+  const fieldColor = rivalColor || '#d01020'; // sin color verificado del club → rojo por defecto
+  const fieldText = textColorFor(fieldColor);
+  const dot = (x,y,d,gk) => `<circle cx="${x}" cy="${y}" r="16" fill="${gk?'#0fd68a':fieldColor}" stroke="rgba(255,255,255,.6)" stroke-width="1.5"/><text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Barlow Condensed,sans-serif" font-size="14" font-weight="800" fill="${gk?'#fff':fieldText}">${esc(d)}</text>`;
   let dots = '';
-  const dot = (x,y,d,gk) => `<circle cx="${x}" cy="${y}" r="16" fill="${gk?'#0fd68a':'#d01020'}" stroke="rgba(255,255,255,.6)" stroke-width="1.5"/><text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Barlow Condensed,sans-serif" font-size="14" font-weight="800" fill="#fff">${esc(d)}</text>`;
-  dots += dot(150, 390, tit[0].dorsal, true);
-  let idx = 1;
-  const yTop = 66, yBottom = 323;
-  lines.forEach((n, li) => {
-    const y = lines.length===1 ? (yTop+yBottom)/2 : yBottom - li*((yBottom-yTop)/(lines.length-1));
-    for(let j=0;j<n;j++){
-      const x = n===1 ? 150 : 50 + j*(200/(n-1));
-      dots += dot(Math.round(x), Math.round(y), tit[idx]?.dorsal||'', false);
-      idx++;
-    }
-  });
+  const tieneEtiquetas = tit.some(p => p.pos && POSICIONES[p.pos]);
+  if(tieneEtiquetas){
+    /* Modo posiciones explícitas: cada jugador va a su demarcación real,
+       sin depender del orden ni de que el sistema reparta en líneas iguales. */
+    const gk = tit.find(p=>p.pos==='POR') || tit[0];
+    dots += dot(POSICIONES.POR.x, POSICIONES.POR.y, gk.dorsal, true);
+    tit.forEach(p=>{
+      if(p===gk) return;
+      const slot = POSICIONES[p.pos];
+      dots += slot ? dot(slot.x, slot.y, p.dorsal, false)
+                   : dot(150, 405, p.dorsal, false); // etiqueta no reconocida: aviso visual pegado a portería, para que se note y se corrija
+    });
+  } else {
+    /* Modo automático (compatibilidad con informes sin etiquetar): igual
+       que antes — por orden y por reparto uniforme según el sistema. */
+    const lines = conv.sistema.replace(/^1-/,'').split('-').map(Number).filter(n=>n>0);
+    if(lines.reduce((a,b)=>a+b,0) !== 10) return '';
+    dots += dot(150, 390, tit[0].dorsal, true);
+    let idx = 1;
+    const yTop = 66, yBottom = 323;
+    lines.forEach((n, li) => {
+      const y = lines.length===1 ? (yTop+yBottom)/2 : yBottom - li*((yBottom-yTop)/(lines.length-1));
+      for(let j=0;j<n;j++){
+        const x = n===1 ? 150 : 50 + j*(200/(n-1));
+        dots += dot(Math.round(x), Math.round(y), tit[idx]?.dorsal||'', false);
+        idx++;
+      }
+    });
+  }
   return `<svg viewBox="0 0 300 420" class="pitch-svg">${PITCH_BG}${dots}</svg>`;
 }
 
@@ -1030,7 +1087,7 @@ function renderEditor(){
   html += taBlock('ta-tarjStaff','Tarjetas · Cuerpo técnico','⚙ Se rellena solo desde las actas. R2: el staff nunca se mezcla con jugadores.',tableToLines(d.tarjetasStaff,['nombre','cargo','amarillas','rojas']),true);
 
   html += `<div class="ed-sec">02 · Formación</div>`;
-  html += taBlock('ta-convocatorias','Últimas 5 convocatorias','⚙ Las últimas 5 se rellenan solas desde las actas, con los 18 convocados y los minutos de cambio. <b>El sistema NO viene en el acta</b>: añádelo tú al final de la cabecera para que se dibuje el campograma.<br/>Cabecera: <b>J28 | C | V | 3-1 | Montilla | 4-2-3-1</b> (sistema opcional → dibuja el campograma).<br/>Jugadores: <b>13 Ortiz Muñoz</b> · sale al 76: <b>8 Caballero &gt;76</b> · entra al 62: <b>22 Ariza &lt;62</b> · <b>--</b> separa titulares de suplentes.<br/>El orden de titulares coloca el campograma: portero primero, luego líneas de atrás hacia delante.',convocatoriasToText(inf.convocatorias),true);
+  html += taBlock('ta-convocatorias','Últimas 5 convocatorias','⚙ Las últimas 5 se rellenan solas desde las actas, con los 18 convocados y los minutos de cambio. <b>El sistema NO viene en el acta</b>: añádelo tú al final de la cabecera para que se dibuje el campograma.<br/>Cabecera: <b>J28 | C | V | 3-1 | Montilla | 4-2-3-1</b> (sistema opcional → dibuja el campograma).<br/>Jugadores: <b>13 Ortiz Muñoz</b> · sale al 76: <b>8 Caballero &gt;76</b> · entra al 62: <b>22 Ariza &lt;62</b> · <b>--</b> separa titulares de suplentes.<br/>Sin posición: el orden coloca el campograma (portero primero, luego líneas de atrás hacia delante, reparto uniforme). <b>Para formaciones no uniformes (rombos, etc.) añade la posición real tras "|"</b> — en cuanto un titular la lleva, TODOS se colocan por su etiqueta y el orden deja de importar: <b>13 Ortiz Muñoz | POR</b> · <b>8 Caballero &gt;76 | PIV</b>.<br/>Códigos: POR · LI CI CD LD (línea de 4) · CDI LIB CDD (línea de 3) · CAI CAD (carrileros) · PIV / PIVI PIVD (pivote único o doble) · MI MC MD (mediocentros) · BI BD (bandas) · MP (mediapunta/enganche) · EI ED (extremos) · DC / DCI DCD (delantero único o dos).<br/>Ejemplo rombo 1-4-4-2: POR, LI CI CD LD, PIV, BI BD, MP, DCI DCD.',convocatoriasToText(inf.convocatorias),true);
 
   html += `<div class="ed-sec">03 · Momentos del juego</div>`;
   MOMENTOS.forEach(b => html += bloqueEditorHtml(b));
@@ -1329,7 +1386,7 @@ window.openInforme = async function(iid){
 
   /* campogramas: las 2 convocatorias más recientes con 11 titulares y sistema */
   const pitches = inf.convocatorias.filter(c=>c.titulares.length===11 && c.sistema).slice(0,2)
-    .map(c=>{ const svg = pitchSvg(c); return svg ? `<div class="pitch-card icard"><div class="pitch-label">${esc(c.jornada)} · ${esc(c.cond)} · ${esc(c.marcador)} · ${esc(c.rival)} ${c.res==='V'?'✅':c.res==='E'?'➖':c.res==='D'?'❌':''}</div>${svg}</div>` : ''; })
+    .map(c=>{ const svg = pitchSvg(c, club && club.color); return svg ? `<div class="pitch-card icard"><div class="pitch-label">${esc(c.jornada)} · ${esc(c.cond)} · ${esc(c.marcador)} · ${esc(c.rival)} ${c.res==='V'?'✅':c.res==='E'?'➖':c.res==='D'?'❌':''}</div>${svg}</div>` : ''; })
     .filter(Boolean).join('');
 
   const fuenteChip = `<div class="pipe-note" style="margin-top:14px;">${d.fuente==='actas'
