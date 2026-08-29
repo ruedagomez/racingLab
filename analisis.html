@@ -310,7 +310,7 @@ img,svg,video{max-width:100%;}
     </div>
     <div style="display:flex;gap:9px;">
       <button class="btn btn-ghost btn-sm" onclick="showCalendario()">← Calendario</button>
-      <button class="btn btn-ghost btn-sm" onclick="openInforme(currentInformeId)">👁 Ver informe</button>
+      <button class="btn btn-ghost btn-sm" onclick="openInforme()">👁 Ver informe</button>
     </div>
   </div>
   <div id="edBody"></div>
@@ -1287,6 +1287,7 @@ function plantillaTableHtml(players){
     `</tbody></table>`;
 }
 window.openInforme = async function(iid){
+  iid = iid || currentInformeId;
   if(!iid) return;
   let inf;
   try{
