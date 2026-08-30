@@ -102,8 +102,21 @@ img,svg,video{max-width:100%;}
 .clip-row .cl-lab{font-weight:600;}
 .clip-row .cl-url{color:var(--mid);font-size:10.5px;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
 .clip-row .cl-del{color:var(--inj);background:none;font-size:14px;padding:2px 6px;}
-.clip-add{display:grid;grid-template-columns:1fr 1.6fr 1.6fr auto;gap:7px;margin-top:9px;}
-.clip-add input{font-size:12px;padding:7px 9px;border:1px solid var(--bdr);border-radius:6px;}
+.clip-add{display:flex;flex-direction:column;gap:7px;margin-top:9px;}
+.clip-add input{font-size:12px;padding:7px 9px;border:1px solid var(--bdr);border-radius:6px;width:100%;}
+.clip-add > button{align-self:flex-start;}
+.cl-upload-row{display:flex;gap:7px;align-items:center;}
+.cl-upload-row input{flex:1;}
+.cl-upload-btn{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;
+  border:1px solid var(--bdr);border-radius:6px;cursor:pointer;font-size:14px;background:var(--bg);transition:.15s;}
+.cl-upload-btn:hover{border-color:var(--r);background:var(--r2,#fdeaec);}
+.cl-upload-progress{font-size:11.5px;color:var(--mid);display:flex;align-items:center;gap:8px;}
+.cl-prog-bar{width:90px;height:5px;background:var(--bg);border-radius:3px;overflow:hidden;flex-shrink:0;}
+.cl-prog-fill{height:100%;background:var(--r,#c0392b);transition:width .2s;}
+.cl-prog-ok{color:var(--fit,#15803d);}
+.cl-prog-err{color:var(--inj,#c0392b);}
+.dbx-status{display:flex;align-items:center;gap:6px;font-size:11.5px;margin-right:10px;}
+.dbx-status .dbx-ok{display:flex;align-items:center;gap:5px;color:var(--fit,#15803d);font-weight:600;}
 .plan-ed-row{display:grid;grid-template-columns:150px 110px 1fr auto;gap:8px;margin-bottom:7px;}
 .plan-ed-row input,.plan-ed-row select{font-size:12px;padding:7px 9px;border:1px solid var(--bdr);border-radius:6px;background:var(--wh);}
 .ed-savebar{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:18px 0 8px;display:flex;gap:10px;justify-content:flex-end;}
@@ -135,7 +148,7 @@ img,svg,video{max-width:100%;}
 .icard ul{font-size:12.5px;color:var(--i-muted2);padding-left:16px;line-height:1.65;}
 .icard ul li{margin-bottom:4px;}
 .ig2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
-.inf-cover{padding:60px 48px 36px;position:relative;background:radial-gradient(1000px 500px at 80% 10%,rgba(232,25,44,.06),transparent 60%),var(--i-bg);}
+.inf-cover{min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:60px 48px;position:relative;background:radial-gradient(1000px 500px at 80% 10%,rgba(232,25,44,.06),transparent 60%),var(--i-bg);}
 .inf-cover .cv-shield{width:110px;height:110px;object-fit:contain;margin-bottom:24px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.15));}
 .inf-cover .cv-kicker{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:var(--i-red);margin-bottom:10px;}
 .inf-cover h1{font-family:'Barlow Condensed',sans-serif;font-size:58px;font-weight:900;line-height:1.02;letter-spacing:.5px;margin-bottom:14px;}
@@ -143,9 +156,6 @@ img,svg,video{max-width:100%;}
 .inf-cover .cv-chip{font-size:11.5px;font-weight:600;padding:6px 14px;border-radius:20px;background:var(--i-card);border:1px solid var(--i-border);color:var(--i-muted2);box-shadow:var(--shadow-sm);}
 .video-section{margin-top:14px;}
 .video-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--i-muted);margin-bottom:8px;}
-.vlink-row{display:block;font-size:12.5px;color:var(--i-red);text-decoration:none;padding:5px 0;border-bottom:1px dashed var(--i-border2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.vlink-row:last-child{border-bottom:none;}
-.vlink-row:hover{text-decoration:underline;}
 .video-grid{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;}
 .video-grid.v1{grid-template-columns:minmax(0,1fr);}
 .video-placeholder{position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;cursor:pointer;border:1px solid var(--i-border2);background:#0a0d13 center/cover no-repeat;transition:opacity .2s;display:block;max-width:100%;min-width:0;}
@@ -279,6 +289,7 @@ img,svg,video{max-width:100%;}
   <a href="index.html" class="back">← Racing Lab</a>
   <h1>ANÁLISIS <span>RIVAL</span></h1>
   <div class="spacer"></div>
+  <div id="dbx-status" class="dbx-status"></div>
   <div class="mode-chip" id="modeChip" onclick="toggleAnalista()" style="cursor:pointer" title="Modo analista: generar, editar y eliminar informes">
     <div class="dot"></div><span id="modeChipTxt">Modo lectura</span>
   </div>
@@ -292,7 +303,7 @@ img,svg,video{max-width:100%;}
   <div class="pagehead">
     <div>
       <div class="pt">Temporada 2026/27 · Grupo X</div>
-      <div class="ps">34 jornadas · Inicio 6 de septiembre · Descanso 27 dic y 3 ene</div>
+      <div class="ps">34 jornadas · Inicio 6 sep · J15 martes 8 dic · Parón 27 dic y 28 mar (Semana Santa) · Fin 2 may</div>
     </div>
     <div style="display:flex;gap:9px;">
       <button class="btn btn-ghost btn-sm" id="btnEditCal" onclick="toggleCalEdit()" style="display:none">✏️ Editar calendario</button>
@@ -310,7 +321,7 @@ img,svg,video{max-width:100%;}
     </div>
     <div style="display:flex;gap:9px;">
       <button class="btn btn-ghost btn-sm" onclick="showCalendario()">← Calendario</button>
-      <button class="btn btn-ghost btn-sm" onclick="openInforme()">👁 Ver informe</button>
+      <button class="btn btn-ghost btn-sm" onclick="openInforme(currentInformeId)">👁 Ver informe</button>
     </div>
   </div>
   <div id="edBody"></div>
@@ -402,39 +413,36 @@ const PASS_HASH = '401fde9cce4cbc36ab385715ead5a7cd8be898ab07368c4303d7cc5ff8543
 const ANALISTA = 'Carlos Rueda';
 
 /* Rivales Grupo X (mismos ids que tercera.html / colección rivals) */
-/* color: color principal de la camiseta de local, para el campograma del rival.
-   Verificado por fuente (web oficial/Wikipedia) donde se indica; el resto se
-   deja en '' a propósito — sin dato fiable, pitchSvg() usa el rojo por
-   defecto en vez de arriesgar un color inventado. Rellénalos aquí cuando
-   los confirmes: es el único sitio que hay que tocar. */
 const CLUBS = [
-  { id:'san-roque',    lpId:'181',   name:'San Roque de Lepe',    short:'SRL', city:'Lepe',                      stadium:'Ciudad de Lepe',              color:'#f0c419' }, // gualdinegro (rayas amarillo/negro) — verificado (futbolme/web oficial)
-  { id:'xerez-dfc',    lpId:'12717', name:'Xerez DFC',            short:'XDF', city:'Jerez de la Frontera',      stadium:'Chapín',                      color:'#1a56db' }, // azul, pantalón blanco — verificado (web oficial/Wikipedia)
-  { id:'onubense',     lpId:'362',   name:'Atlético Onubense',    short:'AON', city:'Huelva',                    stadium:'Ciudad Deportiva Decano',     color:'' }, // sin verificar
-  { id:'cadiz-b',      lpId:'163',   name:'Cádiz CF Mirandilla',  short:'CDZ', city:'Cádiz',                     stadium:'El Rosal',                    color:'' }, // sin verificar
-  { id:'pozoblanco',   lpId:'21',    name:'CD Pozoblanco',        short:'POZ', city:'Pozoblanco',                stadium:'Municipal Pozoblanco',        color:'' }, // sin verificar
-  { id:'ceuta-b',      lpId:'13159', name:'AD Ceuta FC B',        short:'CEU', city:'Ceuta',                     stadium:'José Martínez Pirri',         color:'' }, // sin verificar
-  { id:'bollullos',    lpId:'582',   name:'Bollullos CF',         short:'BCF', city:'Bollullos Par del Condado', stadium:'Eloy Ávila Cano',             color:'' }, // sin verificar
-  { id:'puente-genil', lpId:'2224',  name:'Salerm Puente Genil',  short:'SPG', city:'Puente Genil',              stadium:'Manuel Polinario',            color:'' }, // sin verificar
-  { id:'dos-hermanas', lpId:'34672', name:'Dos Hermanas CF 1971', short:'DH71',city:'Dos Hermanas',              stadium:'Miguel Román',                color:'' }, // sin verificar
-  { id:'egabrense',    lpId:'23',    name:'Egabrense',            short:'EGA', city:'Cabra',                     stadium:'Antonio Povedano',            color:'' }, // sin verificar
-  { id:'linense',      lpId:'580',   name:'RB Linense',           short:'RBL', city:'La Línea de la Concepción', stadium:'Ciudad de La Línea',          color:'' }, // sin verificar
-  { id:'tomares',      lpId:'199',   name:'UD Tomares',           short:'TOM', city:'Tomares',                   stadium:'San Sebastián',               color:'' }, // sin verificar
-  { id:'utrera',       lpId:'201',   name:'CD Utrera',            short:'UTR', city:'Utrera',                    stadium:'San Juan Bosco',              color:'' }, // sin verificar
-  { id:'chiclana',     lpId:'170',   name:'Chiclana CF',          short:'CHI', city:'Chiclana de la Frontera',   stadium:'Municipal de Chiclana',       color:'' }, // sin verificar
-  { id:'conil',        lpId:'313',   name:'Conil CF',             short:'CNL', city:'Conil de la Frontera',      stadium:'José Antonio Pérez Ureba',    color:'' }, // sin verificar
-  { id:'cordoba-b',    lpId:'472',   name:'Córdoba CF B',         short:'COR', city:'Córdoba',                   stadium:'Ciudad Deportiva CCF',        color:'' }, // sin verificar
-  { id:'betis-c',      lpId:'517',   name:'Real Betis C',         short:'RBC', city:'Sevilla',                   stadium:'Luis del Sol',                color:'' }, // sin verificar
+  { id:'san-roque',    lpId:'181',   name:'San Roque de Lepe',    short:'SRL', city:'Lepe',                      stadium:'Ciudad de Lepe' },
+  { id:'xerez-dfc',    lpId:'12717', name:'Xerez DFC',            short:'XDF', city:'Jerez de la Frontera',      stadium:'Chapín' },
+  { id:'onubense',     lpId:'362',   name:'Atlético Onubense',    short:'AON', city:'Huelva',                    stadium:'Ciudad Deportiva Decano' },
+  { id:'cadiz-b',      lpId:'163',   name:'Cádiz CF Mirandilla',  short:'CDZ', city:'Cádiz',                     stadium:'El Rosal' },
+  { id:'pozoblanco',   lpId:'21',    name:'CD Pozoblanco',        short:'POZ', city:'Pozoblanco',                stadium:'Municipal Pozoblanco' },
+  { id:'ceuta-b',      lpId:'13159', name:'AD Ceuta FC B',        short:'CEU', city:'Ceuta',                     stadium:'José Martínez Pirri' },
+  { id:'bollullos',    lpId:'582',   name:'Bollullos CF',         short:'BCF', city:'Bollullos Par del Condado', stadium:'Eloy Ávila Cano' },
+  { id:'sevilla-c',    lpId:'545',   name:'Sevilla FC C',         short:'SEV', city:'Sevilla',                   stadium:'C.D. José Ramón Cisneros Palacios' },
+  { id:'dos-hermanas', lpId:'34672', name:'Dos Hermanas CF 1971', short:'DH71',city:'Dos Hermanas',              stadium:'Miguel Román' },
+  { id:'egabrense',    lpId:'23',    name:'Egabrense',            short:'EGA', city:'Cabra',                     stadium:'Antonio Povedano' },
+  { id:'linense',      lpId:'580',   name:'RB Linense',           short:'RBL', city:'La Línea de la Concepción', stadium:'Ciudad de La Línea' },
+  { id:'tomares',      lpId:'199',   name:'UD Tomares',           short:'TOM', city:'Tomares',                   stadium:'San Sebastián' },
+  { id:'utrera',       lpId:'201',   name:'CD Utrera',            short:'UTR', city:'Utrera',                    stadium:'San Juan Bosco' },
+  { id:'chiclana',     lpId:'170',   name:'Chiclana CF',          short:'CHI', city:'Chiclana de la Frontera',   stadium:'Municipal de Chiclana' },
+  { id:'conil',        lpId:'313',   name:'Conil CF',             short:'CNL', city:'Conil de la Frontera',      stadium:'José Antonio Pérez Ureba' },
+  { id:'cordoba-b',    lpId:'472',   name:'Córdoba CF B',         short:'COR', city:'Córdoba',                   stadium:'Ciudad Deportiva CCF' },
+  { id:'betis-c',      lpId:'517',   name:'Real Betis C',         short:'RBC', city:'Sevilla',                   stadium:'Luis del Sol' },
 ];
 const clubById = id => CLUBS.find(c=>c.id===id) || null;
 
-/* Fechas fijas: domingos desde 06/09/2026, sin 27/12 ni 03/01 */
+/* Fechas OFICIALES (Calendario RFAF 3ª Federación G.10 26/27, publicado).
+   Ojo: J15 es MARTES 08/12 (festivo), J18 SÍ se juega el 03/01.
+   Sin jornada el 27/12 ni el 28/03 (Semana Santa). Fin de liga 02/05/2027. */
 const JORNADA_DATES = [
   '2026-09-06','2026-09-13','2026-09-20','2026-09-27','2026-10-04','2026-10-11','2026-10-18','2026-10-25',
-  '2026-11-01','2026-11-08','2026-11-15','2026-11-22','2026-11-29','2026-12-06','2026-12-13','2026-12-20',
-  '2027-01-10','2027-01-17','2027-01-24','2027-01-31','2027-02-07','2027-02-14','2027-02-21','2027-02-28',
-  '2027-03-07','2027-03-14','2027-03-21','2027-03-28','2027-04-04','2027-04-11','2027-04-18','2027-04-25',
-  '2027-05-02','2027-05-09'
+  '2026-11-01','2026-11-08','2026-11-15','2026-11-22','2026-11-29','2026-12-06','2026-12-08','2026-12-13',
+  '2026-12-20','2027-01-03','2027-01-10','2027-01-17','2027-01-24','2027-01-31','2027-02-07','2027-02-14',
+  '2027-02-21','2027-02-28','2027-03-07','2027-03-14','2027-03-21','2027-04-04','2027-04-11','2027-04-18',
+  '2027-04-25','2027-05-02'
 ];
 const fmtDate = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.slice(2)}`; };
 const todayIso = () => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; };
@@ -529,32 +537,382 @@ function dbxRaw(url){
   return url;
 }
 
-/* ══════════ CALENDARIO ══════════ */
-function defaultCalendario(){
-  const jornadas = [];
-  for(let n=1;n<=17;n++){
-    const club = CLUBS[n-1];
-    const cond = n%2===1 ? 'casa' : 'fuera';
-    jornadas.push({ n, clubId:club.id, condicion:cond });
+/* ══════════════════════════════════════════════════════════════════════
+   DROPBOX · conexión y subida directa de clips
+   ══════════════════════════════════════════════════════════════════════
+   Dropbox no tiene un "preset de subida sin firmar" como Cloudinary: toda
+   subida real requiere un token de tu cuenta. El flujo de abajo (PKCE) es
+   el diseñado para apps sin servidor: te conectas UNA vez desde el
+   navegador, autorizas, y desde ahí cada subida es un fetch directo entre
+   tu navegador y Dropbox — el token vive solo en tu localStorage, nunca
+   pasa por ningún servidor intermedio.
+
+   Ajustar aquí si la app resulta ser "App folder" en vez de "Full
+   Dropbox": las rutas absolutas (/Racing Lab/...) dejarían de valer y
+   habría que subir a rutas relativas a la carpeta de la app. Todo el
+   cálculo de ruta pasa por dbxResolverCarpeta(), así que el cambio queda
+   contenido ahí si hiciera falta.
+   ══════════════════════════════════════════════════════════════════════ */
+const DBX_APP_KEY = 'myo4q3uz371fn0a';
+
+/* Cada bloque del informe sube a su propia subcarpeta dentro de la
+   carpeta del rival. Transiciones y ABP comparten carpeta entre su
+   variante ofensiva y defensiva, tal como se pidió. Si la carpeta ya
+   existe (creada a mano de antemano) se usa tal cual; si no, Dropbox la
+   crea sola al subir el primer archivo — no hace falta un paso aparte. */
+const DBX_CARPETA_POR_BLOQUE = {
+  salidaBalon:        '01_SalidaBalon',
+  presionRival:        '02_PresionRival',
+  faseOfensiva:        '03_Ataque',
+  faseDefensiva:        '04_Defensa',
+  transicionOfensiva:  '05_Transiciones',
+  transicionDefensiva: '05_Transiciones',
+  abpOfensiva:          '06_ABP',
+  abpDefensiva:          '06_ABP',
+};
+const DBX_REDIRECT = location.origin + location.pathname;   // debe coincidir EXACTO con lo registrado en Dropbox
+const DBX_LS_KEY = 'rl_dbx_tokens';
+
+/* ── PKCE: generación de verifier/challenge, sin librerías externas ── */
+function dbxRandomVerifier(){
+  const arr = new Uint8Array(64);
+  crypto.getRandomValues(arr);
+  return btoa(String.fromCharCode(...arr)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function dbxChallengeDe(verifier){
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  return btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+function dbxGetTokens(){
+  try{ return JSON.parse(localStorage.getItem(DBX_LS_KEY) || 'null'); }catch(e){ return null; }
+}
+function dbxSetTokens(t){ localStorage.setItem(DBX_LS_KEY, JSON.stringify(t)); }
+function dbxClearTokens(){ localStorage.removeItem(DBX_LS_KEY); }
+window.dbxConectado = () => !!dbxGetTokens()?.refresh_token;
+
+/* Paso 1: redirige a Dropbox para autorizar */
+window.dbxConectar = async function(){
+  const verifier = dbxRandomVerifier();
+  const challenge = await dbxChallengeDe(verifier);
+  sessionStorage.setItem('rl_dbx_verifier', verifier);
+  const params = new URLSearchParams({
+    client_id: DBX_APP_KEY,
+    response_type: 'code',
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+    token_access_type: 'offline',      // pide refresh_token de larga duración
+    redirect_uri: DBX_REDIRECT,
+  });
+  location.href = `https://www.dropbox.com/oauth2/authorize?${params}`;
+};
+
+window.dbxDesconectar = function(){
+  dbxClearTokens();
+  toast('Dropbox desconectado');
+  actualizarBotonDropbox();
+};
+
+/* Paso 2: al volver de Dropbox con ?code=..., lo cambia por tokens */
+async function dbxProcesarRetorno(){
+  const url = new URL(location.href);
+  const code = url.searchParams.get('code');
+  if(!code) return;
+  const verifier = sessionStorage.getItem('rl_dbx_verifier');
+  url.searchParams.delete('code');
+  url.searchParams.delete('state');
+  history.replaceState({}, '', url.pathname + (url.search || ''));   // limpia el ?code= de la barra de direcciones
+  if(!verifier){ toast('La conexión con Dropbox caducó, inténtalo de nuevo'); return; }
+  try{
+    const res = await fetch('https://api.dropboxapi.com/oauth2/token', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({
+        code, grant_type: 'authorization_code',
+        client_id: DBX_APP_KEY, code_verifier: verifier, redirect_uri: DBX_REDIRECT,
+      }),
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error_description || data.error || 'Error de autorización');
+    dbxSetTokens({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_at: Date.now() + (data.expires_in*1000),
+    });
+    toast('Dropbox conectado ✓');
+  }catch(e){
+    console.error('[dropbox oauth]', e);
+    toast('No se pudo conectar con Dropbox: ' + e.message);
+  }finally{
+    sessionStorage.removeItem('rl_dbx_verifier');
+    actualizarBotonDropbox();
   }
+}
+
+/* Token siempre fresco: refresca solo si va a caducar en <5 min */
+async function dbxToken(){
+  const t = dbxGetTokens();
+  if(!t) throw new Error('Dropbox no está conectado');
+  if(t.expires_at - Date.now() > 5*60*1000) return t.access_token;
+  const res = await fetch('https://api.dropboxapi.com/oauth2/token', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: new URLSearchParams({
+      grant_type: 'refresh_token', refresh_token: t.refresh_token, client_id: DBX_APP_KEY,
+    }),
+  });
+  const data = await res.json();
+  if(!res.ok){
+    dbxClearTokens();
+    throw new Error('La sesión de Dropbox caducó, vuelve a conectar');
+  }
+  const nuevo = { ...t, access_token: data.access_token, expires_at: Date.now() + (data.expires_in*1000) };
+  dbxSetTokens(nuevo);
+  return nuevo.access_token;
+}
+
+/* ── Resolver la carpeta del rival a una ruta real de Dropbox ──
+   inf.dropboxFolder es el enlace COMPARTIDO (para que un humano lo abra
+   en el navegador), no una ruta de subida. Se resuelve una vez por
+   informe y se cachea en memoria durante la sesión, para no repetir la
+   llamada en cada clip que se suba. */
+const dbxPathCache = {};
+async function dbxResolverCarpeta(sharedUrl){
+  if(!sharedUrl) throw new Error('Este informe no tiene una carpeta de Dropbox indicada arriba');
+  if(dbxPathCache[sharedUrl]) return dbxPathCache[sharedUrl];
+  const token = await dbxToken();
+  const res = await fetch('https://api.dropboxapi.com/2/sharing/get_shared_link_metadata', {
+    method: 'POST',
+    headers: {'Authorization': 'Bearer '+token, 'Content-Type': 'application/json'},
+    body: JSON.stringify({ url: sharedUrl }),
+  });
+  const data = await res.json();
+  if(!res.ok || !data.path_lower){
+    /* Si la app de Dropbox está configurada como "App folder" en vez de
+       "Full Dropbox", cualquier ruta fuera de su propia carpeta le resulta
+       directamente invisible — Dropbox la trata como si no existiera. Es
+       el único motivo real por el que esto puede fallar teniendo el
+       enlace bien puesto, así que se detecta aquí en vez de pedir a
+       Carlos que lo interprete a mano en la consola de Dropbox. */
+    if(data.error?.['.tag'] === 'path' || /not_found/i.test(JSON.stringify(data.error||''))){
+      throw new Error('DBX_APP_FOLDER: Dropbox no encuentra esta carpeta. Lo más probable es que la app esté configurada como "App folder" en vez de "Full Dropbox" — habría que recrearla con acceso completo.');
+    }
+    throw new Error('No encuentro esa carpeta en tu Dropbox. Asegúrate de que el enlace de arriba es correcto y de que la carpeta está guardada en tu cuenta.');
+  }
+  dbxPathCache[sharedUrl] = data.path_lower;
+  return data.path_lower;
+}
+
+/* Nombre de archivo seguro: evita caracteres que Dropbox rechaza y
+   conserva la extensión original. */
+function dbxNombreArchivo(nombreOriginal, etiqueta){
+  const ext = (nombreOriginal.match(/\.[a-zA-Z0-9]+$/)||[''])[0];
+  const base = (etiqueta||nombreOriginal.replace(ext,''))
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-zA-Z0-9 _-]/g,'').trim().replace(/\s+/g,'_');
+  const marca = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  return `${marca}_${base||'clip'}${ext}`;
+}
+
+/* Crea (o recupera, si ya existe) el enlace compartido de un archivo
+   recién subido, y lo devuelve ya en formato reproducible (dbxRaw). */
+async function dbxEnlaceCompartido(path){
+  const token = await dbxToken();
+  /* Se pide explícitamente visibilidad "public": es lo que hace que
+     cualquiera del staff pueda ver el clip sin conectar Dropbox ni tener
+     que iniciar sesión — igual que los enlaces que ya pegas a mano hoy.
+     Si la cuenta es de tipo equipo con política restringida, Dropbox
+     rechaza justo ese ajuste; en ese caso se reintenta sin forzar nada,
+     usando el comportamiento por defecto de la cuenta (el mismo que ya
+     tenías antes de esta función). */
+  const crear = async (settings) => fetch('https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings', {
+    method: 'POST',
+    headers: {'Authorization': 'Bearer '+token, 'Content-Type': 'application/json'},
+    body: JSON.stringify(settings ? { path, settings } : { path }),
+  });
+  let res = await crear({ requested_visibility: 'public' });
+  let data = await res.json();
+  if(!res.ok && data.error?.['.tag']==='settings_error'){
+    res = await crear(null);
+    data = await res.json();
+  }
+  if(!res.ok){
+    if(data.error?.['.tag'] === 'shared_link_already_exists'){
+      const url = data.error.shared_link_already_exists?.metadata?.url;
+      if(url) return dbxRaw(url);
+    }
+    // Fallback: buscarlo entre los enlaces existentes de ese archivo
+    const res2 = await fetch('https://api.dropboxapi.com/2/sharing/list_shared_links', {
+      method: 'POST',
+      headers: {'Authorization': 'Bearer '+token, 'Content-Type': 'application/json'},
+      body: JSON.stringify({ path, direct_only: true }),
+    });
+    const data2 = await res2.json();
+    if(res2.ok && data2.links?.[0]?.url) return dbxRaw(data2.links[0].url);
+    throw new Error('El archivo se subió pero no pude generar su enlace compartido');
+  }
+  return dbxRaw(data.url);
+}
+
+/* Subida simple (<140MB) vs por sesión/trozos (vídeos grandes).
+   onProgress(0..1) para pintar la barra. */
+const DBX_CHUNK = 8 * 1024 * 1024; // 8MB por trozo
+async function dbxSubirArchivo(file, folderPath, nombreDestino, onProgress){
+  const token = await dbxToken();
+  const path = folderPath.replace(/\/$/,'') + '/' + nombreDestino;
+
+  if(file.size <= 140*1024*1024){
+    const res = await fetch('https://content.dropboxapi.com/2/files/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer '+token,
+        'Content-Type': 'application/octet-stream',
+        'Dropbox-API-Arg': JSON.stringify({ path, mode:'add', autorename:true, mute:true }),
+      },
+      body: file,
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error_summary || 'Error al subir el archivo');
+    onProgress?.(1);
+    return data.path_lower;
+  }
+
+  // Archivo grande: sesión por trozos
+  let offset = 0;
+  const first = file.slice(0, DBX_CHUNK);
+  let res = await fetch('https://content.dropboxapi.com/2/files/upload_session/start', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer '+token, 'Content-Type': 'application/octet-stream',
+      'Dropbox-API-Arg': JSON.stringify({ close:false }),
+    },
+    body: first,
+  });
+  let data = await res.json();
+  if(!res.ok) throw new Error(data.error_summary || 'Error al iniciar la subida');
+  const sessionId = data.session_id;
+  offset = first.size;
+  onProgress?.(offset/file.size);
+
+  while(offset < file.size - DBX_CHUNK){
+    const chunk = file.slice(offset, offset+DBX_CHUNK);
+    res = await fetch('https://content.dropboxapi.com/2/files/upload_session/append_v2', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer '+token, 'Content-Type': 'application/octet-stream',
+        'Dropbox-API-Arg': JSON.stringify({ cursor:{session_id:sessionId, offset}, close:false }),
+      },
+      body: chunk,
+    });
+    if(!res.ok){ const d=await res.json(); throw new Error(d.error_summary || 'Error subiendo el vídeo'); }
+    offset += chunk.size;
+    onProgress?.(offset/file.size);
+  }
+
+  const last = file.slice(offset);
+  res = await fetch('https://content.dropboxapi.com/2/files/upload_session/finish', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer '+token, 'Content-Type': 'application/octet-stream',
+      'Dropbox-API-Arg': JSON.stringify({
+        cursor:{session_id:sessionId, offset},
+        commit:{ path, mode:'add', autorename:true, mute:true },
+      }),
+    },
+    body: last,
+  });
+  data = await res.json();
+  if(!res.ok) throw new Error(data.error_summary || 'Error al finalizar la subida');
+  onProgress?.(1);
+  return data.path_lower;
+}
+
+/* Flujo completo para un archivo suelto: resuelve carpeta del rival →
+   entra en la subcarpeta del bloque (Salida de balón, Ataque…) → sube →
+   genera enlace. La subcarpeta se crea sola si no existía todavía: no
+   hace falta un paso aparte para crearla, ni de aquí ni a mano — aunque
+   si ya la tienes creada de antes con el mismo nombre, se usa esa. */
+async function dbxSubirYEnlazar(file, sharedFolderUrl, etiqueta, onProgress, bkey){
+  const folderPath = await dbxResolverCarpeta(sharedFolderUrl);
+  const sub = DBX_CARPETA_POR_BLOQUE[bkey];
+  const folderFinal = sub ? folderPath.replace(/\/$/,'') + '/' + sub : folderPath;
+  const nombre = dbxNombreArchivo(file.name, etiqueta);
+  const path = await dbxSubirArchivo(file, folderFinal, nombre, onProgress);
+  return await dbxEnlaceCompartido(path);
+}
+
+function actualizarBotonDropbox(){
+  const el = document.getElementById('dbx-status');
+  if(!el) return;
+  el.innerHTML = window.dbxConectado()
+    ? `<span class="dbx-ok">● Dropbox conectado</span> <button class="btn btn-ghost btn-sm" onclick="dbxDesconectar()">Desconectar</button>`
+    : `<button class="btn btn-ghost btn-sm" onclick="dbxConectar()">🔗 Conectar Dropbox</button>`;
+}
+
+/* ══════════ CALENDARIO ══════════ */
+/* Calendario OFICIAL RFAF 26/27 — rival y condición de RCP en la primera vuelta,
+   transcrito del PDF oficial publicado. J18–J34 = espejo J±17 con condición
+   invertida (verificado jornada a jornada contra el PDF: cuadra las 34).
+   Nota: doble jornada en casa J14+J15 (6 y 8 dic) y doble fuera J31+J32. */
+const CAL_OFICIAL_IDA = [
+  ['xerez-dfc','fuera'],    // J1  06/09 Xerez DFC - RCP
+  ['san-roque','casa'],     // J2  13/09 RCP - San Roque de Lepe
+  ['egabrense','fuera'],    // J3  20/09 Egabrense - RCP
+  ['chiclana','casa'],      // J4  27/09 RCP - Chiclana
+  ['tomares','fuera'],      // J5  04/10 Tomares - RCP
+  ['dos-hermanas','casa'],  // J6  11/10 RCP - Dos Hermanas 1971
+  ['conil','fuera'],        // J7  18/10 Conil - RCP
+  ['pozoblanco','casa'],    // J8  25/10 RCP - Pozoblanco
+  ['utrera','fuera'],       // J9  01/11 Utrera - RCP
+  ['cadiz-b','casa'],       // J10 08/11 RCP - Cádiz (filial)
+  ['linense','fuera'],      // J11 15/11 Linense - RCP
+  ['cordoba-b','casa'],     // J12 22/11 RCP - Córdoba (filial)
+  ['ceuta-b','fuera'],      // J13 29/11 Ceuta (filial) - RCP
+  ['onubense','casa'],      // J14 06/12 RCP - Atlético Onubense
+  ['sevilla-c','casa'],     // J15 08/12 RCP - Sevilla FC C (MARTES)
+  ['bollullos','fuera'],    // J16 13/12 Bollullos - RCP
+  ['betis-c','casa'],       // J17 20/12 RCP - Betis (filial)
+];
+/* Versión del calendario oficial embebido. Subir este número cada vez que
+   cambie un rival o una condición obliga a resembrar el documento de
+   Firestore, que de otro modo se quedaría con los datos antiguos.
+   v1 → calendario oficial RFAF 26/27
+   v2 → Sevilla FC C ocupa la plaza del Salerm Puente Genil (ascendido a
+        2ª Federación por la vacante del CD Unión Malacitano). Confirmado
+        en el calendario oficial: J15 Racing Club Portuense - Sevilla FC C. */
+const CAL_VERSION = 2;
+function defaultCalendario(){
+  const jornadas = CAL_OFICIAL_IDA.map(([clubId,condicion],i)=>({ n:i+1, clubId, condicion }));
   for(let n=18;n<=34;n++){
     const ida = jornadas[n-18];
     jornadas.push({ n, clubId:ida.clubId, condicion: ida.condicion==='casa'?'fuera':'casa' });
   }
-  return { jornadas, provisional:true };
+  return { jornadas, provisional:false, version:CAL_VERSION,
+    fuente:'Calendario oficial RFAF 3ª Federación G.10 26/27' };
 }
 async function loadCalendario(){
   try{
     const snap = await getDoc(doc(db,'analisisCalendario',TEMPORADA));
-    if(snap.exists()){ calendario = snap.data(); }
-    else {
+    const d = snap.exists() ? snap.data() : null;
+    if(d && !d.provisional && (d.version||1) >= CAL_VERSION){
+      calendario = d;
+    } else {
+      /* Doc inexistente, aún provisional, o de una versión anterior a la
+         actual → se sustituye por el calendario oficial embebido. Las
+         ediciones manuales posteriores quedan estampadas con la versión
+         vigente (ver saveCalendario) y ya no se pisan. */
+      const motivo = !d ? 'inexistente' : (d.provisional ? 'provisional' : 'versión '+(d.version||1));
       calendario = defaultCalendario();
       await setDoc(doc(db,'analisisCalendario',TEMPORADA), calendario);
+      console.log('[Calendario] resembrado con el oficial RFAF v'+CAL_VERSION+' (doc '+motivo+')');
     }
   }catch(e){ console.error('[Calendario]', e); calendario = defaultCalendario(); }
 }
 async function saveCalendario(){
-  try{ await setDoc(doc(db,'analisisCalendario',TEMPORADA), calendario); }
+  try{
+    calendario.version = CAL_VERSION;
+    await setDoc(doc(db,'analisisCalendario',TEMPORADA), calendario);
+  }
   catch(e){ console.error('[Calendario save]', e); toast('Error guardando calendario'); }
 }
 window.toggleCalEdit = function(){
@@ -743,7 +1101,7 @@ function plantillaInforme(j){
     condicion: j.condicion, fecha: JORNADA_DATES[j.n-1],
     rivalName: club ? club.name : '', estado: 'borrador',
     sistema: '', dropboxFolder: '',
-    visionado: [], videosVistos: [], contexto: [],
+    visionado: [], contexto: [],
     bloques,
     convocatorias: [],      // [{jornada,cond,res,marcador,rival,sistema,titulares:[{dorsal,nombre,cambio,min}],suplentes:[...]}]
     datos: emptyDatos(),
@@ -830,13 +1188,8 @@ const tramosToLines = t => (t?.gf||zeros6()).map((v,i)=>`${v} | ${(t?.gc||zeros6
 /* Convocatorias: bloques separados por línea en blanco.
    Cabecera: J28 | C | V | 3-1 | Montilla | 4-2-3-1   (sistema opcional)
    Jugadores: "13 Ortiz Muñoz"  ·  ">76" sale al 76  ·  "<62" entra al 62
-   Posición opcional al final, tras "|": "13 Ortiz Muñoz | POR" — ver
-   POSICIONES más abajo para los códigos. Si ningún titular lleva posición,
-   se colocan por orden (portero primero, luego líneas de atrás hacia
-   delante) como hasta ahora. En cuanto uno la lleva, el campograma pasa a
-   colocar a TODOS por su etiqueta — así se pueden dibujar formas no
-   uniformes (rombos, etc.) que el reparto automático por líneas no soporta.
-   "--" separa titulares de suplentes. */
+   "--" separa titulares de suplentes. Orden de titulares = colocación en el
+   campograma: portero primero, luego líneas de atrás hacia delante. */
 function parseConvocatorias(txt){
   return txt.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean).map(b=>{
     const lines = b.split('\n').map(s=>s.trim()).filter(Boolean);
@@ -846,18 +1199,15 @@ function parseConvocatorias(txt){
     let mode='titulares';
     lines.slice(1).forEach(l=>{
       if(/^-{2,}$/.test(l)){ mode='suplentes'; return; }
-      let pos='', core=l;
-      const pipeIdx = l.lastIndexOf('|');
-      if(pipeIdx>-1){ pos = l.slice(pipeIdx+1).trim().toUpperCase(); core = l.slice(0,pipeIdx).trim(); }
-      const m = core.match(/^(\d+)\s+(.+?)(?:\s*([<>])\s*(\d+)\s*)?$/);
-      if(m) c[mode].push({ dorsal:m[1], nombre:m[2], cambio:m[3]||'', min:m[4]||'', pos });
+      const m = l.match(/^(\d+)\s+(.+?)(?:\s*([<>])\s*(\d+)\s*)?$/);
+      if(m) c[mode].push({ dorsal:m[1], nombre:m[2], cambio:m[3]||'', min:m[4]||'' });
     });
     return c;
   });
 }
 function convocatoriasToText(arr){
   return (arr||[]).map(c=>{
-    const pl = p => `${p.dorsal} ${p.nombre}${p.cambio?` ${p.cambio}${p.min}`:''}${p.pos?` | ${p.pos}`:''}`;
+    const pl = p => `${p.dorsal} ${p.nombre}${p.cambio?` ${p.cambio}${p.min}`:''}`;
     const head = [c.jornada,c.cond,c.res,c.marcador,c.rival,c.sistema].filter((x,i)=>i<5||x).join(' | ');
     return [head, ...c.titulares.map(pl), '--', ...c.suplentes.map(pl)].join('\n');
   }).join('\n\n');
@@ -865,68 +1215,24 @@ function convocatoriasToText(arr){
 
 /* ══════════ CAMPOGRAMA SVG ══════════ */
 const PITCH_BG = `<rect width="300" height="420" rx="6" fill="#1a6b34"/><rect x="10" y="10" width="280" height="400" rx="2" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><line x1="10" y1="210" x2="290" y2="210" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><circle cx="150" cy="210" r="40" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><circle cx="150" cy="210" r="2.5" fill="rgba(255,255,255,.75)"/><rect x="70" y="10" width="160" height="60" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><rect x="110" y="10" width="80" height="22" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1"/><path d="M 103 70 A 40 40 0 0 0 197 70" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><rect x="70" y="350" width="160" height="60" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><rect x="110" y="388" width="80" height="22" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1"/><path d="M 103 350 A 40 40 0 0 1 197 350" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/>`;
-/* Coordenadas fijas por posición sobre el viewBox 300×420 (ataque hacia
-   arriba, y menor = más adelantado). Cada código es una demarcación real,
-   no una casilla de una rejilla — por eso soporta formas no uniformes
-   (rombos, etc.) que el reparto automático por líneas no puede dibujar. */
-const POSICIONES = {
-  POR:{x:150,y:390,label:'Portero'},
-  LI :{x:45, y:330,label:'Lateral izquierdo'},        CI :{x:115,y:330,label:'Central izquierdo'},
-  CD :{x:185,y:330,label:'Central derecho'},          LD :{x:255,y:330,label:'Lateral derecho'},
-  CDI:{x:90, y:330,label:'Central izq. (línea de 3)'},LIB:{x:150,y:330,label:'Central eje (línea de 3)'},CDD:{x:210,y:330,label:'Central der. (línea de 3)'},
-  CAI:{x:30, y:265,label:'Carrilero izquierdo'},      CAD:{x:270,y:265,label:'Carrilero derecho'},
-  PIV:{x:150,y:265,label:'Pivote único'},
-  PIVI:{x:110,y:265,label:'Pivote izquierdo'},        PIVD:{x:190,y:265,label:'Pivote derecho'},
-  MI :{x:100,y:195,label:'Interior izquierdo'},       MC :{x:150,y:195,label:'Mediocentro'},         MD :{x:200,y:195,label:'Interior derecho'},
-  BI :{x:65, y:195,label:'Banda izquierda'},          BD :{x:235,y:195,label:'Banda derecha'},
-  MP :{x:150,y:150,label:'Mediapunta / enganche'},
-  EI :{x:40, y:110,label:'Extremo izquierdo'},        ED :{x:260,y:110,label:'Extremo derecho'},
-  DC :{x:150,y:70, label:'Delantero centro'},
-  DCI:{x:105,y:70, label:'Delantero izquierdo'},      DCD:{x:195,y:70, label:'Delantero derecho'},
-};
-function textColorFor(hex){
-  const h = (hex||'').replace('#','');
-  if(h.length!==6) return '#fff';
-  const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
-  const lum = (0.299*r + 0.587*g + 0.114*b)/255;
-  return lum > 0.62 ? '#111' : '#fff';
-}
-function pitchSvg(conv, rivalColor){
+function pitchSvg(conv){
   const tit = conv.titulares || [];
   if(tit.length !== 11 || !conv.sistema) return '';
-  const fieldColor = rivalColor || '#d01020'; // sin color verificado del club → rojo por defecto
-  const fieldText = textColorFor(fieldColor);
-  const dot = (x,y,d,gk) => `<circle cx="${x}" cy="${y}" r="16" fill="${gk?'#0fd68a':fieldColor}" stroke="rgba(255,255,255,.6)" stroke-width="1.5"/><text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Barlow Condensed,sans-serif" font-size="14" font-weight="800" fill="${gk?'#fff':fieldText}">${esc(d)}</text>`;
+  const lines = conv.sistema.replace(/^1-/,'').split('-').map(Number).filter(n=>n>0);
+  if(lines.reduce((a,b)=>a+b,0) !== 10) return '';
   let dots = '';
-  const tieneEtiquetas = tit.some(p => p.pos && POSICIONES[p.pos]);
-  if(tieneEtiquetas){
-    /* Modo posiciones explícitas: cada jugador va a su demarcación real,
-       sin depender del orden ni de que el sistema reparta en líneas iguales. */
-    const gk = tit.find(p=>p.pos==='POR') || tit[0];
-    dots += dot(POSICIONES.POR.x, POSICIONES.POR.y, gk.dorsal, true);
-    tit.forEach(p=>{
-      if(p===gk) return;
-      const slot = POSICIONES[p.pos];
-      dots += slot ? dot(slot.x, slot.y, p.dorsal, false)
-                   : dot(150, 405, p.dorsal, false); // etiqueta no reconocida: aviso visual pegado a portería, para que se note y se corrija
-    });
-  } else {
-    /* Modo automático (compatibilidad con informes sin etiquetar): igual
-       que antes — por orden y por reparto uniforme según el sistema. */
-    const lines = conv.sistema.replace(/^1-/,'').split('-').map(Number).filter(n=>n>0);
-    if(lines.reduce((a,b)=>a+b,0) !== 10) return '';
-    dots += dot(150, 390, tit[0].dorsal, true);
-    let idx = 1;
-    const yTop = 66, yBottom = 323;
-    lines.forEach((n, li) => {
-      const y = lines.length===1 ? (yTop+yBottom)/2 : yBottom - li*((yBottom-yTop)/(lines.length-1));
-      for(let j=0;j<n;j++){
-        const x = n===1 ? 150 : 50 + j*(200/(n-1));
-        dots += dot(Math.round(x), Math.round(y), tit[idx]?.dorsal||'', false);
-        idx++;
-      }
-    });
-  }
+  const dot = (x,y,d,gk) => `<circle cx="${x}" cy="${y}" r="16" fill="${gk?'#0fd68a':'#d01020'}" stroke="rgba(255,255,255,.6)" stroke-width="1.5"/><text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Barlow Condensed,sans-serif" font-size="14" font-weight="800" fill="#fff">${esc(d)}</text>`;
+  dots += dot(150, 390, tit[0].dorsal, true);
+  let idx = 1;
+  const yTop = 66, yBottom = 323;
+  lines.forEach((n, li) => {
+    const y = lines.length===1 ? (yTop+yBottom)/2 : yBottom - li*((yBottom-yTop)/(lines.length-1));
+    for(let j=0;j<n;j++){
+      const x = n===1 ? 150 : 50 + j*(200/(n-1));
+      dots += dot(Math.round(x), Math.round(y), tit[idx]?.dorsal||'', false);
+      idx++;
+    }
+  });
   return `<svg viewBox="0 0 300 420" class="pitch-svg">${PITCH_BG}${dots}</svg>`;
 }
 
@@ -976,31 +1282,6 @@ window.delClip = function(bkey, idx){
   getBloqueRef(bkey).clips.splice(idx,1);
   document.getElementById(`clips-${bkey}`).innerHTML = clipListHtml(bkey);
 };
-/* ══ Vídeos vistos (Visionado) — lista simple de enlaces, sin miniatura ni
-   modal: son URLs directas (Veo, YouTube, Hudl, Dropbox…) que se abren en
-   pestaña nueva, no ficheros mp4 en crudo como los clips de los bloques. ══ */
-function videoLinksListHtml(){
-  const links = currentInforme.videosVistos || [];
-  return links.map((v,idx)=>`
-    <div class="clip-row">
-      <span class="cl-lab">🔗 ${esc(v.label)||'Vídeo'}</span>
-      <span class="cl-url">${esc(v.url)}</span>
-      <button class="cl-del" onclick="delVideoLink(${idx})">✕</button>
-    </div>`).join('');
-}
-window.addVideoLink = function(){
-  const lab = document.getElementById('vl-lab').value.trim();
-  const url = document.getElementById('vl-url').value.trim();
-  if(!url){ toast('Falta la URL del vídeo'); return; }
-  if(!currentInforme.videosVistos) currentInforme.videosVistos = [];
-  currentInforme.videosVistos.push({ label: lab, url });
-  document.getElementById('videolinks-list').innerHTML = videoLinksListHtml();
-  document.getElementById('vl-lab').value=''; document.getElementById('vl-url').value='';
-};
-window.delVideoLink = function(idx){
-  currentInforme.videosVistos.splice(idx,1);
-  document.getElementById('videolinks-list').innerHTML = videoLinksListHtml();
-};
 window.planAdd = function(){ currentInforme.planTramos.push({tramo:'',tipo:'neutral',texto:''}); renderPlanEd(); };
 window.planDel = function(i){ currentInforme.planTramos.splice(i,1); renderPlanEd(); };
 window.planSet = function(i, field, val){ currentInforme.planTramos[i][field] = val; };
@@ -1033,12 +1314,60 @@ function bloqueEditorHtml(b, hint){
     <div class="clip-list" id="clips-${b.key}">${clipListHtml(b.key)}</div>
     <div class="clip-add">
       <input id="cl-lab-${b.key}" placeholder="Etiqueta del clip"/>
-      <input id="cl-vid-${b.key}" placeholder="Enlace Dropbox del vídeo (.mp4)"/>
-      <input id="cl-thu-${b.key}" placeholder="Enlace Dropbox de la miniatura (.png) — opcional"/>
+      <div class="cl-upload-row">
+        <input id="cl-vid-${b.key}" placeholder="Enlace Dropbox del vídeo (.mp4)"/>
+        <label class="cl-upload-btn" title="Subir vídeo directamente a Dropbox">
+          📤<input type="file" accept="video/*" style="display:none" onchange="dbxSubirClip('${b.key}','video',this.files[0])"/>
+        </label>
+      </div>
+      <div class="cl-upload-row">
+        <input id="cl-thu-${b.key}" placeholder="Enlace Dropbox de la miniatura (.png) — opcional"/>
+        <label class="cl-upload-btn" title="Subir miniatura directamente a Dropbox">
+          📤<input type="file" accept="image/*" style="display:none" onchange="dbxSubirClip('${b.key}','thumb',this.files[0])"/>
+        </label>
+      </div>
+      <div class="cl-upload-progress" id="cl-prog-${b.key}" style="display:none"></div>
       <button class="btn btn-ghost btn-sm" onclick="addClip('${b.key}')">+ Clip</button>
     </div>
   </div>`;
 }
+
+/* Sube un archivo (vídeo o miniatura) directamente a la carpeta de
+   Dropbox del rival, y rellena el campo de enlace correspondiente con el
+   resultado — el resto del flujo (addClip) sigue exactamente igual que
+   pegando el enlace a mano. */
+window.dbxSubirClip = async function(bkey, tipo, file){
+  if(!file) return;
+  if(!window.dbxConectado()){
+    toast('Conecta Dropbox primero (arriba a la derecha)');
+    return;
+  }
+  const folderUrl = currentInforme?.dropboxFolder;
+  if(!folderUrl){
+    toast('Rellena antes la "Carpeta Dropbox del rival" de este informe');
+    return;
+  }
+  const prog = document.getElementById(`cl-prog-${bkey}`);
+  const etiqueta = document.getElementById(`cl-lab-${bkey}`).value.trim();
+  prog.style.display = '';
+  prog.innerHTML = `<div class="cl-prog-bar"><div class="cl-prog-fill" style="width:0%"></div></div><span>Subiendo ${tipo==='video'?'vídeo':'miniatura'}…</span>`;
+  const fill = () => prog.querySelector('.cl-prog-fill');
+  try{
+    const url = await dbxSubirYEnlazar(file, folderUrl, etiqueta, (p)=>{
+      const f = fill(); if(f) f.style.width = Math.round(p*100)+'%';
+    }, bkey);
+    const carpeta = DBX_CARPETA_POR_BLOQUE[bkey] || '';
+    document.getElementById(`cl-${tipo==='video'?'vid':'thu'}-${bkey}`).value = url;
+    prog.innerHTML = `<span class="cl-prog-ok">✓ ${tipo==='video'?'Vídeo':'Miniatura'} subido a ${carpeta}</span>`;
+    setTimeout(()=>{ prog.style.display='none'; }, 2500);
+  }catch(e){
+    console.error('[dbxSubirClip]', e);
+    const msg = e.message.startsWith('DBX_APP_FOLDER:')
+      ? e.message.replace('DBX_APP_FOLDER: ', '')
+      : e.message;
+    prog.innerHTML = `<span class="cl-prog-err">✕ ${msg}</span>`;
+  }
+};
 function renderEditor(){
   const inf = currentInforme;
   const d = inf.datos;
@@ -1068,17 +1397,7 @@ function renderEditor(){
   </div>`;
 
   html += `<div class="ed-sec">01 · Previa</div>`;
-  html += `<div class="ed-block">
-    <div class="ed-block-title">Visionado · primeras impresiones</div>
-    <div class="ed-hint">Partidos vistos y primeras impresiones que vayas recogiendo para este informe. Una idea por línea.</div>
-    <textarea id="ta-visionado">${esc(arrToLines(inf.visionado))}</textarea>
-    <div class="clip-list" id="videolinks-list">${videoLinksListHtml()}</div>
-    <div class="clip-add" style="grid-template-columns:1fr 1.8fr auto;">
-      <input id="vl-lab" placeholder="Etiqueta (opcional)"/>
-      <input id="vl-url" placeholder="URL directa del vídeo (Veo, YouTube, Hudl, Dropbox…)"/>
-      <button class="btn btn-ghost btn-sm" onclick="addVideoLink()">+ Vídeo</button>
-    </div>
-  </div>`;
+  html += taBlock('ta-visionado','Visionado','Partidos vistos para este informe. Uno por línea.',arrToLines(inf.visionado));
   html += taBlock('ta-contexto','Contexto / Situación del rival','Dinámica, necesidad, bajas, entorno. Una idea por línea.',arrToLines(inf.contexto));
   html += taBlock('ta-clasificacion','Clasificación','⚙ Se rellena solo desde las actas. Edítalo únicamente para corregir (R7: sanciones administrativas). Formato: <b>pos | equipo | pj | pts</b>',tableToLines(d.clasificacion,['pos','equipo','pj','pts']),true);
   html += taBlock('ta-racha','Racha · últimos 5 partidos','⚙ Se rellena solo desde las actas. Formato: <b>jornada | C/F | V/E/D | marcador | rival</b>',tableToLines(d.racha,['jornada','cond','res','marcador','rival']),true);
@@ -1087,7 +1406,7 @@ function renderEditor(){
   html += taBlock('ta-tarjStaff','Tarjetas · Cuerpo técnico','⚙ Se rellena solo desde las actas. R2: el staff nunca se mezcla con jugadores.',tableToLines(d.tarjetasStaff,['nombre','cargo','amarillas','rojas']),true);
 
   html += `<div class="ed-sec">02 · Formación</div>`;
-  html += taBlock('ta-convocatorias','Últimas 5 convocatorias','⚙ Las últimas 5 se rellenan solas desde las actas, con los 18 convocados y los minutos de cambio. <b>El sistema NO viene en el acta</b>: añádelo tú al final de la cabecera para que se dibuje el campograma.<br/>Cabecera: <b>J28 | C | V | 3-1 | Montilla | 4-2-3-1</b> (sistema opcional → dibuja el campograma).<br/>Jugadores: <b>13 Ortiz Muñoz</b> · sale al 76: <b>8 Caballero &gt;76</b> · entra al 62: <b>22 Ariza &lt;62</b> · <b>--</b> separa titulares de suplentes.<br/>Sin posición: el orden coloca el campograma (portero primero, luego líneas de atrás hacia delante, reparto uniforme). <b>Para formaciones no uniformes (rombos, etc.) añade la posición real tras "|"</b> — en cuanto un titular la lleva, TODOS se colocan por su etiqueta y el orden deja de importar: <b>13 Ortiz Muñoz | POR</b> · <b>8 Caballero &gt;76 | PIV</b>.<br/>Códigos: POR · LI CI CD LD (línea de 4) · CDI LIB CDD (línea de 3) · CAI CAD (carrileros) · PIV / PIVI PIVD (pivote único o doble) · MI MC MD (mediocentros) · BI BD (bandas) · MP (mediapunta/enganche) · EI ED (extremos) · DC / DCI DCD (delantero único o dos).<br/>Ejemplo rombo 1-4-4-2: POR, LI CI CD LD, PIV, BI BD, MP, DCI DCD.',convocatoriasToText(inf.convocatorias),true);
+  html += taBlock('ta-convocatorias','Últimas 5 convocatorias','⚙ Las últimas 5 se rellenan solas desde las actas, con los 18 convocados y los minutos de cambio. <b>El sistema NO viene en el acta</b>: añádelo tú al final de la cabecera para que se dibuje el campograma.<br/>Cabecera: <b>J28 | C | V | 3-1 | Montilla | 4-2-3-1</b> (sistema opcional → dibuja el campograma).<br/>Jugadores: <b>13 Ortiz Muñoz</b> · sale al 76: <b>8 Caballero &gt;76</b> · entra al 62: <b>22 Ariza &lt;62</b> · <b>--</b> separa titulares de suplentes.<br/>El orden de titulares coloca el campograma: portero primero, luego líneas de atrás hacia delante.',convocatoriasToText(inf.convocatorias),true);
 
   html += `<div class="ed-sec">03 · Momentos del juego</div>`;
   MOMENTOS.forEach(b => html += bloqueEditorHtml(b));
@@ -1250,12 +1569,6 @@ function bulletsHtml(arr){
   if(!arr || !arr.length) return `<div style="font-size:12px;color:var(--i-muted);font-style:italic;">Sin contenido aún.</div>`;
   return `<ul>${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
 }
-function videoLinksReportHtml(links){
-  if(!links || !links.length) return '';
-  return `<div class="video-section"><div class="video-label">Vídeos revisados</div>` +
-    links.map(v=>`<a href="${esc(v.url)}" target="_blank" rel="noopener" class="vlink-row">🔗 ${esc(v.label)||esc(v.url)}</a>`).join('') +
-    `</div>`;
-}
 function clipsHtml(clips, tag){
   if(!clips || !clips.length) return '';
   const cls = clips.length===1 ? 'video-grid v1' : 'video-grid';
@@ -1344,7 +1657,6 @@ function plantillaTableHtml(players){
     `</tbody></table>`;
 }
 window.openInforme = async function(iid){
-  iid = iid || currentInformeId;
   if(!iid) return;
   let inf;
   try{
@@ -1386,7 +1698,7 @@ window.openInforme = async function(iid){
 
   /* campogramas: las 2 convocatorias más recientes con 11 titulares y sistema */
   const pitches = inf.convocatorias.filter(c=>c.titulares.length===11 && c.sistema).slice(0,2)
-    .map(c=>{ const svg = pitchSvg(c, club && club.color); return svg ? `<div class="pitch-card icard"><div class="pitch-label">${esc(c.jornada)} · ${esc(c.cond)} · ${esc(c.marcador)} · ${esc(c.rival)} ${c.res==='V'?'✅':c.res==='E'?'➖':c.res==='D'?'❌':''}</div>${svg}</div>` : ''; })
+    .map(c=>{ const svg = pitchSvg(c); return svg ? `<div class="pitch-card icard"><div class="pitch-label">${esc(c.jornada)} · ${esc(c.cond)} · ${esc(c.marcador)} · ${esc(c.rival)} ${c.res==='V'?'✅':c.res==='E'?'➖':c.res==='D'?'❌':''}</div>${svg}</div>` : ''; })
     .filter(Boolean).join('');
 
   const fuenteChip = `<div class="pipe-note" style="margin-top:14px;">${d.fuente==='actas'
@@ -1411,7 +1723,7 @@ window.openInforme = async function(iid){
     <div class="sec-label">01 · Previa</div>
     <div class="sec-title">Contexto</div>
     <div class="ig2" style="margin-bottom:14px;">
-      <div class="icard"><div class="subsection-title">Visionado</div>${bulletsHtml(inf.visionado)}${videoLinksReportHtml(inf.videosVistos)}</div>
+      <div class="icard"><div class="subsection-title">Visionado</div>${bulletsHtml(inf.visionado)}</div>
       <div class="icard"><div class="subsection-title">Situación del rival</div>${bulletsHtml(inf.contexto)}</div>
     </div>
     <div class="ig2" style="margin-bottom:14px;">
@@ -1615,6 +1927,8 @@ function watchInformes(){
   refreshMode();
   renderCalendario();
   watchInformes();
+  await dbxProcesarRetorno();   // procesa el ?code= si volvemos de autorizar Dropbox
+  actualizarBotonDropbox();
 })();
 </script>
 </body>
