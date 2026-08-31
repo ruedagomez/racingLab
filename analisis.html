@@ -117,8 +117,6 @@ img,svg,video{max-width:100%;}
 .cl-prog-err{color:var(--inj,#c0392b);}
 .dbx-status{display:flex;align-items:center;gap:6px;font-size:11.5px;margin-right:10px;}
 .dbx-status .dbx-ok{display:flex;align-items:center;gap:5px;color:var(--fit,#15803d);font-weight:600;}
-.plan-ed-row{display:grid;grid-template-columns:150px 110px 1fr auto;gap:8px;margin-bottom:7px;}
-.plan-ed-row input,.plan-ed-row select{font-size:12px;padding:7px 9px;border:1px solid var(--bdr);border-radius:6px;background:var(--wh);}
 .ed-savebar{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:18px 0 8px;display:flex;gap:10px;justify-content:flex-end;}
 
 /* ══ INFORME (estilo analisis-rival) ══ */
@@ -169,13 +167,6 @@ img,svg,video{max-width:100%;}
 .vp-play svg{width:16px;height:16px;fill:#fff;margin-left:3px;}
 .vp-label{position:absolute;bottom:8px;left:10px;right:10px;font-size:10px;font-weight:600;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8);z-index:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .vp-tag{position:absolute;top:8px;left:8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:3px;background:rgba(232,25,44,.8);color:#fff;z-index:2;}
-.plan-item{padding:13px 15px;border-radius:10px;border:1px solid var(--i-border);background:var(--i-card);box-shadow:var(--shadow-sm);}
-.plan-item.danger{background:rgba(208,16,32,.04);border-color:rgba(208,16,32,.2);}
-.plan-item.chance{background:rgba(10,138,85,.04);border-color:rgba(10,138,85,.2);}
-.plan-time{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;margin-bottom:4px;color:var(--i-muted2);}
-.plan-item.danger .plan-time{color:var(--i-red);}
-.plan-item.chance .plan-time{color:var(--i-green);}
-.plan-text{font-size:11.5px;color:var(--i-muted2);line-height:1.4;}
 .inf-close{position:fixed;top:14px;right:16px;z-index:220;background:rgba(0,0,0,.55);color:#fff;border-radius:8px;padding:8px 15px;font-size:12px;font-weight:600;backdrop-filter:blur(4px);}
 .pipe-note{display:flex;gap:10px;align-items:flex-start;background:var(--i-card2);border:1px dashed var(--i-border2);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--i-muted);}
 
@@ -280,7 +271,6 @@ img,svg,video{max-width:100%;}
   .inf-cover h1{font-size:38px;}
   .inf-cover{padding:40px 20px;}
   .clip-add{grid-template-columns:1fr;}
-  .plan-ed-row{grid-template-columns:1fr;}
   .video-grid{grid-template-columns:minmax(0,1fr);}
 }
 </style>
@@ -1075,14 +1065,7 @@ function plantillaInforme(j){
     datos: emptyDatos(),
     arbitro: emptyArbitro(),
     fortalezas: [], debilidades: [],
-    planTramos: [
-      { tramo:"0–15'",  tipo:'neutral', texto:'' },
-      { tramo:"16–30'", tipo:'neutral', texto:'' },
-      { tramo:"31–45'", tipo:'neutral', texto:'' },
-      { tramo:"46–60'", tipo:'neutral', texto:'' },
-      { tramo:"61–75'", tipo:'neutral', texto:'' },
-      { tramo:"76–90'", tipo:'neutral', texto:'' },
-    ],
+    planPartido: [],   // síntesis libre del plan de partido: una observación por línea, como el resto del informe
     createdAt: new Date().toISOString(),
   };
 }
@@ -1327,23 +1310,7 @@ window.delVideoLink = function(idx){
   currentInforme.videosVistos.splice(idx,1);
   document.getElementById('videolinks-list').innerHTML = videoLinksListHtml();
 };
-window.planAdd = function(){ currentInforme.planTramos.push({tramo:'',tipo:'neutral',texto:''}); renderPlanEd(); };
-window.planDel = function(i){ currentInforme.planTramos.splice(i,1); renderPlanEd(); };
-window.planSet = function(i, field, val){ currentInforme.planTramos[i][field] = val; };
-function renderPlanEd(){
-  document.getElementById('planEd').innerHTML = currentInforme.planTramos.map((p,i)=>`
-    <div class="plan-ed-row">
-      <input value="${esc(p.tramo)}" placeholder="Tramo (0–15')" oninput="planSet(${i},'tramo',this.value)"/>
-      <select onchange="planSet(${i},'tipo',this.value)">
-        <option value="neutral" ${p.tipo==='neutral'?'selected':''}>Neutral</option>
-        <option value="chance"  ${p.tipo==='chance'?'selected':''}>Oportunidad</option>
-        <option value="danger"  ${p.tipo==='danger'?'selected':''}>Peligro</option>
-      </select>
-      <input value="${esc(p.texto)}" placeholder="Consigna del tramo" oninput="planSet(${i},'texto',this.value)"/>
-      <button class="btn btn-ghost btn-sm" onclick="planDel(${i})">✕</button>
-    </div>`).join('') +
-    `<button class="btn btn-ghost btn-sm" onclick="planAdd()" style="margin-top:4px">+ Añadir tramo</button>`;
-}
+
 function taBlock(id, title, hint, value, mono){
   return `<div class="ed-block">
     <div class="ed-block-title">${title}</div>
@@ -1495,14 +1462,9 @@ function renderEditor(){
   html += `<div class="ed-sec">07 · Plan de partido</div>`;
   html += taBlock('ta-fortalezas','Fortalezas del rival','',arrToLines(inf.fortalezas));
   html += taBlock('ta-debilidades','Debilidades / A explotar','',arrToLines(inf.debilidades));
-  html += `<div class="ed-block">
-    <div class="ed-block-title">Plan por tramos</div>
-    <div class="ed-hint">Tu síntesis subjetiva con todo el contexto: una consigna por franja. "Oportunidad" verde, "Peligro" rojo.</div>
-    <div id="planEd"></div>
-  </div>`;
+  html += taBlock('ta-planPartido','Plan de partido','Tu síntesis del análisis, ya lista para dar al equipo: una idea por línea — se convierten en viñetas del informe.',arrToLines(inf.planPartido));
 
   document.getElementById('edBody').innerHTML = html;
-  renderPlanEd();
 }
 /* Recarga desde rivalStats. Los bloques que Carlos haya tocado a mano se
    respetan salvo que los desmarque: nunca se pisa trabajo manual en silencio. */
@@ -1595,7 +1557,7 @@ window.saveInforme = async function(){
   };
   inf.fortalezas  = linesToArr(V('ta-fortalezas'));
   inf.debilidades = linesToArr(V('ta-debilidades'));
-  inf.planTramos  = inf.planTramos.filter(p=>p.tramo||p.texto);
+  inf.planPartido = linesToArr(V('ta-planPartido'));
   [...MOMENTOS, ...ABP].forEach(b => {
     getBloqueRef(b.key).items = linesToArr(V(`ta-${b.key}`));
   });
@@ -1614,8 +1576,6 @@ window.saveInforme = async function(){
     await setDoc(doc(db,'analisisInformes',currentInformeId), inf);
     toast('Informe guardado');
     document.getElementById('edSub').textContent = `${fmtDate(inf.fecha)} · ${inf.condicion.toUpperCase()} · ${inf.estado==='publicado'?'Publicado':'Borrador'}`;
-    if(inf.planTramos.length===0) inf.planTramos=[{tramo:'',tipo:'neutral',texto:''}];
-    renderPlanEd();
   }catch(e){ console.error('[Save]', e); toast('Error guardando'); }
 };
 
@@ -1891,7 +1851,7 @@ window.openInforme = async function(iid){
 
   <section class="inf-section" id="s-plan" style="padding-bottom:90px;">
     <div class="sec-label">08 · Plan de partido</div>
-    <div class="sec-title">Fortalezas, debilidades y plan por tramos</div>
+    <div class="sec-title">Fortalezas, debilidades y plan de partido</div>
     <div class="ig2" style="margin-bottom:24px;">
       <div class="icard" style="border-left:3px solid var(--i-green);">
         <div class="subsection-title" style="color:var(--i-green)">Fortalezas</div>${bulletsHtml(inf.fortalezas)}
@@ -1900,15 +1860,9 @@ window.openInforme = async function(iid){
         <div class="subsection-title" style="color:var(--i-red)">Debilidades</div>${bulletsHtml(inf.debilidades)}
       </div>
     </div>
-    ${inf.planTramos && inf.planTramos.filter(p=>p.texto).length ? `
-    <div class="subsection-title" style="margin-top:24px;">Plan por tramos</div>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      ${inf.planTramos.filter(p=>p.texto).map(p=>`
-        <div class="plan-item ${p.tipo!=='neutral'?p.tipo:''}">
-          <div class="plan-time">${esc(p.tramo)}</div>
-          <div class="plan-text">${esc(p.texto)}</div>
-        </div>`).join('')}
-    </div>`:''}
+    ${inf.planPartido && inf.planPartido.length ? `
+    <div class="subsection-title" style="margin-top:24px;">Plan de partido</div>
+    ${bulletsHtml(inf.planPartido)}`:''}
   </section>`;
 
   const mainEl = document.getElementById('infMain');
