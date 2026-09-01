@@ -173,6 +173,24 @@ img,svg,video{max-width:100%;}
 .vp-label{position:absolute;bottom:8px;left:10px;right:10px;font-size:10px;font-weight:600;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8);z-index:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .vp-tag{position:absolute;top:8px;left:8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:3px;background:rgba(232,25,44,.8);color:#fff;z-index:2;}
 .inf-close{position:fixed;top:14px;right:16px;z-index:220;background:rgba(0,0,0,.55);color:#fff;border-radius:8px;padding:8px 15px;font-size:12px;font-weight:600;backdrop-filter:blur(4px);}
+
+/* Enlaces compartidos */
+.share-banner{background:rgba(196,123,0,.15);border:1px solid rgba(196,123,0,.4);color:#f0b055;
+  font-size:11px;font-weight:600;text-align:center;padding:8px 14px;margin:0 0 14px;border-radius:6px;
+  line-height:1.4;}
+.share-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 11px;
+  background:var(--bg);border:1px solid var(--bdr);border-radius:7px;font-size:12px;}
+.share-chip{padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:700;white-space:nowrap;}
+.share-chip-ok{background:var(--fit-bg,#f0fdf4);color:var(--fit,#15803d);}
+.share-chip-off{background:var(--bg);color:var(--i-muted,#7a7872);}
+.share-fecha{color:var(--i-muted,#7a7872);font-size:11px;flex:1;}
+.share-gone{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:var(--i-bg,#f4f4f2);z-index:999;padding:20px;}
+.share-gone-card{max-width:420px;text-align:center;background:#fff;border:1px solid var(--i-border,#e4e2de);
+  border-radius:14px;padding:36px 30px;box-shadow:0 8px 30px rgba(0,0,0,.08);}
+.share-gone-t{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;margin-bottom:8px;}
+.share-gone-s{font-size:13px;color:var(--i-muted,#7a7872);line-height:1.5;}
+body.modo-compartido .inf-sidebar{padding-top:8px;}
 .pipe-note{display:flex;gap:10px;align-items:flex-start;background:var(--i-card2);border:1px dashed var(--i-border2);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--i-muted);}
 
 /* ══ TABLAS INFORME ══ */
@@ -390,7 +408,7 @@ img,svg,video{max-width:100%;}
 <div id="toast"></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, getDocs, setDoc, deleteDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, getDocs, setDoc, deleteDoc, collection, onSnapshot, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app = initializeApp({
   apiKey: "AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
@@ -1619,7 +1637,18 @@ function renderEditor(){
   html += taBlock('ta-debilidades','Debilidades / A explotar','',arrToLines(inf.debilidades));
   html += taBlock('ta-planPartido','Plan de partido','Tu síntesis del análisis, ya lista para dar al equipo: una idea por línea — se convierten en viñetas del informe.',arrToLines(inf.planPartido));
 
+  html += `<div class="ed-sec">09 · Compartir</div>
+  <div class="ed-block">
+    <div class="ed-block-title">Enlace temporal para enviar fuera de la plataforma</div>
+    <div class="ed-hint">Genera un enlace que caduca solo a las 24 horas — o revócalo tú antes si quieres cerrarlo antes.
+      ${inf.estado!=='publicado' ? '<b style="color:var(--i-amber)">Publica el informe primero: un borrador no se puede compartir.</b>' : ''}</div>
+    <button class="btn btn-primary btn-sm" onclick="generarEnlaceCompartir()" ${inf.estado!=='publicado'?'disabled':''}>🔗 Generar enlace (24h)</button>
+    <input id="ed-share-nuevo" class="form-control" style="display:none;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:12px;" readonly onclick="this.select()"/>
+    <div id="ed-shares-list" style="margin-top:14px;display:flex;flex-direction:column;gap:6px;"></div>
+  </div>`;
+
   document.getElementById('edBody').innerHTML = html;
+  renderShares();
 }
 /* Recarga desde rivalStats. Los bloques que Carlos haya tocado a mano se
    respetan salvo que los desmarque: nunca se pisa trabajo manual en silencio. */
@@ -2047,6 +2076,144 @@ window.closeInforme = function(){
   document.getElementById('modalVideo').pause();
 };
 
+/* ══════════════════════════════════════════════════════════════════════
+   ENLACES COMPARTIDOS (24h)
+   ══════════════════════════════════════════════════════════════════════
+   Un enlace no reparte el informe, reparte una LLAVE: la vista externa
+   siempre lee el informe en vivo de Firestore, comprobando en el momento
+   si esa llave sigue siendo válida. Por eso se puede revocar cuando se
+   quiera — a diferencia de un archivo exportado, que una vez enviado ya
+   no hay forma de retirarlo.
+
+   Aviso honesto sobre el nivel de protección real: igual que la
+   contraseña de Modo analista, esta comprobación vive en el cliente
+   contra Firestore, no detrás de un servidor con autenticación propia.
+   Frena a cualquiera que no tenga el enlace exacto y hace que puedas
+   cerrarlo cuando quieras — que es justo lo que se pidió — pero no es
+   una barrera criptográfica infranqueable frente a alguien que inspeccione
+   las peticiones de red a bajo nivel. Para compartir análisis con
+   entrenadores, directiva o jugadores es un nivel apropiado; para
+   contenido que exija seguridad de nivel bancario, no lo sería.
+
+   Colección 'analisisShares', id de documento = el propio token:
+     informeId, rivalName, jornada, createdAt (epoch ms), expiresAt
+     (epoch ms, createdAt + 24h), revoked (bool). */
+const SHARE_DURACION_MS = 24 * 60 * 60 * 1000;
+
+function generarTokenCompartir(){
+  const arr = new Uint8Array(32);
+  crypto.getRandomValues(arr);
+  return btoa(String.fromCharCode(...arr)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+function shareUrlDe(token){
+  return location.origin + location.pathname + '?compartido=' + token;
+}
+
+function shareEstado(s){
+  if(s.revoked) return 'revocado';
+  if(Date.now() > s.expiresAt) return 'caducado';
+  return 'activo';
+}
+
+function fmtHora(ms){
+  const d = new Date(ms);
+  return d.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'}) + ' ' +
+         d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+}
+
+window.generarEnlaceCompartir = async function(){
+  if(!currentInformeId || !currentInforme) return;
+  if(currentInforme.estado !== 'publicado'){
+    toast('Publica el informe antes de compartirlo'); return;
+  }
+  const token = generarTokenCompartir();
+  const ahora = Date.now();
+  try{
+    await setDoc(doc(db,'analisisShares',token), {
+      informeId: currentInformeId,
+      rivalName: currentInforme.rivalName,
+      jornada: currentInforme.jornada,
+      createdAt: ahora,
+      expiresAt: ahora + SHARE_DURACION_MS,
+      revoked: false,
+    });
+    await renderShares();
+    const url = shareUrlDe(token);
+    /* Se muestra ya seleccionado en un campo, listo para Cmd+C — más
+       fiable entre navegadores que depender de la API del portapapeles,
+       que en algunos contextos (http, permisos) puede fallar en silencio. */
+    const campo = document.getElementById('ed-share-nuevo');
+    if(campo){ campo.value = url; campo.style.display=''; campo.select(); }
+    toast('Enlace generado · caduca en 24 horas');
+  }catch(e){ console.error('[generarEnlaceCompartir]', e); toast('No se pudo generar el enlace'); }
+};
+
+window.revocarShare = async function(token){
+  if(!confirm('¿Revocar este enlace? Quien lo abra a partir de ahora verá que ya no está disponible.')) return;
+  try{
+    await setDoc(doc(db,'analisisShares',token), {revoked:true}, {merge:true});
+    await renderShares();
+    toast('Enlace revocado');
+  }catch(e){ console.error('[revocarShare]', e); toast('No se pudo revocar'); }
+};
+
+async function renderShares(){
+  const cont = document.getElementById('ed-shares-list');
+  if(!cont || !currentInformeId) return;
+  cont.innerHTML = '<div style="font-size:12px;color:var(--i-muted)">Cargando enlaces…</div>';
+  try{
+    const snap = await getDocs(query(collection(db,'analisisShares'), where('informeId','==',currentInformeId)));
+    const shares = snap.docs.map(d=>({token:d.id, ...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);
+    if(!shares.length){ cont.innerHTML = '<div style="font-size:12px;color:var(--i-muted)">Todavía no has generado ningún enlace para este informe.</div>'; return; }
+    cont.innerHTML = shares.map(s=>{
+      const estado = shareEstado(s);
+      const chip = {activo:'share-chip-ok', caducado:'share-chip-off', revocado:'share-chip-off'}[estado];
+      const label = {activo:'Activo · caduca '+fmtHora(s.expiresAt), caducado:'Caducado '+fmtHora(s.expiresAt), revocado:'Revocado'}[estado];
+      return `<div class="share-row">
+        <span class="share-chip ${chip}">${label}</span>
+        <span class="share-fecha">generado ${fmtHora(s.createdAt)}</span>
+        ${estado==='activo' ? `<button class="btn btn-ghost btn-sm" onclick="revocarShare('${s.token}')">Revocar</button>` : ''}
+      </div>`;
+    }).join('');
+  }catch(e){ console.error('[renderShares]', e); cont.innerHTML = '<div style="font-size:12px;color:var(--i-red)">Error cargando los enlaces.</div>'; }
+}
+
+/* ── Entrada por enlace compartido: sustituye por completo la carga
+   normal de la app (calendario, editor…) cuando la URL trae ?compartido=.
+   Solo puede leer y mostrar el ÚNICO informe al que apunta el token —
+   nunca da acceso a navegar a otros rivales ni al editor. ── */
+async function iniciarVistaCompartida(token){
+  document.querySelector('.topbar').style.display = 'none';
+  document.getElementById('view-calendario').style.display = 'none';
+  document.body.classList.add('modo-compartido');
+  await loadShields();
+  let s = null;
+  try{
+    const snap = await getDoc(doc(db,'analisisShares',token));
+    if(snap.exists()) s = snap.data();
+  }catch(e){ console.error('[iniciarVistaCompartida]', e); }
+
+  if(!s || shareEstado(s) !== 'activo'){
+    document.body.innerHTML = `<div class="share-gone">
+      <div class="share-gone-card">
+        <div class="share-gone-t">Este enlace ya no está disponible</div>
+        <div class="share-gone-s">${!s ? 'El enlace no existe.' : s.revoked ? 'Quien lo compartió lo ha desactivado.' : 'Caducó — los enlaces solo son válidos 24 horas.'}</div>
+      </div>
+    </div>`;
+    return;
+  }
+
+  await openInforme(s.informeId);
+  document.getElementById('view-informe').style.display = 'block';
+  const closeBtn = document.querySelector('.inf-close');
+  if(closeBtn) closeBtn.style.display = 'none';
+  const aviso = document.createElement('div');
+  aviso.className = 'share-banner';
+  aviso.textContent = `Enlace temporal · caduca el ${fmtHora(s.expiresAt)}`;
+  document.getElementById('infSidebar').prepend(aviso);
+}
+
 /* ══════════ VÍDEO MODAL ══════════ */
 window.openVideo = function(url){
   const modal = document.getElementById('videoModal');
@@ -2095,6 +2262,14 @@ function watchInformes(){
   );
 }
 (async function init(){
+  const shareToken = new URLSearchParams(location.search).get('compartido');
+  if(shareToken){
+    /* Camino completamente aparte: nunca toca el calendario completo, el
+       editor, ni watchInformes() (que expondría el resto de rivales) —
+       solo lee el ÚNICO informe al que apunta el token, si sigue vigente. */
+    await iniciarVistaCompartida(shareToken);
+    return;
+  }
   await Promise.all([loadCalendario(), loadShields()]);
   refreshMode();
   renderCalendario();
