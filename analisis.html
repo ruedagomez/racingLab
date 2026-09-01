@@ -673,9 +673,7 @@ async function dbxToken(){
    informe y se cachea en memoria durante la sesión, para no repetir la
    llamada en cada clip que se suba. */
 const dbxPathCache = {};
-async function dbxResolverCarpeta(sharedUrl){
-  if(!sharedUrl) throw new Error('Este informe no tiene una carpeta de Dropbox indicada arriba');
-  if(dbxPathCache[sharedUrl]) return dbxPathCache[sharedUrl];
+async function dbxResolverCarpetaIntento(sharedUrl){
   const token = await dbxToken();
   const res = await fetch('https://api.dropboxapi.com/2/sharing/get_shared_link_metadata', {
     method: 'POST',
@@ -683,20 +681,41 @@ async function dbxResolverCarpeta(sharedUrl){
     body: JSON.stringify({ url: sharedUrl }),
   });
   const data = await res.json();
-  if(!res.ok || !data.path_lower){
-    /* Si la app de Dropbox está configurada como "App folder" en vez de
-       "Full Dropbox", cualquier ruta fuera de su propia carpeta le resulta
-       directamente invisible — Dropbox la trata como si no existiera. Es
-       el único motivo real por el que esto puede fallar teniendo el
-       enlace bien puesto, así que se detecta aquí en vez de pedir a
-       Carlos que lo interprete a mano en la consola de Dropbox. */
-    if(data.error?.['.tag'] === 'path' || /not_found/i.test(JSON.stringify(data.error||''))){
-      throw new Error('DBX_APP_FOLDER: Dropbox no encuentra esta carpeta. Lo más probable es que la app esté configurada como "App folder" en vez de "Full Dropbox" — habría que recrearla con acceso completo.');
-    }
-    throw new Error('No encuentro esa carpeta en tu Dropbox. Asegúrate de que el enlace de arriba es correcto y de que la carpeta está guardada en tu cuenta.');
+  if(res.ok && data.path_lower) return {ok:true, path:data.path_lower};
+  return {ok:false, tag: data.error?.['.tag'] || 'desconocido'};
+}
+async function dbxResolverCarpeta(sharedUrl){
+  if(!sharedUrl) throw new Error('Este informe no tiene una carpeta de Dropbox indicada arriba');
+  if(dbxPathCache[sharedUrl]) return dbxPathCache[sharedUrl];
+  /* SharedLinkError de Dropbox (spec oficial) solo tiene tres valores:
+     shared_link_not_found, shared_link_access_denied, unsupported_link_type.
+     Antes se trataba como "posible App folder" cualquier error que
+     contuviera "not_found" en el JSON — pero shared_link_not_found NO
+     tiene nada que ver con el scope de la app: es que Dropbox no resuelve
+     el enlace EN ESE MOMENTO, algo que le pasa de forma intermitente
+     incluso a apps que llevan tiempo funcionando bien (reportado por
+     otros desarrolladores con este mismo endpoint y enlaces scl/, encaja
+     con "funcionaba y de pronto dejó de funcionar" sin cambiar nada).
+     Por eso, solo para ESE tag concreto se reintenta una vez tras una
+     breve espera antes de rendirse. El único tag que de verdad indica
+     scope insuficiente (tipo App folder) es shared_link_access_denied —
+     ese no se reintenta, porque reintentar no lo va a arreglar. */
+  let r = await dbxResolverCarpetaIntento(sharedUrl);
+  if(!r.ok && r.tag === 'shared_link_not_found'){
+    await new Promise(res => setTimeout(res, 900));
+    r = await dbxResolverCarpetaIntento(sharedUrl);
   }
-  dbxPathCache[sharedUrl] = data.path_lower;
-  return data.path_lower;
+  if(!r.ok){
+    if(r.tag === 'shared_link_access_denied'){
+      throw new Error(`Dropbox deniega el acceso a esta carpeta (${r.tag}). Lo más probable es que la app esté configurada como "App folder" en vez de "Full Dropbox" — habría que recrearla con acceso completo.`);
+    }
+    if(r.tag === 'shared_link_not_found'){
+      throw new Error(`Dropbox no reconoce este enlace ahora mismo, ni siquiera tras reintentarlo (${r.tag}). Suele ser un fallo puntual de su lado con enlaces de carpeta — prueba a subir el clip otra vez en un momento.`);
+    }
+    throw new Error(`No encuentro esa carpeta en tu Dropbox (${r.tag}). Revisa que el enlace de arriba sea correcto.`);
+  }
+  dbxPathCache[sharedUrl] = r.path;
+  return r.path;
 }
 
 /* Nombre de archivo seguro: evita caracteres que Dropbox rechaza y
@@ -1374,10 +1393,7 @@ window.dbxSubirClip = async function(bkey, tipo, file){
     setTimeout(()=>{ prog.style.display='none'; }, 2500);
   }catch(e){
     console.error('[dbxSubirClip]', e);
-    const msg = e.message.startsWith('DBX_APP_FOLDER:')
-      ? e.message.replace('DBX_APP_FOLDER: ', '')
-      : e.message;
-    prog.innerHTML = `<span class="cl-prog-err">✕ ${msg}</span>`;
+    prog.innerHTML = `<span class="cl-prog-err">✕ ${e.message}</span>`;
   }
 };
 function renderEditor(){
