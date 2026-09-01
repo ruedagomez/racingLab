@@ -102,6 +102,11 @@ img,svg,video{max-width:100%;}
 .clip-row .cl-lab{font-weight:600;}
 .clip-row .cl-url{color:var(--mid);font-size:10.5px;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
 .clip-row .cl-del{color:var(--inj);background:none;font-size:14px;padding:2px 6px;}
+.clip-row .cl-edit{color:var(--mid);background:none;font-size:13px;padding:2px 6px;}
+.clip-row .cl-edit:hover{color:var(--r);}
+.clip-row-edit{flex-direction:column;align-items:stretch;gap:6px;background:var(--i-card,#fff);border-color:var(--r);}
+.clip-row-edit input{font-size:12px;padding:6px 9px;border:1px solid var(--bdr);border-radius:6px;width:100%;}
+.clip-row-edit button{align-self:flex-start;}
 .clip-add{display:flex;flex-direction:column;gap:7px;margin-top:9px;}
 .clip-add input{font-size:12px;padding:7px 9px;border:1px solid var(--bdr);border-radius:6px;width:100%;}
 .clip-add > button{align-self:flex-start;}
@@ -746,6 +751,34 @@ async function dbxResolverCarpeta(sharedUrl){
 
 /* Nombre de archivo seguro: evita caracteres que Dropbox rechaza y
    conserva la extensión original. */
+/* Limpia lo que se pega en "Ruta interna de Dropbox": suele venir mal
+   por el camino de copia/pega (%20 en vez de espacio, si se copió de la
+   barra de direcciones en vez de "Copiar ruta de Dropbox"; o una tilde
+   perdida y convertida en el carácter de reemplazo si algo por medio
+   maltrató la codificación). El %20 se puede arreglar solo, con
+   seguridad: una ruta real de Dropbox nunca lleva un % seguido de dos
+   dígitos de forma literal, así que si aparece SIEMPRE es codificación
+   de URL colada por error. El carácter de reemplazo (tilde perdida) NO
+   se puede recuperar — el dato original ya no está — así que solo se
+   avisa para que se corrija a mano. */
+function dbxLimpiarRuta(s){
+  let limpia = String(s||'').trim().replace(/\/+$/,'').replace(/\/{2,}/g,'/');
+  if(/%[0-9A-Fa-f]{2}/.test(limpia)){
+    try{ limpia = decodeURIComponent(limpia); }catch(e){}
+  }
+  const avisos = [];
+  if(limpia.includes('\uFFFD')) avisos.push('Hay un carácter que no se ha copiado bien (probablemente una tilde o la ñ) — revísalo a mano.');
+  return {limpia, avisos};
+}
+window.limpiarRutaDbx = function(input){
+  const {limpia, avisos} = dbxLimpiarRuta(input.value);
+  input.value = limpia;
+  const warn = document.getElementById('ed-dbxpath-warn');
+  if(warn){
+    warn.style.display = avisos.length ? '' : 'none';
+    warn.textContent = avisos.join(' ');
+  }
+};
 function dbxNombreArchivo(nombreOriginal, etiqueta){
   const ext = (nombreOriginal.match(/\.[a-zA-Z0-9]+$/)||[''])[0];
   const base = (etiqueta||nombreOriginal.replace(ext,''))
@@ -1338,14 +1371,31 @@ function getBloqueRef(key){
   if(!currentInforme.bloques[key]) currentInforme.bloques[key] = emptyBloque();
   return currentInforme.bloques[key];
 }
+/* Edición de un clip ya añadido — solo existe dentro del editor (edBody),
+   que ya está detrás de la contraseña de Modo analista: el informe
+   publicado usa clipsHtml(), una función de solo lectura completamente
+   distinta, así que esta edición nunca llega a quien no sea analista. */
+let clipEditando = null;   // {bkey, idx} o null
 function clipListHtml(bkey){
   const clips = getBloqueRef(bkey).clips || [];
-  return clips.map((c,idx)=>`
+  return clips.map((c,idx)=>{
+    if(clipEditando && clipEditando.bkey===bkey && clipEditando.idx===idx){
+      return `<div class="clip-row clip-row-edit">
+        <input id="cle-lab-${bkey}-${idx}" value="${esc(c.label)}" placeholder="Etiqueta del clip"/>
+        <input id="cle-vid-${bkey}-${idx}" value="${esc(c.video)}" placeholder="Enlace Dropbox del vídeo"/>
+        <input id="cle-thu-${bkey}-${idx}" value="${esc(c.thumb||'')}" placeholder="Enlace de la miniatura — opcional"/>
+        <button class="btn btn-ghost btn-sm" onclick="guardarClip('${bkey}',${idx})">✓ Guardar</button>
+        <button class="btn btn-ghost btn-sm" onclick="cancelarEdicionClip('${bkey}')">Cancelar</button>
+      </div>`;
+    }
+    return `
     <div class="clip-row">
       <span class="cl-lab">🎬 ${esc(c.label)||'Clip'}</span>
       <span class="cl-url">${esc(c.video)}</span>
+      <button class="cl-edit" onclick="editarClip('${bkey}',${idx})" title="Editar el enlace de este clip">✎</button>
       <button class="cl-del" onclick="delClip('${bkey}',${idx})">✕</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 window.addClip = function(bkey){
   const lab = document.getElementById(`cl-lab-${bkey}`).value.trim();
@@ -1358,7 +1408,27 @@ window.addClip = function(bkey){
 };
 window.delClip = function(bkey, idx){
   getBloqueRef(bkey).clips.splice(idx,1);
+  if(clipEditando && clipEditando.bkey===bkey && clipEditando.idx===idx) clipEditando = null;
   document.getElementById(`clips-${bkey}`).innerHTML = clipListHtml(bkey);
+};
+window.editarClip = function(bkey, idx){
+  clipEditando = {bkey, idx};
+  document.getElementById(`clips-${bkey}`).innerHTML = clipListHtml(bkey);
+};
+window.cancelarEdicionClip = function(bkey){
+  clipEditando = null;
+  document.getElementById(`clips-${bkey}`).innerHTML = clipListHtml(bkey);
+};
+window.guardarClip = function(bkey, idx){
+  const lab = document.getElementById(`cle-lab-${bkey}-${idx}`).value.trim();
+  const vid = document.getElementById(`cle-vid-${bkey}-${idx}`).value.trim();
+  const thu = document.getElementById(`cle-thu-${bkey}-${idx}`).value.trim();
+  if(!vid){ toast('Falta el enlace del vídeo'); return; }
+  const clip = getBloqueRef(bkey).clips[idx];
+  clip.label = lab; clip.video = dbxRaw(vid); clip.thumb = dbxRaw(thu);
+  clipEditando = null;
+  document.getElementById(`clips-${bkey}`).innerHTML = clipListHtml(bkey);
+  toast('Enlace del clip actualizado');
 };
 /* ══ Vídeos vistos (Visionado) — lista simple de enlaces, sin miniatura ni
    modal: son URLs directas (Veo, YouTube, Hudl, Dropbox…) que se abren en
@@ -1472,11 +1542,14 @@ function renderEditor(){
     <div class="ed-field" style="grid-column:span 2"><label>Carpeta Dropbox del rival</label><input id="ed-dbx" value="${esc(inf.dropboxFolder)}" placeholder="https://www.dropbox.com/scl/fo/..."/></div>
     <div class="ed-field" style="grid-column:span 2">
       <label>Ruta interna de Dropbox (opcional — solo si el enlace de arriba da error al subir clips)</label>
-      <input id="ed-dbxpath" value="${esc(inf.dropboxPath||'')}" placeholder="/Racing Lab/Rivales/Xerez DFC"/>
+      <input id="ed-dbxpath" value="${esc(inf.dropboxPath||'')}" placeholder="/Racing Lab/Rivales/Xerez DFC"
+        onblur="limpiarRutaDbx(this)"/>
+      <div id="ed-dbxpath-warn" style="font-size:11px;color:var(--i-red);margin-top:3px;display:none;"></div>
       <div style="font-size:11px;color:var(--i-muted);margin-top:3px;line-height:1.5;">
         Rellénala solo si al subir un clip sale un error de Dropbox. Cópiala tal cual desde la app de escritorio
         (clic derecho en la carpeta → Copiar ruta de Dropbox) o desde la barra de direcciones al navegar dentro
         de la carpeta en dropbox.com. Con esta ruta rellena, la subida ya no depende del enlace de arriba.
+        Se limpia sola al salir del campo (espacios mal codificados, barras de más).
       </div>
     </div>
     <div class="ed-field" style="grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -1618,7 +1691,7 @@ window.saveInforme = async function(){
   inf.estado    = V('ed-estado');
   inf.sistema   = V('ed-sistema').trim();
   inf.dropboxFolder = V('ed-dbx').trim();
-  inf.dropboxPath = V('ed-dbxpath').trim();
+  inf.dropboxPath = dbxLimpiarRuta(V('ed-dbxpath')).limpia;
   inf.visionado = linesToArr(V('ta-visionado'));
   inf.contexto  = linesToArr(V('ta-contexto'));
   inf.convocatorias = parseConvocatorias(V('ta-convocatorias'));
