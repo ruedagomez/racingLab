@@ -868,13 +868,43 @@ async function dbxSubirArchivo(file, folderPath, nombreDestino, onProgress){
   return data.path_lower;
 }
 
+/* Confirma que una ruta escrita a mano existe de verdad y es una carpeta,
+   ANTES de subir nada ahí — para no fallar a medio subir por una errata,
+   ni subir en silencio a un sitio que no es. Usa files/get_metadata, del
+   namespace files (files.content.read), un permiso DISTINTO del que usa
+   sharing/get_shared_link_metadata — por eso sirve como vía alternativa
+   cuando ese otro endpoint falla: no comparten el mismo punto de fallo. */
+async function dbxVerificarRuta(path){
+  const token = await dbxToken();
+  const res = await fetch('https://api.dropboxapi.com/2/files/get_metadata', {
+    method: 'POST',
+    headers: {'Authorization': 'Bearer '+token, 'Content-Type': 'application/json'},
+    body: JSON.stringify({ path }),
+  });
+  const data = await res.json();
+  if(!res.ok) throw new Error(`No encuentro esa ruta en tu Dropbox (${data.error?.['.tag']||data.error_summary||'error'}). Revisa que esté escrita tal cual aparece en Dropbox, con mayúsculas y todo.`);
+  if(data['.tag'] !== 'folder') throw new Error('Esa ruta existe pero no es una carpeta.');
+  return path;
+}
+
 /* Flujo completo para un archivo suelto: resuelve carpeta del rival →
    entra en la subcarpeta del bloque (Salida de balón, Ataque…) → sube →
    genera enlace. La subcarpeta se crea sola si no existía todavía: no
    hace falta un paso aparte para crearla, ni de aquí ni a mano — aunque
-   si ya la tienes creada de antes con el mismo nombre, se usa esa. */
-async function dbxSubirYEnlazar(file, sharedFolderUrl, etiqueta, onProgress, bkey){
-  const folderPath = await dbxResolverCarpeta(sharedFolderUrl);
+   si ya la tienes creada de antes con el mismo nombre, se usa esa.
+
+   Resolución de la carpeta del rival, en dos vías:
+   — Si el informe tiene una RUTA escrita a mano (dropboxPath), se usa
+     directamente vía files/get_metadata, sin tocar en ningún momento
+     sharing/get_shared_link_metadata. Es la vía de emergencia cuando ese
+     endpoint da problemas (ha mostrado fallos persistentes reales, ajenos
+     a la configuración de la app, con enlaces de carpeta tipo scl/fo/...).
+   — Si no hay ruta escrita, se resuelve el ENLACE compartido como hasta
+     ahora (más cómodo de configurar, solo pegar el enlace). */
+async function dbxSubirYEnlazar(file, sharedFolderUrl, etiqueta, onProgress, bkey, rutaManual){
+  const folderPath = rutaManual
+    ? await dbxVerificarRuta(rutaManual)
+    : await dbxResolverCarpeta(sharedFolderUrl);
   const sub = DBX_CARPETA_POR_BLOQUE[bkey];
   const folderFinal = sub ? folderPath.replace(/\/$/,'') + '/' + sub : folderPath;
   const nombre = dbxNombreArchivo(file.name, etiqueta);
@@ -1103,7 +1133,7 @@ function plantillaInforme(j){
     temporada: TEMPORADA, jornada: j.n, clubId: j.clubId,
     condicion: j.condicion, fecha: JORNADA_DATES[j.n-1],
     rivalName: club ? club.name : '', estado: 'borrador',
-    sistema: '', dropboxFolder: '',
+    sistema: '', dropboxFolder: '', dropboxPath: '',
     visionado: [], videosVistos: [], contexto: [],
     bloques,
     convocatorias: [],      // [{jornada,cond,res,marcador,rival,sistema,titulares:[{dorsal,nombre,cambio,min}],suplentes:[...]}]
@@ -1400,8 +1430,9 @@ window.dbxSubirClip = async function(bkey, tipo, file){
     return;
   }
   const folderUrl = currentInforme?.dropboxFolder;
-  if(!folderUrl){
-    toast('Rellena antes la "Carpeta Dropbox del rival" de este informe');
+  const rutaManual = currentInforme?.dropboxPath;
+  if(!folderUrl && !rutaManual){
+    toast('Rellena antes la "Carpeta Dropbox del rival" (o la ruta interna) de este informe');
     return;
   }
   const prog = document.getElementById(`cl-prog-${bkey}`);
@@ -1412,7 +1443,7 @@ window.dbxSubirClip = async function(bkey, tipo, file){
   try{
     const url = await dbxSubirYEnlazar(file, folderUrl, etiqueta, (p)=>{
       const f = fill(); if(f) f.style.width = Math.round(p*100)+'%';
-    }, bkey);
+    }, bkey, rutaManual);
     const carpeta = DBX_CARPETA_POR_BLOQUE[bkey] || '';
     document.getElementById(`cl-${tipo==='video'?'vid':'thu'}-${bkey}`).value = url;
     prog.innerHTML = `<span class="cl-prog-ok">✓ ${tipo==='video'?'Vídeo':'Miniatura'} subido a ${carpeta}</span>`;
@@ -1439,6 +1470,15 @@ function renderEditor(){
       </select></div>
     <div class="ed-field"><label>Sistema habitual</label><input id="ed-sistema" value="${esc(inf.sistema)}" placeholder="1-4-2-3-1"/></div>
     <div class="ed-field" style="grid-column:span 2"><label>Carpeta Dropbox del rival</label><input id="ed-dbx" value="${esc(inf.dropboxFolder)}" placeholder="https://www.dropbox.com/scl/fo/..."/></div>
+    <div class="ed-field" style="grid-column:span 2">
+      <label>Ruta interna de Dropbox (opcional — solo si el enlace de arriba da error al subir clips)</label>
+      <input id="ed-dbxpath" value="${esc(inf.dropboxPath||'')}" placeholder="/Racing Lab/Rivales/Xerez DFC"/>
+      <div style="font-size:11px;color:var(--i-muted);margin-top:3px;line-height:1.5;">
+        Rellénala solo si al subir un clip sale un error de Dropbox. Cópiala tal cual desde la app de escritorio
+        (clic derecho en la carpeta → Copiar ruta de Dropbox) o desde la barra de direcciones al navegar dentro
+        de la carpeta en dropbox.com. Con esta ruta rellena, la subida ya no depende del enlace de arriba.
+      </div>
+    </div>
     <div class="ed-field" style="grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <span class="ed-fuente ${d.fuente==='actas'?'actas':'manual'}">${d.fuente==='actas'
         ? `⚙ Cargado de actas · hasta J${inf.datosMeta?.hastaJornada??'—'}`
@@ -1578,6 +1618,7 @@ window.saveInforme = async function(){
   inf.estado    = V('ed-estado');
   inf.sistema   = V('ed-sistema').trim();
   inf.dropboxFolder = V('ed-dbx').trim();
+  inf.dropboxPath = V('ed-dbxpath').trim();
   inf.visionado = linesToArr(V('ta-visionado'));
   inf.contexto  = linesToArr(V('ta-contexto'));
   inf.convocatorias = parseConvocatorias(V('ta-convocatorias'));
