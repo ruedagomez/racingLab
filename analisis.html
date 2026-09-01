@@ -672,7 +672,31 @@ async function dbxToken(){
    en el navegador), no una ruta de subida. Se resuelve una vez por
    informe y se cachea en memoria durante la sesión, para no repetir la
    llamada en cada clip que se suba. */
-const dbxPathCache = {};
+/* Caché de resolución carpeta compartida → ruta real de Dropbox.
+   PERSISTENTE (localStorage), no solo en memoria: get_shared_link_metadata
+   ha mostrado un comportamiento intermitente real con enlaces de carpeta
+   tipo scl/fo/... (reportado también por otros desarrolladores contra la
+   API de Dropbox, no es exclusivo de este proyecto) — funciona, y sin que
+   nadie cambie nada, deja de funcionar durante un rato. Antes, la caché
+   solo vivía en memoria y se perdía en cada recarga de página; si esa
+   recarga coincidía con una de las rachas en que el endpoint falla, la
+   subida se rompía aunque la carpeta llevara resuelta con éxito toda la
+   sesión anterior. Ahora que se resuelve una vez, se guarda en el
+   navegador y nunca más se depende de ese endpoint para esa carpeta —
+   ni en esta sesión ni en las siguientes. Solo se re-resuelve si el
+   propio Carlos borra la caché o si falla el propio subido (ver más abajo). */
+const DBX_LS_PATHCACHE = 'rl_dbx_pathcache';
+function dbxPathCacheGet(sharedUrl){
+  try{ return JSON.parse(localStorage.getItem(DBX_LS_PATHCACHE)||'{}')[sharedUrl] || null; }
+  catch(e){ return null; }
+}
+function dbxPathCacheSet(sharedUrl, path){
+  try{
+    const m = JSON.parse(localStorage.getItem(DBX_LS_PATHCACHE)||'{}');
+    m[sharedUrl] = path;
+    localStorage.setItem(DBX_LS_PATHCACHE, JSON.stringify(m));
+  }catch(e){}
+}
 async function dbxResolverCarpetaIntento(sharedUrl){
   const token = await dbxToken();
   const res = await fetch('https://api.dropboxapi.com/2/sharing/get_shared_link_metadata', {
@@ -686,7 +710,8 @@ async function dbxResolverCarpetaIntento(sharedUrl){
 }
 async function dbxResolverCarpeta(sharedUrl){
   if(!sharedUrl) throw new Error('Este informe no tiene una carpeta de Dropbox indicada arriba');
-  if(dbxPathCache[sharedUrl]) return dbxPathCache[sharedUrl];
+  const cacheado = dbxPathCacheGet(sharedUrl);
+  if(cacheado) return cacheado;
   /* SharedLinkError de Dropbox (spec oficial) solo tiene tres valores:
      shared_link_not_found, shared_link_access_denied, unsupported_link_type.
      Antes se trataba como "posible App folder" cualquier error que
@@ -696,13 +721,14 @@ async function dbxResolverCarpeta(sharedUrl){
      incluso a apps que llevan tiempo funcionando bien (reportado por
      otros desarrolladores con este mismo endpoint y enlaces scl/, encaja
      con "funcionaba y de pronto dejó de funcionar" sin cambiar nada).
-     Por eso, solo para ESE tag concreto se reintenta una vez tras una
-     breve espera antes de rendirse. El único tag que de verdad indica
+     Por eso, solo para ESE tag concreto se reintenta dos veces más con
+     espera creciente antes de rendirse. El único tag que de verdad indica
      scope insuficiente (tipo App folder) es shared_link_access_denied —
      ese no se reintenta, porque reintentar no lo va a arreglar. */
   let r = await dbxResolverCarpetaIntento(sharedUrl);
-  if(!r.ok && r.tag === 'shared_link_not_found'){
-    await new Promise(res => setTimeout(res, 900));
+  for(const espera of [900, 2000]){
+    if(r.ok || r.tag !== 'shared_link_not_found') break;
+    await new Promise(res => setTimeout(res, espera));
     r = await dbxResolverCarpetaIntento(sharedUrl);
   }
   if(!r.ok){
@@ -710,11 +736,11 @@ async function dbxResolverCarpeta(sharedUrl){
       throw new Error(`Dropbox deniega el acceso a esta carpeta (${r.tag}). Lo más probable es que la app esté configurada como "App folder" en vez de "Full Dropbox" — habría que recrearla con acceso completo.`);
     }
     if(r.tag === 'shared_link_not_found'){
-      throw new Error(`Dropbox no reconoce este enlace ahora mismo, ni siquiera tras reintentarlo (${r.tag}). Suele ser un fallo puntual de su lado con enlaces de carpeta — prueba a subir el clip otra vez en un momento.`);
+      throw new Error(`Dropbox no reconoce este enlace ahora mismo, ni siquiera tras varios reintentos (${r.tag}). Suele ser un fallo puntual de su lado con enlaces de carpeta — prueba a subir el clip otra vez en un momento.`);
     }
     throw new Error(`No encuentro esa carpeta en tu Dropbox (${r.tag}). Revisa que el enlace de arriba sea correcto.`);
   }
-  dbxPathCache[sharedUrl] = r.path;
+  dbxPathCacheSet(sharedUrl, r.path);
   return r.path;
 }
 
