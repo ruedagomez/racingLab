@@ -294,6 +294,9 @@ input,select,textarea{font-family:inherit;outline:none;}
 .fd-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
 .fd-date{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);margin-top:6px;}
 .fd-hint{font-size:11px;color:var(--faint);margin-top:5px;}
+.edit-session-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  font-size:12.5px;color:var(--warn);background:var(--warn-bg);border-left:3px solid var(--warn);
+  padding:10px 14px;margin-bottom:14px;line-height:1.5;}
 .wk-note{font-size:12px;color:var(--mid);background:var(--bg);border-left:3px solid var(--faint);
   padding:9px 13px;margin-bottom:18px;line-height:1.55;}
 .wk-empty{padding:34px;text-align:center;color:var(--faint);border:1px dashed var(--bdr);background:var(--wh);}
@@ -397,7 +400,7 @@ input,select,textarea{font-family:inherit;outline:none;}
   </div>
   <nav class="sb-nav">
     <div class="sb-section">Asistencia</div>
-    <div class="nav-item active" onclick="nav('p-register',this)"><span class="nav-icon">📷</span>Registrar</div>
+    <div class="nav-item active" onclick="irARegistrarNuevo(this)"><span class="nav-icon">📷</span>Registrar</div>
     <div class="nav-item" onclick="nav('p-history',this)"><span class="nav-icon">◫</span>Historial</div>
     <div class="nav-item" onclick="nav('p-week',this)"><span class="nav-icon">▤</span>Parte semanal</div>
     <!-- Zonas/Vision retirado — ver nota en el JS junto a checkZonesState() -->
@@ -417,7 +420,7 @@ input,select,textarea{font-family:inherit;outline:none;}
 </div>
 
 <nav class="mobnav">
-  <div class="mobnav-item active" onclick="nav('p-register',this)"><span class="nav-icon">📷</span><small>Registrar</small></div>
+  <div class="mobnav-item active" onclick="irARegistrarNuevo(this)"><span class="nav-icon">📷</span><small>Registrar</small></div>
   <div class="mobnav-item" onclick="nav('p-history',this)"><span class="nav-icon">◫</span><small>Historial</small></div>
   <div class="mobnav-item" onclick="nav('p-week',this)"><span class="nav-icon">▤</span><small>Semana</small></div>
   <div class="mobnav-item" onclick="nav('p-fines',this)"><span class="nav-icon">◉</span><small>Registro</small><span class="mobnav-badge" id="unpaid-badge-m">0</span></div>
@@ -434,6 +437,10 @@ input,select,textarea{font-family:inherit;outline:none;}
 
   <!-- REGISTER -->
   <div class="page active" id="p-register">
+    <div class="edit-session-banner" id="edit-session-banner" style="display:none">
+      <span></span>
+      <button class="btn btn-ghost btn-sm" onclick="resetReg()">Cancelar y empezar sesión nueva</button>
+    </div>
     <div id="reg-upload">
       <div class="sh">
         <div class="st">Registrar Asistencia</div>
@@ -769,7 +776,7 @@ async function uploadToCloudinary(file) {
    `amount:null` = importe a definir caso por caso (conducta antideportiva):
    el concepto existe en el catálogo, pero obliga a teclear la cantidad al
    registrar la multa en vez de aplicar un importe inventado. */
-const CATALOG_VERSION = 2;
+const CATALOG_VERSION = 3;
 const CAT_ORDER = ['puntualidad','asistencia','comportamiento','equipamiento','otros'];
 const CAT_LABEL = {puntualidad:'Puntualidad', asistencia:'Asistencia',
   comportamiento:'Comportamiento', equipamiento:'Equipamiento', otros:'Otros', otro:'Otros'};
@@ -787,6 +794,8 @@ const DEFAULT_FINE_TYPES = [
   {id:'rm11',order:11,name:'Desorden & limpieza de vestuario', amount:5, cat:'comportamiento', desc:'Responsabilidad con el material propio.'},
   {id:'rm12',order:12,name:'Balonazo',         amount:5,   cat:'comportamiento', desc:'Doble o nada desde mitad de campo.'},
   {id:'rm13',order:13,name:'Wellness & RPE',   amount:5,   cat:'otros',          desc:'Rellenar diariamente.'},
+  {id:'rm14',order:14,name:'Doble Área',       amount:5,   cat:'otros',          desc:'No completar la tarea asignada en la app Doble Área.'},
+  {id:'rm15',order:15,name:'Otro',             amount:null,cat:'otros',          desc:'Cualquier concepto no recogido arriba. Importe a definir.'},
 ];
 const IDS_SEMILLA_ANTIGUA = ['ft1','ft2','ft3','ft4','ft5','ft6'];
 /* Un retraso ES asistencia: el jugador vino. Solo la ausencia y la falta
@@ -958,9 +967,15 @@ async function syncCatalog() {
 
   try{
     for(const t of DEFAULT_FINE_TYPES){
-      const actual = FINE_TYPES.find(x => x.id === t.id);
-      // Si ya existe con esta versión y fue editado a mano, se respeta
-      if(actual && (actual.catalogVersion||0) >= CATALOG_VERSION) continue;
+      /* La sincronización solo AÑADE lo que falta — nunca reescribe un
+         concepto que ya exista en Firestore, esté editado o no. Antes se
+         comparaba por catalogVersion y se pisaba cualquier edición manual
+         hecha con una versión de catálogo anterior a la que se sincroniza,
+         que es precisamente el caso normal (editas hoy con v2, mañana el
+         catálogo sube a v3 para traer conceptos nuevos, y tu edición se
+         perdía). Subir CATALOG_VERSION debe servir para traer conceptos
+         NUEVOS del régimen, nunca para tocar los que el staff ya gestiona. */
+      if(FINE_TYPES.some(x => x.id === t.id)) continue;
       await setDoc(doc(db,'fineTypes',t.id), {...t, catalogVersion:CATALOG_VERSION});
     }
     // La semilla genérica antigua se retira solo si no la usa ninguna multa
@@ -1256,6 +1271,25 @@ window.resetReg = function() {
   document.getElementById('reg-results').style.display='none';
   document.getElementById('reg-processing').style.display='none';
   document.getElementById('reg-upload').style.display='block';
+  document.getElementById('edit-session-banner').style.display='none';
+  // Misma fecha local corregida que showResults(): evita el bug UTC ya
+  // documentado (toISOString() puede saltar al día siguiente pasadas
+  // ciertas horas en España).
+  const hoy = new Date();
+  const localIso = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  const campoFecha = document.getElementById('reg-session-date');
+  if(campoFecha) campoFecha.value = localIso;
+};
+/* Entrada al registro desde el MENÚ (no desde editSession): siempre debe
+   empezar en limpio. Sin esto, si Carlos entraba a editar una sesión
+   antigua y luego pulsaba "Registrar" en el menú sin guardar ni cancelar
+   explícitamente, editingSessionId se quedaba "colgado" — la fecha nunca
+   se recalculaba a hoy (se quedaba la de la sesión vieja) y, más grave
+   aún, si llegaba a guardar, se SOBRESCRIBÍA esa sesión antigua en vez de
+   crear una nueva. No existía ningún botón para cancelar ese estado. */
+window.irARegistrarNuevo = function(el){
+  resetReg();
+  nav('p-register', el);
 };
 
 /* ── EDITAR / ELIMINAR SESIÓN YA SUBIDA ── */
@@ -1285,6 +1319,9 @@ window.editSession = function(id, ev) {
   document.getElementById('reg-processing').style.display = 'none';
   document.getElementById('reg-results').style.display = 'block';
   document.getElementById('reg-results-title').textContent = `Editando sesión del ${s.date ? new Date(s.date+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'long'}) : ''}`;
+  const banner = document.getElementById('edit-session-banner');
+  banner.querySelector('span').textContent = `✎ Editando la sesión del ${s.date ? new Date(s.date+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'long'}) : ''} — los cambios sustituirán a esa sesión, no crearán una nueva.`;
+  banner.style.display = '';
   document.getElementById('result-img').src = currentPhotoB64;
   document.getElementById('reg-session-date').value = s.date || '';
   updateResultMeta();
@@ -1741,7 +1778,7 @@ function populateFineModals() {
     '</optgroup>';
   document.getElementById('af-type').innerHTML =
     '<option value="">— Tipo —</option>'+
-    FINE_TYPES.map(t=>`<option value="${t.id}">${t.name} (${t.amount}€)</option>`).join('');
+    FINE_TYPES.map(t=>`<option value="${t.id}">${t.name} (${fmtAmount(t.amount)})</option>`).join('');
   document.getElementById('af-date').value = new Date().toISOString().slice(0,10);
   // Limpios en cada apertura: no debe arrastrarse el nombre de la persona
   // externa de la multa anterior a la siguiente.
