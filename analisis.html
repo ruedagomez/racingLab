@@ -190,6 +190,16 @@ img,svg,video{max-width:100%;}
   border-radius:14px;padding:36px 30px;box-shadow:0 8px 30px rgba(0,0,0,.08);}
 .share-gone-t{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;margin-bottom:8px;}
 .share-gone-s{font-size:13px;color:var(--i-muted,#7a7872);line-height:1.5;}
+.share-block{border:1px solid var(--bdr);border-radius:7px;padding:10px 11px;margin-bottom:8px;background:var(--bg);}
+.share-block .share-row{background:none;border:none;padding:0;margin-bottom:6px;}
+.share-acc-none{font-size:11px;color:var(--i-muted,#7a7872);padding:4px 0;}
+.share-acc-warn{font-size:11.5px;font-weight:700;color:#b91c1c;background:#fef2f2;border-left:3px solid #b91c1c;
+  padding:6px 9px;margin-bottom:6px;border-radius:3px;}
+.share-acc-list{display:flex;flex-direction:column;gap:3px;max-height:160px;overflow-y:auto;}
+.share-acc-row{display:grid;grid-template-columns:16px 90px 1fr 1fr;gap:8px;align-items:center;
+  font-size:11px;color:var(--mid);padding:3px 5px;border-radius:3px;}
+.share-acc-row.bloq{background:#fef2f2;color:#b91c1c;font-weight:600;}
+.share-acc-ico{text-align:center;}
 body.modo-compartido .inf-sidebar{padding-top:8px;}
 .pipe-note{display:flex;gap:10px;align-items:flex-start;background:var(--i-card2);border:1px dashed var(--i-border2);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--i-muted);}
 
@@ -2100,6 +2110,65 @@ window.closeInforme = function(){
      (epoch ms, createdAt + 24h), revoked (bool). */
 const SHARE_DURACION_MS = 24 * 60 * 60 * 1000;
 
+/* ── Identidad de dispositivo para el candado "solo el primer
+   dispositivo" ──────────────────────────────────────────────────────
+   No hay login en la vista compartida (es justo el punto: un enlace
+   sin fricción), así que "dispositivo" es una marca aleatoria guardada
+   en el navegador de quien abre el enlace, persistente mientras no
+   borre datos de navegación ni use modo incógnito. No identifica a la
+   persona — identifica "este navegador concreto", que es lo máximo que
+   se puede hacer sin pedir que inicien sesión. */
+function dispositivoIdLocal(){
+  let id = localStorage.getItem('rl_device_id');
+  if(!id){
+    const arr = new Uint8Array(16);
+    crypto.getRandomValues(arr);
+    id = Array.from(arr, b=>b.toString(16).padStart(2,'0')).join('');
+    localStorage.setItem('rl_device_id', id);
+  }
+  return id;
+}
+
+/* Lectura orientativa del tipo de dispositivo/navegador a partir del
+   user agent — no es exacta al 100% (los UA se pueden falsear), pero
+   basta para ver de un vistazo "esto es un móvil distinto" o "esto es
+   un ordenador que no había abierto el enlace antes". */
+function dispositivoLegible(){
+  const ua = navigator.userAgent || '';
+  let so = 'Dispositivo';
+  if(/iPhone/.test(ua)) so='iPhone';
+  else if(/iPad/.test(ua)) so='iPad';
+  else if(/Android/.test(ua)) so='Android';
+  else if(/Macintosh/.test(ua)) so='Mac';
+  else if(/Windows/.test(ua)) so='Windows';
+  else if(/Linux/.test(ua)) so='Linux';
+  let nav = 'navegador';
+  if(/Edg\//.test(ua)) nav='Edge';
+  else if(/Chrome\//.test(ua) && !/OPR\//.test(ua)) nav='Chrome';
+  else if(/CriOS/.test(ua)) nav='Chrome';
+  else if(/Firefox/.test(ua)) nav='Firefox';
+  else if(/Safari/.test(ua) && !/Chrome/.test(ua)) nav='Safari';
+  return `${so} · ${nav}`;
+}
+
+/* Geolocalización por IP, en silencio, sin pedir ningún permiso al
+   visitante (a diferencia de la geolocalización GPS del navegador, que
+   exigiría un permiso explícito y sería una fricción rarísima para
+   alguien que solo quiere ver un informe). Es una aproximación por
+   ciudad/país según su proveedor de internet, no su ubicación exacta —
+   y cualquiera con una VPN la puede falsear. Si el servicio falla por
+   lo que sea (red, límite de uso), no bloquea nada: simplemente se
+   registra el acceso sin ubicación. */
+async function geoAproximada(){
+  try{
+    const res = await fetch('https://ipapi.co/json/');
+    if(!res.ok) return null;
+    const d = await res.json();
+    if(d.error) return null;
+    return { ciudad: d.city || '', pais: d.country_name || '' };
+  }catch(e){ return null; }
+}
+
 function generarTokenCompartir(){
   const arr = new Uint8Array(32);
   crypto.getRandomValues(arr);
@@ -2158,6 +2227,32 @@ window.revocarShare = async function(token){
   }catch(e){ console.error('[revocarShare]', e); toast('No se pudo revocar'); }
 };
 
+window.desbloquearDispositivoShare = async function(token){
+  if(!confirm('¿Liberar este enlace? El siguiente dispositivo que lo abra quedará vinculado a partir de ahora.')) return;
+  try{
+    await setDoc(doc(db,'analisisShares',token), {deviceId:null}, {merge:true});
+    await renderShares();
+    toast('Dispositivo desvinculado');
+  }catch(e){ console.error('[desbloquearDispositivoShare]', e); toast('No se pudo desvincular'); }
+};
+
+function accesosHtml(accesos){
+  if(!accesos || !accesos.length) return '<div class="share-acc-none">Sin aperturas todavía.</div>';
+  const bloqueados = accesos.filter(a=>a.resultado==='bloqueado').length;
+  const filas = accesos.slice().sort((a,b)=>b.ts-a.ts).map(a=>{
+    const lugar = [a.ciudad,a.pais].filter(Boolean).join(', ') || 'ubicación desconocida';
+    const ok = a.resultado==='permitido';
+    return `<div class="share-acc-row ${ok?'':'bloq'}">
+      <span class="share-acc-ico">${ok?'✓':'⛔'}</span>
+      <span>${fmtHora(a.ts)}</span>
+      <span>${a.dispositivo||'—'}</span>
+      <span>${lugar}</span>
+    </div>`;
+  }).join('');
+  return `${bloqueados ? `<div class="share-acc-warn">⚠ ${bloqueados} intento${bloqueados>1?'s':''} bloqueado${bloqueados>1?'s':''} desde otro dispositivo — revisa si alguien más tiene este enlace.</div>` : ''}
+    <div class="share-acc-list">${filas}</div>`;
+}
+
 async function renderShares(){
   const cont = document.getElementById('ed-shares-list');
   if(!cont || !currentInformeId) return;
@@ -2170,10 +2265,14 @@ async function renderShares(){
       const estado = shareEstado(s);
       const chip = {activo:'share-chip-ok', caducado:'share-chip-off', revocado:'share-chip-off'}[estado];
       const label = {activo:'Activo · caduca '+fmtHora(s.expiresAt), caducado:'Caducado '+fmtHora(s.expiresAt), revocado:'Revocado'}[estado];
-      return `<div class="share-row">
-        <span class="share-chip ${chip}">${label}</span>
-        <span class="share-fecha">generado ${fmtHora(s.createdAt)}</span>
-        ${estado==='activo' ? `<button class="btn btn-ghost btn-sm" onclick="revocarShare('${s.token}')">Revocar</button>` : ''}
+      return `<div class="share-block">
+        <div class="share-row">
+          <span class="share-chip ${chip}">${label}</span>
+          <span class="share-fecha">generado ${fmtHora(s.createdAt)}</span>
+          ${estado==='activo' ? `<button class="btn btn-ghost btn-sm" onclick="revocarShare('${s.token}')">Revocar</button>` : ''}
+          ${s.deviceId ? `<button class="btn btn-ghost btn-sm" onclick="desbloquearDispositivoShare('${s.token}')">Desvincular dispositivo</button>` : ''}
+        </div>
+        ${accesosHtml(s.accesos)}
       </div>`;
     }).join('');
   }catch(e){ console.error('[renderShares]', e); cont.innerHTML = '<div style="font-size:12px;color:var(--i-red)">Error cargando los enlaces.</div>'; }
@@ -2183,6 +2282,37 @@ async function renderShares(){
    normal de la app (calendario, editor…) cuando la URL trae ?compartido=.
    Solo puede leer y mostrar el ÚNICO informe al que apunta el token —
    nunca da acceso a navegar a otros rivales ni al editor. ── */
+function pantallaEnlaceNoDisponible(motivo){
+  document.body.innerHTML = `<div class="share-gone">
+    <div class="share-gone-card">
+      <div class="share-gone-t">Este enlace ya no está disponible</div>
+      <div class="share-gone-s">${motivo}</div>
+    </div>
+  </div>`;
+}
+
+/* Registra CADA intento de apertura (permitido o bloqueado) en el propio
+   documento del share. Los bloqueados son la señal más valiosa: un
+   intento desde un dispositivo/ciudad distintos es justo lo que se
+   quiere detectar. No bloquea nada si falla — el registro es
+   complementario, nunca debe impedir ver un informe legítimo por un
+   fallo de red al escribir el log. */
+async function registrarAcceso(token, resultado, deviceId){
+  const geo = await geoAproximada();
+  const entrada = {
+    ts: Date.now(),
+    resultado,                    // 'permitido' | 'bloqueado'
+    dispositivo: dispositivoLegible(),
+    ciudad: geo?.ciudad || '',
+    pais: geo?.pais || '',
+  };
+  try{
+    const snap = await getDoc(doc(db,'analisisShares',token));
+    const actual = snap.exists() ? (snap.data().accesos||[]) : [];
+    await setDoc(doc(db,'analisisShares',token), {accesos:[...actual, entrada]}, {merge:true});
+  }catch(e){ console.error('[registrarAcceso]', e); }
+}
+
 async function iniciarVistaCompartida(token){
   document.querySelector('.topbar').style.display = 'none';
   document.getElementById('view-calendario').style.display = 'none';
@@ -2195,12 +2325,28 @@ async function iniciarVistaCompartida(token){
   }catch(e){ console.error('[iniciarVistaCompartida]', e); }
 
   if(!s || shareEstado(s) !== 'activo'){
-    document.body.innerHTML = `<div class="share-gone">
-      <div class="share-gone-card">
-        <div class="share-gone-t">Este enlace ya no está disponible</div>
-        <div class="share-gone-s">${!s ? 'El enlace no existe.' : s.revoked ? 'Quien lo compartió lo ha desactivado.' : 'Caducó — los enlaces solo son válidos 24 horas.'}</div>
-      </div>
-    </div>`;
+    pantallaEnlaceNoDisponible(!s ? 'El enlace no existe.' : s.revoked ? 'Quien lo compartió lo ha desactivado.' : 'Caducó — los enlaces solo son válidos 24 horas.');
+    return;
+  }
+
+  /* Candado de "solo el primer dispositivo": la primera apertura real
+     reclama el enlace para ese navegador. Cualquier apertura posterior
+     desde un navegador distinto queda bloqueada — no basta con tener el
+     enlace, hace falta ser el dispositivo que lo abrió primero. Esto no
+     identifica a la persona, solo el navegador: alguien que borre sus
+     datos o use incógnito parecería "un dispositivo nuevo" — es una
+     barrera contra el reenvío casual, no a prueba de alguien decidido
+     a saltársela. */
+  const miDeviceId = dispositivoIdLocal();
+  if(!s.deviceId){
+    try{ await setDoc(doc(db,'analisisShares',token), {deviceId: miDeviceId}, {merge:true}); }
+    catch(e){ console.error('[iniciarVistaCompartida] no se pudo fijar el dispositivo', e); }
+    registrarAcceso(token, 'permitido', miDeviceId);
+  } else if(s.deviceId === miDeviceId){
+    registrarAcceso(token, 'permitido', miDeviceId);
+  } else {
+    registrarAcceso(token, 'bloqueado', miDeviceId);
+    pantallaEnlaceNoDisponible('Este enlace ya está vinculado a otro dispositivo. Pide uno nuevo a quien te lo compartió.');
     return;
   }
 
