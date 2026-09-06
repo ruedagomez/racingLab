@@ -568,6 +568,35 @@ const personaById = id => PERSONAS.find(p => p.id === id) || null;
 const GRUPOS_ORDEN = ['Cuerpo técnico','Porteros','Defensas','Centrocampistas','Delanteros'];
 const POS_GRUPO = {POR:'Porteros', DEF:'Defensas', MED:'Centrocampistas', DEL:'Delanteros'};
 
+/* ── Quién NO puede abrir informes de rival ─────────────────────────
+   Gente ACTIVA en el club (siguen en cuerpo-tecnico.html con normalidad,
+   no se les da de baja de nada) pero a la que no se le da acceso al
+   análisis del rival. Es una decisión de este módulo, no un dato del
+   club: por eso vive aquí y no en la colección `staff`, que describe
+   quién trabaja en el club y la comparten todos los módulos.
+
+   Se compara contra el NOMBRE tal y como aparece en la ficha (`name`),
+   normalizado sin tildes ni mayúsculas para que una tilde de más o de
+   menos no deje entrar a alguien por error. Si alguien cambia de nombre
+   en su ficha, hay que actualizarlo aquí — es el precio de no meter un
+   campo nuevo en `staff`, y a cambio queda a la vista de un vistazo
+   quién está excluido y por qué. */
+const SIN_ACCESO_ANALISIS = [
+  'Pablo',
+  'Antonio',
+  'Javier Romero',
+  'Javier Sampalo',
+  'Abraham Melgar',
+];
+/* Normalización propia y local (sin tildes, minúsculas, espacios
+   colapsados). No se reutiliza normNombre() del motor de estadísticas
+   porque esa se declara más abajo en el archivo y aquí hace falta
+   antes: son idénticas en comportamiento, pero mezclarlas crearía una
+   dependencia de orden frágil entre dos partes sin relación. */
+const normAcceso = s => String(s||'').trim().toLowerCase()
+  .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
+const SIN_ACCESO_SET = new Set(SIN_ACCESO_ANALISIS.map(normAcceso));
+
 async function cargarPersonas(){
   if(personasCargadas) return PERSONAS;
   const [snapStaff, snapPlayers] = await Promise.all([
@@ -576,6 +605,10 @@ async function cargarPersonas(){
   ]);
   const staff = snapStaff.docs.map(d=>({id:d.id, ...d.data()}))
     .filter(s => s.active !== false)
+    /* Se comprueban los dos campos (name y role): un puesto sin cubrir
+       se muestra por su cargo, así que podría estar excluido por
+       cualquiera de los dos. */
+    .filter(s => !SIN_ACCESO_SET.has(normAcceso(s.name)) && !SIN_ACCESO_SET.has(normAcceso(s.role)))
     .sort((a,b) => (a.order ?? 999) - (b.order ?? 999))
     .map(s => ({
       id: 'st:' + s.id,
@@ -585,6 +618,9 @@ async function cargarPersonas(){
     }));
   const players = snapPlayers.docs.map(d=>({id:d.id, ...d.data()}))
     .filter(p => p.active !== false)
+    /* Mismo filtro para jugadores: se comprueban apodo y nombre completo,
+       porque la exclusión se escribe como se conoce a la persona. */
+    .filter(p => !SIN_ACCESO_SET.has(normAcceso(p.nick)) && !SIN_ACCESO_SET.has(normAcceso(p.n)))
     .sort((a,b) => (a.d ?? 999) - (b.d ?? 999))
     .map(p => ({
       id: 'pl:' + p.id,
