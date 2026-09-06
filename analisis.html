@@ -471,7 +471,7 @@ body.modo-compartido .inf-sidebar{padding-top:8px;}
 <div id="toast"></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, getDocs, setDoc, deleteDoc, deleteField, collection, onSnapshot, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, getDocs, setDoc, deleteDoc, deleteField, arrayUnion, collection, onSnapshot, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app = initializeApp({
   apiKey: "AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
@@ -544,63 +544,60 @@ const ABP = [
 ];
 
 /* ══════════ PERSONAS AUTORIZADAS (enlaces compartidos) ══════════
-   Lista cerrada de quién puede identificarse al abrir un enlace
-   compartido. Es el ÚNICO sitio que hay que tocar cuando entre o
-   salga alguien de la plantilla o del cuerpo técnico.
+   Quién puede identificarse al abrir un enlace compartido. NO es una
+   lista aparte que haya que mantener a mano: se lee en vivo de las
+   mismas colecciones que ya alimentan el resto del Lab.
 
-   · Plantilla: copiada literalmente de plantilla.html (mismos ids
-     p00, p13… para que un día se pueda leer de rl_players / Firestore
-     sin renumerar nada). Nombre y dorsal tal cual están allí.
-   · Cuerpo técnico: van por CARGO, no por nombre, porque los nombres
-     reales no constan en ninguna fuente del proyecto — no me los
-     invento. Sustitúyelos por el nombre de cada persona (y añade una
-     línea por cada utillero, no una sola compartida: dos personas con
-     la misma entrada se bloquearían entre ellas).
+     · 'players' → la que escribe plantilla.html
+     · 'staff'   → la que escribe cuerpo-tecnico.html
 
-   IMPORTANTE: quien no esté en esta lista no puede entrar. Si mandas
-   el enlace al presidente o a un ojeador, añádelo aquí antes. */
-const PERSONAS = [
-  // ── Cuerpo técnico ──
-  { id:'s-1e',  nombre:'Primer Entrenador',      grupo:'Cuerpo técnico' },
-  { id:'s-2e',  nombre:'2º Entrenador',          grupo:'Cuerpo técnico' },
-  { id:'s-pf',  nombre:'Preparador Físico',      grupo:'Cuerpo técnico' },
-  { id:'s-ep',  nombre:'Entrenador de Porteros', grupo:'Cuerpo técnico' },
-  { id:'s-an',  nombre:'Analista',               grupo:'Cuerpo técnico' },
-  { id:'s-del', nombre:'Delegado',               grupo:'Cuerpo técnico' },
-  { id:'s-ut',  nombre:'Utillero',               grupo:'Cuerpo técnico' },
-  // ── Porteros ──
-  { id:'p00', dorsal:0,  nombre:'Castañeda',     completo:'Alejandro Castañeda Sánchez',    grupo:'Porteros' },
-  { id:'p01', dorsal:1,  nombre:'Manu',          completo:'Manuel López García',            grupo:'Porteros' },
-  { id:'p13', dorsal:13, nombre:'Juanma',        completo:'Juan Manuel Lozano Álvarez',     grupo:'Porteros' },
-  // ── Defensas ──
-  { id:'p02', dorsal:2,  nombre:'Carmelo',       completo:'Carmelo Manuel Humanes Porras',  grupo:'Defensas' },
-  { id:'p04', dorsal:4,  nombre:'Kevin',         completo:'Kevin Roberto Gil Navarro',      grupo:'Defensas' },
-  { id:'p06', dorsal:6,  nombre:'Alberto Durán', completo:'Alberto Durán López',            grupo:'Defensas' },
-  { id:'p11', dorsal:11, nombre:'Manu Moreno',   completo:'Manuel Domínguez Moreno',        grupo:'Defensas' },
-  { id:'p15', dorsal:15, nombre:'Rodri',         completo:'José Luis Rodríguez Muñoz',      grupo:'Defensas' },
-  { id:'p18', dorsal:18, nombre:'Oca',           completo:'Antonio Miguel Oca Contreras',   grupo:'Defensas' },
-  { id:'p20', dorsal:20, nombre:'Barba',         completo:'Roberto Barba Castillo',         grupo:'Defensas' },
-  { id:'p42', dorsal:42, nombre:'Lainez',        completo:'Daniel Lainez Herrera',          grupo:'Defensas' },
-  // ── Centrocampistas ──
-  { id:'p05', dorsal:5,  nombre:'Fernando',      completo:'Fernando Ramos Delgado',         grupo:'Centrocampistas' },
-  { id:'p08', dorsal:8,  nombre:'Kevin B.',      completo:'Juan Kevin Bonilla Durán',       grupo:'Centrocampistas' },
-  { id:'p10', dorsal:10, nombre:'Chicho',        completo:'Antonio Jesús Garrido Fernández',grupo:'Centrocampistas' },
-  { id:'p14', dorsal:14, nombre:'Adri Romero',   completo:'Adrián Romero Rodríguez',        grupo:'Centrocampistas' },
-  { id:'p21', dorsal:21, nombre:'Fran García',   completo:'Francisco José García Pavón',    grupo:'Centrocampistas' },
-  { id:'p28', dorsal:28, nombre:'Adri Cuevas',   completo:'Adrián Cuevas',                  grupo:'Centrocampistas' },
-  // ── Delanteros ──
-  { id:'p07', dorsal:7,  nombre:'Manu Heredia',  completo:'Manuel Heredia Montoya',         grupo:'Delanteros' },
-  { id:'p09', dorsal:9,  nombre:'Javi Tamayo',   completo:'Manuel Javier Tamayo Pacheco',   grupo:'Delanteros' },
-  { id:'p16', dorsal:16, nombre:'Borja',         completo:'Borja Jiménez Macías',           grupo:'Delanteros' },
-  { id:'p17', dorsal:17, nombre:'Fran Jiménez',  completo:'Francisco Jiménez Cruz',         grupo:'Delanteros' },
-  { id:'p19', dorsal:19, nombre:'Tocino',        completo:'Antonio Jesús Tocino Sánchez',   grupo:'Delanteros' },
-  { id:'p24', dorsal:24, nombre:'Jacobo',        completo:'Jacobo Cornejo Salas',           grupo:'Delanteros' },
-  { id:'p27', dorsal:27, nombre:'Pepe Sáinz',    completo:'José Luis Sáinz Hugues',         grupo:'Delanteros' },
-  { id:'p30', dorsal:30, nombre:'Hugo',          completo:'Hugo Rodríguez Romero',          grupo:'Delanteros' },
-  { id:'p99',            nombre:'Elías',         completo:'Elías Sebastián Palacio',        grupo:'Delanteros' },
-];
+   Así, un fichaje o una baja se reflejan aquí solos: quien esté de alta
+   en plantilla puede entrar, quien esté dado de baja deja de poder.
+   No hay que tocar este archivo cuando cambie el vestuario.
+
+   Se descartan los que tienen active:false. Los del staff que siguen
+   marcados como 'tbd' (puesto sin cubrir) aparecen por su cargo, igual
+   que se muestran en cuerpo-tecnico.html, para que un fisio que aún no
+   tiene ficha completa no se quede fuera del informe.
+
+   Los ids llevan prefijo ('pl:' / 'st:') para que un jugador y un
+   miembro del staff nunca puedan chocar en el mismo identificador. */
+let PERSONAS = [];
+let personasCargadas = false;
 const personaById = id => PERSONAS.find(p => p.id === id) || null;
 const GRUPOS_ORDEN = ['Cuerpo técnico','Porteros','Defensas','Centrocampistas','Delanteros'];
+const POS_GRUPO = {POR:'Porteros', DEF:'Defensas', MED:'Centrocampistas', DEL:'Delanteros'};
+
+async function cargarPersonas(){
+  if(personasCargadas) return PERSONAS;
+  const [snapStaff, snapPlayers] = await Promise.all([
+    getDocs(collection(db,'staff')),
+    getDocs(collection(db,'players')),
+  ]);
+  const staff = snapStaff.docs.map(d=>({id:d.id, ...d.data()}))
+    .filter(s => s.active !== false)
+    .sort((a,b) => (a.order ?? 999) - (b.order ?? 999))
+    .map(s => ({
+      id: 'st:' + s.id,
+      nombre: (s.tbd ? (s.role || s.name) : (s.name || s.role)) || s.id,
+      completo: s.role || '',
+      grupo: 'Cuerpo técnico',
+    }));
+  const players = snapPlayers.docs.map(d=>({id:d.id, ...d.data()}))
+    .filter(p => p.active !== false)
+    .sort((a,b) => (a.d ?? 999) - (b.d ?? 999))
+    .map(p => ({
+      id: 'pl:' + p.id,
+      nombre: p.nick || p.n || p.id,
+      completo: p.n || '',
+      dorsal: p.d || null,
+      grupo: POS_GRUPO[p.pos] || 'Plantilla',
+    }));
+  PERSONAS = [...staff, ...players];
+  personasCargadas = true;
+  return PERSONAS;
+}
+
 
 /* ══════════ ESTADO ══════════ */
 let SHIELDS = {};          // lpId → shieldUrl
@@ -1762,9 +1759,14 @@ function renderEditor(){
   html += `<div class="ed-sec">09 · Compartir</div>
   <div class="ed-block">
     <div class="ed-block-title">Enlace temporal para enviar fuera de la plataforma</div>
-    <div class="ed-hint">Un solo enlace para todo el grupo: quien lo abra tendrá que identificarse con su nombre de la lista del club, y ese nombre queda atado a su dispositivo. Caduca solo a las 24 horas — o revócalo tú antes.
+    <div class="ed-hint">Un solo enlace para todo el grupo: quien lo abra tendrá que identificarse con su nombre de la lista del club, y ese nombre queda atado a su dispositivo. Caduca solo al plazo que elijas — o revócalo tú antes.
       ${inf.estado!=='publicado' ? '<b style="color:var(--i-amber)">Publica el informe primero: un borrador no se puede compartir.</b>' : ''}</div>
-    <button class="btn btn-primary btn-sm" onclick="generarEnlaceCompartir()" ${inf.estado!=='publicado'?'disabled':''}>🔗 Generar enlace (24h)</button>
+    <div class="share-gen">
+      <select id="ed-share-dur" class="form-control share-dur" ${inf.estado!=='publicado'?'disabled':''}>
+        ${SHARE_DURACIONES.map((d,i)=>`<option value="${i}"${i===0?' selected':''}>Caduca en ${d.label}</option>`).join('')}
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="generarEnlaceCompartir()" ${inf.estado!=='publicado'?'disabled':''}>🔗 Generar enlace</button>
+    </div>
     <input id="ed-share-nuevo" class="form-control" style="display:none;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:12px;" readonly onclick="this.select()"/>
     <div id="ed-shares-list" style="margin-top:14px;display:flex;flex-direction:column;gap:6px;"></div>
   </div>`;
@@ -2219,7 +2221,7 @@ window.closeInforme = function(){
 
    Colección 'analisisShares', id de documento = el propio token:
      informeId, rivalName, jornada, createdAt (epoch ms), expiresAt
-     (epoch ms, createdAt + 24h), revoked (bool),
+     (epoch ms), duracion (texto legible), revoked (bool),
      identidades      { personaId: {deviceId, nombre, dispositivo,
                         ciudad, pais, primeraApertura, ultimaApertura,
                         aperturas} }  ← quién ha reclamado cada nombre
@@ -2227,7 +2229,15 @@ window.closeInforme = function(){
                         ciudad, pais} }
      accesos          [ {ts, resultado, persona, motivo, dispositivo,
                         ciudad, pais} ]  ← registro de cada intento */
-const SHARE_DURACION_MS = 24 * 60 * 60 * 1000;
+/* Plazos elegibles al generar el enlace. 24 h se queda corto cuando el
+   enlace es para la plantilla entera y se manda el viernes para el
+   domingo; el orden importa, el primero es el que sale marcado. */
+const H = 60 * 60 * 1000;
+const SHARE_DURACIONES = [
+  { label:'24 horas', ms: 24 * H },
+  { label:'3 días',   ms: 72 * H },
+  { label:'7 días',   ms: 168 * H },
+];
 
 /* ── Identidad del navegador, base del candado por persona ──────────
    No hay login en la vista compartida (es justo el punto: un enlace
@@ -2316,13 +2326,16 @@ window.generarEnlaceCompartir = async function(){
   }
   const token = generarTokenCompartir();
   const ahora = Date.now();
+  const sel = document.getElementById('ed-share-dur');
+  const dur = SHARE_DURACIONES[sel ? parseInt(sel.value,10) : 0] || SHARE_DURACIONES[0];
   try{
     await setDoc(doc(db,'analisisShares',token), {
       informeId: currentInformeId,
       rivalName: currentInforme.rivalName,
       jornada: currentInforme.jornada,
       createdAt: ahora,
-      expiresAt: ahora + SHARE_DURACION_MS,
+      expiresAt: ahora + dur.ms,
+      duracion: dur.label,
       revoked: false,
     });
     await renderShares();
@@ -2332,7 +2345,7 @@ window.generarEnlaceCompartir = async function(){
        que en algunos contextos (http, permisos) puede fallar en silencio. */
     const campo = document.getElementById('ed-share-nuevo');
     if(campo){ campo.value = url; campo.style.display=''; campo.select(); }
-    toast('Enlace generado · caduca en 24 horas');
+    toast('Enlace generado · caduca en ' + dur.label);
   }catch(e){ console.error('[generarEnlaceCompartir]', e); toast('No se pudo generar el enlace'); }
 };
 
@@ -2380,7 +2393,7 @@ function identidadesHtml(token, identidades){
   const ids = Object.keys(identidades || {});
   const cabecera = `<div class="share-ident-head">
       <span class="share-ident-t">Identificados</span>
-      <span class="share-ident-cont">${ids.length} de ${PERSONAS.length}</span>
+      <span class="share-ident-cont">${ids.length}${PERSONAS.length ? ' de ' + PERSONAS.length : ''}</span>
     </div>`;
   if(!ids.length) return cabecera + '<div class="share-ident-none">Todavía no ha entrado nadie con este enlace.</div>';
   const filas = ids.map(id=>{
@@ -2434,6 +2447,9 @@ async function renderShares(){
   if(!cont || !currentInformeId) return;
   cont.innerHTML = '<div style="font-size:12px;color:var(--i-muted)">Cargando enlaces…</div>';
   try{
+    /* La lista del club hace falta para poner nombre a cada identidad y
+       para el contador "X de N"; si falla, el panel sigue pintándose. */
+    try{ await cargarPersonas(); }catch(e){ console.error('[renderShares] personas', e); }
     const snap = await getDocs(query(collection(db,'analisisShares'), where('informeId','==',currentInformeId)));
     const shares = snap.docs.map(d=>({token:d.id, ...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);
     if(!shares.length){ cont.innerHTML = '<div style="font-size:12px;color:var(--i-muted)">Todavía no has generado ningún enlace para este informe.</div>'; return; }
@@ -2487,7 +2503,7 @@ function pantallaEnlaceNoDisponible(motivo){
    Lo que esto sí resuelve: el reenvío casual. Quien reciba el enlace de
    segunda mano no tiene un nombre libre que usar sin que salte el aviso.
    Lo que no resuelve, y conviene tener claro: nadie verifica que quien
-   pulsa "Tocino" sea Tocino, y una captura de pantalla sigue siendo
+   pulsa "Lupu" sea Lupu, y una captura de pantalla sigue siendo
    incontrolable. Es una barrera de trazabilidad, no de criptografía. */
 
 const identLocalKey  = token => 'rl_share_ident_' + token;
@@ -2517,7 +2533,12 @@ async function geoCacheada(){
 /* Registra CADA intento de apertura, permitido o bloqueado, con el
    nombre que se usó. No bloquea nada si falla: el registro es
    complementario y nunca debe impedir que alguien legítimo vea el
-   informe por un fallo de red al escribir el log. */
+   informe por un fallo de red al escribir el log.
+
+   Se añade con arrayUnion, que es una operación atómica del servidor.
+   La versión anterior leía el array entero y lo reescribía: con un
+   enlace para todo el grupo, quince personas abriéndolo en el mismo
+   minuto se pisaban unas a otras y el registro perdía entradas. */
 async function registrarAcceso(token, resultado, opts = {}){
   const geo = await geoCacheada();
   const entrada = {
@@ -2530,23 +2551,26 @@ async function registrarAcceso(token, resultado, opts = {}){
     pais: geo?.pais || '',
   };
   try{
-    const snap = await getDoc(doc(db,'analisisShares',token));
-    const actual = snap.exists() ? (snap.data().accesos||[]) : [];
-    await setDoc(doc(db,'analisisShares',token), {accesos:[...actual, entrada]}, {merge:true});
+    await setDoc(doc(db,'analisisShares',token), {accesos: arrayUnion(entrada)}, {merge:true});
   }catch(e){ console.error('[registrarAcceso]', e); }
 }
 
 /* Intenta vincular una persona a este dispositivo.
    → {ok:true}                        nombre libre, o ya era suyo
    → {ok:false, motivo:'ocupado'}     ese nombre es de otro dispositivo
-   → {ok:false, motivo:'error'}       no se pudo leer/escribir en Firestore */
+   → {ok:false, motivo:'permisos'}    las reglas de Firestore rechazan la
+                                      escritura: hay que abrir la colección
+   → {ok:false, motivo:'error'}       fallo de red u otro */
 async function reclamarIdentidad(token, persona, deviceId){
   const ref = doc(db,'analisisShares',token);
   let s = null;
   try{
     const snap = await getDoc(ref);
     if(snap.exists()) s = snap.data();
-  }catch(e){ console.error('[reclamarIdentidad] lectura', e); return {ok:false, motivo:'error'}; }
+  }catch(e){
+    console.error('[reclamarIdentidad] lectura', e);
+    return {ok:false, motivo: e?.code === 'permission-denied' ? 'permisos' : 'error'};
+  }
   if(!s) return {ok:false, motivo:'error'};
 
   const previa = (s.identidades || {})[persona.id];
@@ -2564,7 +2588,10 @@ async function reclamarIdentidad(token, persona, deviceId){
        solo esta persona no pisa las identidades de los demás aunque dos
        jugadores entren a la vez. */
     await setDoc(ref, {identidades:{[persona.id]: registro}}, {merge:true});
-  }catch(e){ console.error('[reclamarIdentidad] escritura', e); return {ok:false, motivo:'error'}; }
+  }catch(e){
+    console.error('[reclamarIdentidad] escritura', e);
+    return {ok:false, motivo: e?.code === 'permission-denied' ? 'permisos' : 'error'};
+  }
   return {ok:true};
 }
 
@@ -2591,7 +2618,11 @@ async function bloquearDispositivo(token, deviceId, persona){
 function personasPorGrupo(){
   const g = {};
   PERSONAS.forEach(p => { (g[p.grupo] = g[p.grupo] || []).push(p); });
-  return GRUPOS_ORDEN.filter(k => g[k]).map(k => ({grupo:k, personas:g[k]}));
+  /* Los grupos conocidos van en su orden; si alguna ficha trae una
+     posición que no esperábamos, se muestra igualmente al final en vez
+     de desaparecer de la lista y dejar a esa persona sin poder entrar. */
+  const extra = Object.keys(g).filter(k => !GRUPOS_ORDEN.includes(k)).sort();
+  return [...GRUPOS_ORDEN, ...extra].filter(k => g[k]).map(k => ({grupo:k, personas:g[k]}));
 }
 
 /* La lista NO marca qué nombres están ya cogidos, y es deliberado: si
@@ -2607,7 +2638,7 @@ function identOpcionesHtml(filtro){
     html += `<div class="ident-grp">${grupo}</div>`;
     vis.forEach(p => {
       html += `<button class="ident-opt" data-id="${p.id}">
-        <span class="ident-dors">${p.dorsal != null ? '#' + p.dorsal : '··'}</span>
+        <span class="ident-dors">${p.dorsal ? '#' + p.dorsal : '··'}</span>
         <span>${esc(p.nombre)}</span>
       </button>`;
     });
@@ -2684,7 +2715,9 @@ function pantallaIdentificacion(token, share, deviceId){
       }
       go.disabled = false;
       go.textContent = 'Entrar al informe';
-      err.textContent = 'No se ha podido comprobar tu identidad. Revisa la conexión e inténtalo otra vez.';
+      err.textContent = r.motivo === 'permisos'
+        ? 'El sistema no tiene permiso para registrar tu identificación. Avisa al analista: hay que revisar los permisos de la base de datos.'
+        : 'No se ha podido comprobar tu identidad. Revisa la conexión e inténtalo otra vez.';
       err.style.display = 'block';
     });
 
@@ -2704,11 +2737,25 @@ async function iniciarVistaCompartida(token){
   }catch(e){ console.error('[iniciarVistaCompartida]', e); }
 
   if(!s || shareEstado(s) !== 'activo'){
-    pantallaEnlaceNoDisponible(!s ? 'El enlace no existe.' : s.revoked ? 'Quien lo compartió lo ha desactivado.' : 'Caducó — los enlaces solo son válidos 24 horas.');
+    pantallaEnlaceNoDisponible(!s ? 'El enlace no existe.' : s.revoked ? 'Quien lo compartió lo ha desactivado.' : 'El enlace ha caducado. Pídele uno nuevo a quien te lo compartió.');
     return;
   }
 
   const miDeviceId = dispositivoIdLocal();
+
+  /* 0 · Lista del club. Sin ella no hay identificación posible, así que
+     si falla se corta en vez de dejar pasar a nadie sin nombre. */
+  try{
+    await cargarPersonas();
+  }catch(e){
+    console.error('[iniciarVistaCompartida] no se pudo cargar la lista del club', e);
+    pantallaEnlaceNoDisponible('No se ha podido cargar la lista del club para identificarte. Inténtalo en un momento o avisa al analista.');
+    return;
+  }
+  if(!PERSONAS.length){
+    pantallaEnlaceNoDisponible('No hay ninguna persona dada de alta en el club para identificarse. Avisa al analista.');
+    return;
+  }
 
   /* 1 · Dispositivo ya vetado en un intento anterior. El veto vive en
      Firestore y también en el navegador; si el analista lo levantó
