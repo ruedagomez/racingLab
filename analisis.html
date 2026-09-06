@@ -232,9 +232,6 @@ img,svg,video{max-width:100%;}
 .ident-q{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;letter-spacing:.4px;
   text-transform:uppercase;margin-bottom:4px;}
 .ident-hint{font-size:11.5px;color:var(--i-muted,#7a7872);line-height:1.5;margin-bottom:12px;}
-.ident-search{width:100%;border:1px solid var(--bdr);border-radius:8px;padding:9px 11px;font-size:13px;
-  background:var(--bg);margin-bottom:9px;}
-.ident-search:focus{border-color:var(--r);background:var(--wh);}
 .ident-list{max-height:288px;overflow-y:auto;border:1px solid var(--bdr);border-radius:8px;padding:5px;
   background:var(--bg);}
 .ident-grp{font-family:'Barlow Condensed',sans-serif;font-size:9.5px;font-weight:800;letter-spacing:1.4px;
@@ -587,6 +584,7 @@ const SIN_ACCESO_ANALISIS = [
   'Javier Romero',
   'Javier Sampalo',
   'Abraham Melgar',
+  'Ramón Herrera',
 ];
 /* Normalización propia y local (sin tildes, minúsculas, espacios
    colapsados). No se reutiliza normNombre() del motor de estadísticas
@@ -595,7 +593,23 @@ const SIN_ACCESO_ANALISIS = [
    dependencia de orden frágil entre dos partes sin relación. */
 const normAcceso = s => String(s||'').trim().toLowerCase()
   .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
-const SIN_ACCESO_SET = new Set(SIN_ACCESO_ANALISIS.map(normAcceso));
+const SIN_ACCESO_NORM = SIN_ACCESO_ANALISIS.map(normAcceso);
+/* Coincidencia por INICIO del nombre, no exacta: en las fichas el nombre
+   suele estar completo ("Abraham Melgar Álvarez") mientras que aquí se
+   escribe como se le conoce ("Abraham Melgar"). Exigir igualdad exacta
+   dejaba entrar a gente que sí debía estar excluida. Se compara sobre el
+   nombre normalizado y con el espacio final incluido en la prueba de
+   prefijo, para que "Pablo" no excluya por error a un "Pablo Ramírez"
+   distinto que sí deba tener acceso — pero sí a "Pablo Ruiz Gómez" si
+   fuera esa la persona: cuando haya dos nombres que empiecen igual, hay
+   que escribir aquí el nombre lo bastante completo para distinguirlos. */
+function sinAccesoAnalisis(...campos){
+  return campos.some(c => {
+    const n = normAcceso(c);
+    if(!n) return false;
+    return SIN_ACCESO_NORM.some(x => n === x || n.startsWith(x + ' '));
+  });
+}
 
 async function cargarPersonas(){
   if(personasCargadas) return PERSONAS;
@@ -608,7 +622,7 @@ async function cargarPersonas(){
     /* Se comprueban los dos campos (name y role): un puesto sin cubrir
        se muestra por su cargo, así que podría estar excluido por
        cualquiera de los dos. */
-    .filter(s => !SIN_ACCESO_SET.has(normAcceso(s.name)) && !SIN_ACCESO_SET.has(normAcceso(s.role)))
+    .filter(s => !sinAccesoAnalisis(s.name, s.role))
     .sort((a,b) => (a.order ?? 999) - (b.order ?? 999))
     .map(s => ({
       id: 'st:' + s.id,
@@ -620,7 +634,7 @@ async function cargarPersonas(){
     .filter(p => p.active !== false)
     /* Mismo filtro para jugadores: se comprueban apodo y nombre completo,
        porque la exclusión se escribe como se conoce a la persona. */
-    .filter(p => !SIN_ACCESO_SET.has(normAcceso(p.nick)) && !SIN_ACCESO_SET.has(normAcceso(p.n)))
+    .filter(p => !sinAccesoAnalisis(p.nick, p.n))
     .sort((a,b) => (a.d ?? 999) - (b.d ?? 999))
     .map(p => ({
       id: 'pl:' + p.id,
@@ -2696,8 +2710,7 @@ function pantallaIdentificacion(token, share, deviceId){
       </div>
       <div class="ident-body">
         <div class="ident-q">¿Quién eres?</div>
-        <div class="ident-hint">Busca y selecciona tu nombre para abrir el informe. Tu nombre quedará vinculado a este dispositivo: podrás volver a entrar siempre que quieras desde él.</div>
-        <input class="ident-search" id="identBuscar" placeholder="Escribe tu nombre o dorsal…" autocomplete="off"/>
+        <div class="ident-hint">Selecciona tu nombre de la lista para abrir el informe. Tu nombre quedará vinculado a este dispositivo: podrás volver a entrar siempre que quieras desde él.</div>
         <div class="ident-list" id="identLista">${identOpcionesHtml('')}</div>
         <div class="ident-foot">
           <button class="btn btn-primary ident-go" id="identGo" disabled>Entrar al informe</button>
@@ -2709,16 +2722,14 @@ function pantallaIdentificacion(token, share, deviceId){
     document.body.appendChild(ov);
 
     const lista  = ov.querySelector('#identLista');
-    const buscar = ov.querySelector('#identBuscar');
     const go     = ov.querySelector('#identGo');
     const err    = ov.querySelector('#identErr');
     let sel = null;
 
-    buscar.addEventListener('input', () => {
-      lista.innerHTML = identOpcionesHtml(buscar.value);
-      sel = null; go.disabled = true;
-    });
-
+    /* Sin buscador a propósito: la ÚNICA forma de identificarse es pulsar
+       un nombre de la lista, que se genera desde las fichas reales del
+       club. No existe ningún campo donde escribir texto, así que nadie
+       puede introducir un nombre a mano ni por error ni a propósito. */
     lista.addEventListener('click', e => {
       const btn = e.target.closest('.ident-opt');
       if(!btn) return;
@@ -2757,7 +2768,6 @@ function pantallaIdentificacion(token, share, deviceId){
       err.style.display = 'block';
     });
 
-    setTimeout(() => buscar.focus(), 80);
   });
 }
 
