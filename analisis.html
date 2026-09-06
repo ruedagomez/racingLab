@@ -515,6 +515,26 @@ const CLUBS = [
 ];
 const clubById = id => CLUBS.find(c=>c.id===id) || null;
 
+/* Nombre presentable de un equipo a partir de su id interno.
+   El motor de estadísticas guarda los equipos por ID ('xerez-dfc',
+   'bollullos'), que es lo correcto para cruzar datos pero NO para
+   enseñar: hasta ahora la clasificación mostraba literalmente esos ids
+   en minúsculas y con guiones. Esta función es el único punto de
+   traducción id → nombre; si un id no está en CLUBS (caso del propio
+   Racing, que no es rival de sí mismo) se resuelve aquí, y si aun así
+   no se reconoce, se devuelve algo legible en vez del id crudo. */
+const NOMBRES_EXTRA = { racing: 'Racing Club Portuense' };
+function nombreEquipo(id){
+  if(!id) return '—';
+  const c = clubById(id);
+  if(c) return c.name;
+  if(NOMBRES_EXTRA[id]) return NOMBRES_EXTRA[id];
+  // Último recurso: 'san-roque' → 'San Roque'. Mejor que mostrar el id.
+  return String(id).split('-')
+    .map(p => p ? p[0].toUpperCase() + p.slice(1) : p)
+    .join(' ');
+}
+
 /* Fechas fijas: domingos desde 06/09/2026, sin 27/12 ni 03/01 */
 const JORNADA_DATES = [
   '2026-09-06','2026-09-13','2026-09-20','2026-09-27','2026-10-04','2026-10-11','2026-10-18','2026-10-25',
@@ -1993,19 +2013,24 @@ function convCardHtml(c){
   </div>`;
   return `<div class="lu-card">
     <div class="lu-header"><span class="lu-badge" style="background:${RES_COLOR[c.res]||'var(--i-muted)'}">${esc(c.res)||'·'}</span>
-      <span class="lu-title">${esc(c.jornada)} · ${esc(c.cond)} · ${esc(c.marcador)} · ${esc(c.rival)}</span></div>
+      <span class="lu-title">${esc(c.jornada)} · ${esc(c.cond)} · ${esc(c.marcador)} · ${esc(nombreEquipo(c.rival))}</span></div>
     ${c.titulares.map(p=>pl(p,true)).join('')}
     ${c.suplentes.length?`<div class="lu-sep">Suplentes</div>${c.suplentes.map(p=>pl(p,false)).join('')}`:''}
   </div>`;
 }
-function clasifTableHtml(rows, rivalName){
+function clasifTableHtml(rows, rivalId){
   if(!rows.length) return bulletsHtml([]);
   return `<table class="tbl"><thead><tr><th>Pos</th><th>Equipo</th><th class="num">PJ</th><th class="num">Pts</th></tr></thead><tbody>` +
     rows.map(r=>{
-      const isRacing = /racing|portuense/i.test(r.equipo);
-      const isRival = !isRacing && rivalName && r.equipo && rivalName.toLowerCase().includes(r.equipo.toLowerCase().slice(0,6));
+      /* r.equipo es el ID interno ('xerez-dfc'), no el nombre. Se resalta
+         comparando IDs (exacto y fiable) y se muestra el nombre real.
+         Antes se comparaba el id contra el nombre del rival recortado a 6
+         letras, que fallaba en casos como 'dos-hermanas' vs 'Dos Hermanas
+         Club de Fútbol 1971'. */
+      const isRacing = r.equipo === 'racing';
+      const isRival = !isRacing && rivalId && r.equipo === rivalId;
       return `<tr class="${isRacing?'hl-racing':isRival?'hl-rival':''}">
-        <td><span class="pos-b">${esc(r.pos)}</span></td><td>${esc(r.equipo)}</td>
+        <td><span class="pos-b">${esc(r.pos)}</span></td><td>${esc(nombreEquipo(r.equipo))}</td>
         <td class="num">${esc(r.pj)}</td><td class="num" style="font-weight:700">${esc(r.pts)}</td></tr>`;
     }).join('') + `</tbody></table>`;
 }
@@ -2079,7 +2104,7 @@ window.openInforme = async function(iid){
 
   /* campogramas: las 2 convocatorias más recientes con 11 titulares y sistema */
   const pitches = inf.convocatorias.filter(c=>c.titulares.length===11 && c.sistema).slice(0,2)
-    .map(c=>{ const svg = pitchSvg(c, club && club.color); return svg ? `<div class="pitch-card icard"><div class="pitch-label">${esc(c.jornada)} · ${esc(c.cond)} · ${esc(c.marcador)} · ${esc(c.rival)} ${c.res==='V'?'✅':c.res==='E'?'➖':c.res==='D'?'❌':''}</div>${svg}</div>` : ''; })
+    .map(c=>{ const svg = pitchSvg(c, club && club.color); return svg ? `<div class="pitch-card icard"><div class="pitch-label">${esc(c.jornada)} · ${esc(c.cond)} · ${esc(c.marcador)} · ${esc(nombreEquipo(c.rival))} ${c.res==='V'?'✅':c.res==='E'?'➖':c.res==='D'?'❌':''}</div>${svg}</div>` : ''; })
     .filter(Boolean).join('');
 
   const fuenteChip = `<div class="pipe-note" style="margin-top:14px;">${d.fuente==='actas'
@@ -2108,13 +2133,13 @@ window.openInforme = async function(iid){
       <div class="icard"><div class="subsection-title">Situación del rival</div>${bulletsHtml(inf.contexto)}</div>
     </div>
     <div class="ig2" style="margin-bottom:14px;">
-      <div class="icard"><div class="subsection-title">Clasificación</div>${clasifTableHtml(d.clasificacion, inf.rivalName)}</div>
+      <div class="icard"><div class="subsection-title">Clasificación</div>${clasifTableHtml(d.clasificacion, inf.clubId)}</div>
       <div class="icard"><div class="subsection-title">Racha · últimos 5</div>
         ${d.racha.length ? d.racha.map(r=>`
           <div class="form-row"><span class="form-j">${esc(r.jornada)}</span>
             <span class="form-badge ${esc(r.res)}">${esc(r.res)}</span>
             <span class="form-score">${esc(r.marcador)}</span>
-            <span class="form-rival">${esc(r.rival)}</span>
+            <span class="form-rival">${esc(nombreEquipo(r.rival))}</span>
             <span class="form-cond">${esc(r.cond)}</span></div>`).join('') : bulletsHtml([])}
       </div>
     </div>
@@ -2175,7 +2200,7 @@ window.openInforme = async function(iid){
     ${d.rankings.length ? `<div class="subsection-title">Rankings de liga</div>
     <div class="icard" style="margin-bottom:14px;">
       <div class="rank-head"><div class="rh" style="text-align:right;">${esc(inf.rivalName)}</div><div class="rank-met">Métrica</div><div class="rh" style="color:var(--i-red)">Racing</div></div>
-      ${d.rankings.map(r=>`<div class="rank-row"><div class="rank-v left">${esc(r.rival)}</div><div class="rank-met">${esc(r.metrica)}</div><div class="rank-v right">${esc(r.racing)}</div></div>`).join('')}
+      ${d.rankings.map(r=>`<div class="rank-row"><div class="rank-v left">${esc(nombreEquipo(r.rival))}</div><div class="rank-met">${esc(r.metrica)}</div><div class="rank-v right">${esc(r.racing)}</div></div>`).join('')}
     </div>`:''}
     ${d.patrones.length ? `<div class="subsection-title">Patrones situacionales</div><div class="icard">${bulletsHtml(d.patrones)}</div>`:''}
     ${fuenteChip}
