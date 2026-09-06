@@ -196,10 +196,63 @@ img,svg,video{max-width:100%;}
 .share-acc-warn{font-size:11.5px;font-weight:700;color:#b91c1c;background:#fef2f2;border-left:3px solid #b91c1c;
   padding:6px 9px;margin-bottom:6px;border-radius:3px;}
 .share-acc-list{display:flex;flex-direction:column;gap:3px;max-height:160px;overflow-y:auto;}
-.share-acc-row{display:grid;grid-template-columns:16px 90px 1fr 1fr;gap:8px;align-items:center;
+.share-acc-row{display:grid;grid-template-columns:16px 72px 1fr 1fr 1fr;gap:8px;align-items:center;
   font-size:11px;color:var(--mid);padding:3px 5px;border-radius:3px;}
 .share-acc-row.bloq{background:#fef2f2;color:#b91c1c;font-weight:600;}
 .share-acc-ico{text-align:center;}
+.share-acc-persona{font-weight:700;color:var(--txt);}
+.share-acc-row.bloq .share-acc-persona{color:#b91c1c;}
+/* Identidades reclamadas (vista del editor) */
+.share-ident-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:9px 0 5px;}
+.share-ident-t{font-family:'Barlow Condensed',sans-serif;font-size:10.5px;font-weight:800;letter-spacing:1px;
+  text-transform:uppercase;color:var(--i-muted,#7a7872);}
+.share-ident-list{display:flex;flex-direction:column;gap:3px;max-height:240px;overflow-y:auto;}
+.share-ident-row{display:grid;grid-template-columns:1.1fr 1fr 1fr auto;gap:8px;align-items:center;
+  font-size:11px;color:var(--mid);background:var(--wh);border:1px solid var(--bdr);
+  border-left:3px solid var(--fit,#15803d);border-radius:4px;padding:5px 8px;}
+.share-ident-nom{font-weight:700;color:var(--txt);font-size:11.5px;}
+.share-ident-sub{font-size:10px;color:var(--faint);}
+.share-ident-btn{background:none;border:none;color:var(--i-muted,#7a7872);font-size:10.5px;font-weight:600;
+  text-decoration:underline;padding:0 2px;cursor:pointer;white-space:nowrap;}
+.share-ident-btn:hover{color:var(--r);}
+.share-ident-none{font-size:11px;color:var(--i-muted,#7a7872);padding:4px 0;}
+.share-ident-cont{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--i-muted,#7a7872);}
+
+/* ══ PANTALLA DE IDENTIFICACIÓN (solo enlace compartido) ══ */
+.ident-ov{position:fixed;inset:0;z-index:1000;background:var(--bg);display:flex;align-items:center;
+  justify-content:center;padding:18px;overflow-y:auto;}
+.ident-card{width:100%;max-width:460px;background:var(--wh);border:1px solid var(--bdr);border-radius:14px;
+  overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.10);animation:fadeUp .3s ease;}
+.ident-head{background:var(--blk);border-bottom:3px solid var(--r);padding:20px 22px;}
+.ident-eyebrow{font-family:'Barlow Condensed',sans-serif;font-size:9.5px;font-weight:800;letter-spacing:2.2px;
+  text-transform:uppercase;color:var(--r);margin-bottom:6px;}
+.ident-title{font-family:'Bebas Neue',cursive;font-size:30px;letter-spacing:1.2px;color:#fff;line-height:1;}
+.ident-sub{font-size:11.5px;color:rgba(255,255,255,.5);margin-top:7px;}
+.ident-body{padding:18px 20px 20px;}
+.ident-q{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;letter-spacing:.4px;
+  text-transform:uppercase;margin-bottom:4px;}
+.ident-hint{font-size:11.5px;color:var(--i-muted,#7a7872);line-height:1.5;margin-bottom:12px;}
+.ident-search{width:100%;border:1px solid var(--bdr);border-radius:8px;padding:9px 11px;font-size:13px;
+  background:var(--bg);margin-bottom:9px;}
+.ident-search:focus{border-color:var(--r);background:var(--wh);}
+.ident-list{max-height:288px;overflow-y:auto;border:1px solid var(--bdr);border-radius:8px;padding:5px;
+  background:var(--bg);}
+.ident-grp{font-family:'Barlow Condensed',sans-serif;font-size:9.5px;font-weight:800;letter-spacing:1.4px;
+  text-transform:uppercase;color:var(--faint);padding:8px 8px 4px;}
+.ident-opt{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:var(--wh);
+  border:1px solid var(--bdr);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--txt);
+  margin-bottom:3px;transition:.12s;}
+.ident-opt:hover{border-color:var(--r);}
+.ident-opt.sel{border-color:var(--r);background:var(--r2);font-weight:600;}
+.ident-dors{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);min-width:24px;}
+.ident-opt.sel .ident-dors{color:var(--r);}
+.ident-foot{margin-top:14px;}
+.ident-go{width:100%;justify-content:center;padding:11px;font-size:13px;}
+.ident-warn{font-size:11px;color:var(--i-muted,#7a7872);line-height:1.5;margin-top:10px;
+  background:var(--bg);border-left:3px solid var(--i-amber,#c47b00);padding:8px 10px;border-radius:4px;}
+.ident-empty{font-size:12px;color:var(--faint);padding:14px 8px;text-align:center;}
+.ident-err{font-size:11.5px;font-weight:700;color:#b91c1c;background:#fef2f2;border-left:3px solid #b91c1c;
+  padding:8px 10px;border-radius:4px;margin-top:10px;display:none;}
 body.modo-compartido .inf-sidebar{padding-top:8px;}
 .pipe-note{display:flex;gap:10px;align-items:flex-start;background:var(--i-card2);border:1px dashed var(--i-border2);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--i-muted);}
 
@@ -418,7 +471,7 @@ body.modo-compartido .inf-sidebar{padding-top:8px;}
 <div id="toast"></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, getDocs, setDoc, deleteDoc, collection, onSnapshot, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, getDocs, setDoc, deleteDoc, deleteField, collection, onSnapshot, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app = initializeApp({
   apiKey: "AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
@@ -489,6 +542,65 @@ const ABP = [
   { key:'abpOfensiva',  title:'ABP Ofensiva',  hint:'Córners, faltas laterales/frontales, saques de banda, penaltis — a favor' },
   { key:'abpDefensiva', title:'ABP Defensiva', hint:'Cómo defienden córners, faltas y saques de banda — a explotar' },
 ];
+
+/* ══════════ PERSONAS AUTORIZADAS (enlaces compartidos) ══════════
+   Lista cerrada de quién puede identificarse al abrir un enlace
+   compartido. Es el ÚNICO sitio que hay que tocar cuando entre o
+   salga alguien de la plantilla o del cuerpo técnico.
+
+   · Plantilla: copiada literalmente de plantilla.html (mismos ids
+     p00, p13… para que un día se pueda leer de rl_players / Firestore
+     sin renumerar nada). Nombre y dorsal tal cual están allí.
+   · Cuerpo técnico: van por CARGO, no por nombre, porque los nombres
+     reales no constan en ninguna fuente del proyecto — no me los
+     invento. Sustitúyelos por el nombre de cada persona (y añade una
+     línea por cada utillero, no una sola compartida: dos personas con
+     la misma entrada se bloquearían entre ellas).
+
+   IMPORTANTE: quien no esté en esta lista no puede entrar. Si mandas
+   el enlace al presidente o a un ojeador, añádelo aquí antes. */
+const PERSONAS = [
+  // ── Cuerpo técnico ──
+  { id:'s-1e',  nombre:'Primer Entrenador',      grupo:'Cuerpo técnico' },
+  { id:'s-2e',  nombre:'2º Entrenador',          grupo:'Cuerpo técnico' },
+  { id:'s-pf',  nombre:'Preparador Físico',      grupo:'Cuerpo técnico' },
+  { id:'s-ep',  nombre:'Entrenador de Porteros', grupo:'Cuerpo técnico' },
+  { id:'s-an',  nombre:'Analista',               grupo:'Cuerpo técnico' },
+  { id:'s-del', nombre:'Delegado',               grupo:'Cuerpo técnico' },
+  { id:'s-ut',  nombre:'Utillero',               grupo:'Cuerpo técnico' },
+  // ── Porteros ──
+  { id:'p00', dorsal:0,  nombre:'Castañeda',     completo:'Alejandro Castañeda Sánchez',    grupo:'Porteros' },
+  { id:'p01', dorsal:1,  nombre:'Manu',          completo:'Manuel López García',            grupo:'Porteros' },
+  { id:'p13', dorsal:13, nombre:'Juanma',        completo:'Juan Manuel Lozano Álvarez',     grupo:'Porteros' },
+  // ── Defensas ──
+  { id:'p02', dorsal:2,  nombre:'Carmelo',       completo:'Carmelo Manuel Humanes Porras',  grupo:'Defensas' },
+  { id:'p04', dorsal:4,  nombre:'Kevin',         completo:'Kevin Roberto Gil Navarro',      grupo:'Defensas' },
+  { id:'p06', dorsal:6,  nombre:'Alberto Durán', completo:'Alberto Durán López',            grupo:'Defensas' },
+  { id:'p11', dorsal:11, nombre:'Manu Moreno',   completo:'Manuel Domínguez Moreno',        grupo:'Defensas' },
+  { id:'p15', dorsal:15, nombre:'Rodri',         completo:'José Luis Rodríguez Muñoz',      grupo:'Defensas' },
+  { id:'p18', dorsal:18, nombre:'Oca',           completo:'Antonio Miguel Oca Contreras',   grupo:'Defensas' },
+  { id:'p20', dorsal:20, nombre:'Barba',         completo:'Roberto Barba Castillo',         grupo:'Defensas' },
+  { id:'p42', dorsal:42, nombre:'Lainez',        completo:'Daniel Lainez Herrera',          grupo:'Defensas' },
+  // ── Centrocampistas ──
+  { id:'p05', dorsal:5,  nombre:'Fernando',      completo:'Fernando Ramos Delgado',         grupo:'Centrocampistas' },
+  { id:'p08', dorsal:8,  nombre:'Kevin B.',      completo:'Juan Kevin Bonilla Durán',       grupo:'Centrocampistas' },
+  { id:'p10', dorsal:10, nombre:'Chicho',        completo:'Antonio Jesús Garrido Fernández',grupo:'Centrocampistas' },
+  { id:'p14', dorsal:14, nombre:'Adri Romero',   completo:'Adrián Romero Rodríguez',        grupo:'Centrocampistas' },
+  { id:'p21', dorsal:21, nombre:'Fran García',   completo:'Francisco José García Pavón',    grupo:'Centrocampistas' },
+  { id:'p28', dorsal:28, nombre:'Adri Cuevas',   completo:'Adrián Cuevas',                  grupo:'Centrocampistas' },
+  // ── Delanteros ──
+  { id:'p07', dorsal:7,  nombre:'Manu Heredia',  completo:'Manuel Heredia Montoya',         grupo:'Delanteros' },
+  { id:'p09', dorsal:9,  nombre:'Javi Tamayo',   completo:'Manuel Javier Tamayo Pacheco',   grupo:'Delanteros' },
+  { id:'p16', dorsal:16, nombre:'Borja',         completo:'Borja Jiménez Macías',           grupo:'Delanteros' },
+  { id:'p17', dorsal:17, nombre:'Fran Jiménez',  completo:'Francisco Jiménez Cruz',         grupo:'Delanteros' },
+  { id:'p19', dorsal:19, nombre:'Tocino',        completo:'Antonio Jesús Tocino Sánchez',   grupo:'Delanteros' },
+  { id:'p24', dorsal:24, nombre:'Jacobo',        completo:'Jacobo Cornejo Salas',           grupo:'Delanteros' },
+  { id:'p27', dorsal:27, nombre:'Pepe Sáinz',    completo:'José Luis Sáinz Hugues',         grupo:'Delanteros' },
+  { id:'p30', dorsal:30, nombre:'Hugo',          completo:'Hugo Rodríguez Romero',          grupo:'Delanteros' },
+  { id:'p99',            nombre:'Elías',         completo:'Elías Sebastián Palacio',        grupo:'Delanteros' },
+];
+const personaById = id => PERSONAS.find(p => p.id === id) || null;
+const GRUPOS_ORDEN = ['Cuerpo técnico','Porteros','Defensas','Centrocampistas','Delanteros'];
 
 /* ══════════ ESTADO ══════════ */
 let SHIELDS = {};          // lpId → shieldUrl
@@ -1650,7 +1762,7 @@ function renderEditor(){
   html += `<div class="ed-sec">09 · Compartir</div>
   <div class="ed-block">
     <div class="ed-block-title">Enlace temporal para enviar fuera de la plataforma</div>
-    <div class="ed-hint">Genera un enlace que caduca solo a las 24 horas — o revócalo tú antes si quieres cerrarlo antes.
+    <div class="ed-hint">Un solo enlace para todo el grupo: quien lo abra tendrá que identificarse con su nombre de la lista del club, y ese nombre queda atado a su dispositivo. Caduca solo a las 24 horas — o revócalo tú antes.
       ${inf.estado!=='publicado' ? '<b style="color:var(--i-amber)">Publica el informe primero: un borrador no se puede compartir.</b>' : ''}</div>
     <button class="btn btn-primary btn-sm" onclick="generarEnlaceCompartir()" ${inf.estado!=='publicado'?'disabled':''}>🔗 Generar enlace (24h)</button>
     <input id="ed-share-nuevo" class="form-control" style="display:none;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:12px;" readonly onclick="this.select()"/>
@@ -2107,11 +2219,17 @@ window.closeInforme = function(){
 
    Colección 'analisisShares', id de documento = el propio token:
      informeId, rivalName, jornada, createdAt (epoch ms), expiresAt
-     (epoch ms, createdAt + 24h), revoked (bool). */
+     (epoch ms, createdAt + 24h), revoked (bool),
+     identidades      { personaId: {deviceId, nombre, dispositivo,
+                        ciudad, pais, primeraApertura, ultimaApertura,
+                        aperturas} }  ← quién ha reclamado cada nombre
+     devicesBloqueados{ deviceId: {ts, personaIntentada, dispositivo,
+                        ciudad, pais} }
+     accesos          [ {ts, resultado, persona, motivo, dispositivo,
+                        ciudad, pais} ]  ← registro de cada intento */
 const SHARE_DURACION_MS = 24 * 60 * 60 * 1000;
 
-/* ── Identidad de dispositivo para el candado "solo el primer
-   dispositivo" ──────────────────────────────────────────────────────
+/* ── Identidad del navegador, base del candado por persona ──────────
    No hay login en la vista compartida (es justo el punto: un enlace
    sin fricción), así que "dispositivo" es una marca aleatoria guardada
    en el navegador de quien abre el enlace, persistente mientras no
@@ -2227,29 +2345,87 @@ window.revocarShare = async function(token){
   }catch(e){ console.error('[revocarShare]', e); toast('No se pudo revocar'); }
 };
 
-window.desbloquearDispositivoShare = async function(token){
-  if(!confirm('¿Liberar este enlace? El siguiente dispositivo que lo abra quedará vinculado a partir de ahora.')) return;
+/* Libera un nombre concreto: el jugador vuelve a poder identificarse
+   desde cero (con el mismo móvil o con otro). Es el escape necesario
+   para el caso real más frecuente: alguien cambia de teléfono, borra
+   los datos del navegador o entró en incógnito, y su nombre se quedó
+   atado a un dispositivo que ya no existe. */
+window.desvincularPersonaShare = async function(token, personaId){
+  const p = personaById(personaId);
+  if(!confirm(`¿Liberar el nombre de ${p ? p.nombre : personaId}? Podrá volver a identificarse desde cualquier dispositivo.`)) return;
   try{
-    await setDoc(doc(db,'analisisShares',token), {deviceId:null}, {merge:true});
+    await setDoc(doc(db,'analisisShares',token), {identidades:{[personaId]: deleteField()}}, {merge:true});
     await renderShares();
-    toast('Dispositivo desvinculado');
-  }catch(e){ console.error('[desbloquearDispositivoShare]', e); toast('No se pudo desvincular'); }
+    toast('Nombre liberado');
+  }catch(e){ console.error('[desvincularPersonaShare]', e); toast('No se pudo liberar'); }
 };
 
+/* Levanta los bloqueos de dispositivo de este enlace. Úsalo solo si
+   sabes que el bloqueo fue un error (alguien se equivocó de nombre al
+   pulsar), no como rutina: cada bloqueo levantado es una segunda
+   oportunidad para probar nombres. */
+window.liberarBloqueosShare = async function(token){
+  if(!confirm('¿Levantar los bloqueos de este enlace? Los dispositivos bloqueados podrán volver a intentar identificarse.')) return;
+  try{
+    await setDoc(doc(db,'analisisShares',token),
+      {devicesBloqueados: deleteField(), bloqueosLevantadosAt: Date.now()}, {merge:true});
+    await renderShares();
+    toast('Bloqueos levantados');
+  }catch(e){ console.error('[liberarBloqueosShare]', e); toast('No se pudieron levantar'); }
+};
+
+/* Quién ha entrado: una fila por persona identificada, con el
+   dispositivo y la ubicación desde la que reclamó su nombre. */
+function identidadesHtml(token, identidades){
+  const ids = Object.keys(identidades || {});
+  const cabecera = `<div class="share-ident-head">
+      <span class="share-ident-t">Identificados</span>
+      <span class="share-ident-cont">${ids.length} de ${PERSONAS.length}</span>
+    </div>`;
+  if(!ids.length) return cabecera + '<div class="share-ident-none">Todavía no ha entrado nadie con este enlace.</div>';
+  const filas = ids.map(id=>{
+    const r = identidades[id] || {};
+    const p = personaById(id);
+    const nombre = p ? p.nombre : (r.nombre || id);
+    const lugar = [r.ciudad, r.pais].filter(Boolean).join(', ') || 'ubicación desconocida';
+    const veces = r.aperturas || 1;
+    return `<div class="share-ident-row">
+      <div>
+        <div class="share-ident-nom">${esc(nombre)}${p && p.dorsal!=null ? ` <span class="share-ident-sub">#${p.dorsal}</span>` : ''}</div>
+        <div class="share-ident-sub">${veces} apertura${veces>1?'s':''} · última ${fmtHora(r.ultimaApertura || r.primeraApertura || Date.now())}</div>
+      </div>
+      <div>${esc(r.dispositivo || '—')}</div>
+      <div>${esc(lugar)}</div>
+      <button class="share-ident-btn" onclick="desvincularPersonaShare('${token}','${id}')">Desvincular</button>
+    </div>`;
+  }).join('');
+  return cabecera + `<div class="share-ident-list">${filas}</div>`;
+}
+
+/* Registro crudo de intentos, permitidos y bloqueados. Lo que de verdad
+   interesa mirar son los bloqueados: dicen qué nombre se intentó usar,
+   desde dónde y cuándo. */
 function accesosHtml(accesos){
   if(!accesos || !accesos.length) return '<div class="share-acc-none">Sin aperturas todavía.</div>';
-  const bloqueados = accesos.filter(a=>a.resultado==='bloqueado').length;
+  const bloqueados = accesos.filter(a=>a.resultado==='bloqueado');
   const filas = accesos.slice().sort((a,b)=>b.ts-a.ts).map(a=>{
     const lugar = [a.ciudad,a.pais].filter(Boolean).join(', ') || 'ubicación desconocida';
     const ok = a.resultado==='permitido';
+    const quien = a.persona || (ok ? '—' : 'sin identificar');
     return `<div class="share-acc-row ${ok?'':'bloq'}">
       <span class="share-acc-ico">${ok?'✓':'⛔'}</span>
       <span>${fmtHora(a.ts)}</span>
-      <span>${a.dispositivo||'—'}</span>
-      <span>${lugar}</span>
+      <span class="share-acc-persona">${esc(quien)}</span>
+      <span>${esc(a.dispositivo||'—')}</span>
+      <span>${esc(lugar)}</span>
     </div>`;
   }).join('');
-  return `${bloqueados ? `<div class="share-acc-warn">⚠ ${bloqueados} intento${bloqueados>1?'s':''} bloqueado${bloqueados>1?'s':''} desde otro dispositivo — revisa si alguien más tiene este enlace.</div>` : ''}
+  const aviso = bloqueados.length
+    ? `<div class="share-acc-warn">⚠ ${bloqueados.length} intento${bloqueados.length>1?'s':''} bloqueado${bloqueados.length>1?'s':''} — ${
+        [...new Set(bloqueados.map(b=>b.persona).filter(Boolean))].join(', ') || 'sin nombre'
+      }. Alguien intentó entrar con un nombre ya vinculado a otro dispositivo.</div>`
+    : '';
+  return `${aviso}<div class="share-acc-head share-ident-head"><span class="share-ident-t">Registro de aperturas</span></div>
     <div class="share-acc-list">${filas}</div>`;
 }
 
@@ -2265,13 +2441,15 @@ async function renderShares(){
       const estado = shareEstado(s);
       const chip = {activo:'share-chip-ok', caducado:'share-chip-off', revocado:'share-chip-off'}[estado];
       const label = {activo:'Activo · caduca '+fmtHora(s.expiresAt), caducado:'Caducado '+fmtHora(s.expiresAt), revocado:'Revocado'}[estado];
+      const nBloq = Object.keys(s.devicesBloqueados||{}).length;
       return `<div class="share-block">
         <div class="share-row">
           <span class="share-chip ${chip}">${label}</span>
           <span class="share-fecha">generado ${fmtHora(s.createdAt)}</span>
           ${estado==='activo' ? `<button class="btn btn-ghost btn-sm" onclick="revocarShare('${s.token}')">Revocar</button>` : ''}
-          ${s.deviceId ? `<button class="btn btn-ghost btn-sm" onclick="desbloquearDispositivoShare('${s.token}')">Desvincular dispositivo</button>` : ''}
+          ${nBloq ? `<button class="btn btn-ghost btn-sm" onclick="liberarBloqueosShare('${s.token}')">Levantar ${nBloq} bloqueo${nBloq>1?'s':''}</button>` : ''}
         </div>
+        ${identidadesHtml(s.token, s.identidades)}
         ${accesosHtml(s.accesos)}
       </div>`;
     }).join('');
@@ -2291,17 +2469,62 @@ function pantallaEnlaceNoDisponible(motivo){
   </div>`;
 }
 
-/* Registra CADA intento de apertura (permitido o bloqueado) en el propio
-   documento del share. Los bloqueados son la señal más valiosa: un
-   intento desde un dispositivo/ciudad distintos es justo lo que se
-   quiere detectar. No bloquea nada si falla — el registro es
-   complementario, nunca debe impedir ver un informe legítimo por un
-   fallo de red al escribir el log. */
-async function registrarAcceso(token, resultado, deviceId){
-  const geo = await geoAproximada();
+/* ══════════ IDENTIFICACIÓN NOMINAL DEL ENLACE COMPARTIDO ══════════
+   El enlace es uno solo para toda la plantilla (25+ personas), así que
+   el candado antiguo de "solo el primer dispositivo" ya no vale: lo
+   reclamaría el primero que lo abriera y dejaría fuera a los otros 24.
+   El candado ahora es por PERSONA:
+
+     1. La primera vez que alguien abre el enlace en un dispositivo,
+        tiene que decir quién es eligiendo de una lista cerrada.
+     2. Ese nombre queda vinculado a ESE dispositivo mientras el enlace
+        viva. Vuelve a abrirlo cuantas veces quiera, sin fricción.
+     3. Si alguien intenta identificarse con un nombre ya reclamado
+        desde otro dispositivo, no entra: se bloquea, se registra con
+        su ubicación aproximada y ese dispositivo queda vetado para
+        este enlace (para que no vaya probando nombres uno a uno).
+
+   Lo que esto sí resuelve: el reenvío casual. Quien reciba el enlace de
+   segunda mano no tiene un nombre libre que usar sin que salte el aviso.
+   Lo que no resuelve, y conviene tener claro: nadie verifica que quien
+   pulsa "Tocino" sea Tocino, y una captura de pantalla sigue siendo
+   incontrolable. Es una barrera de trazabilidad, no de criptografía. */
+
+const identLocalKey  = token => 'rl_share_ident_' + token;
+const blockLocalKey  = token => 'rl_share_block_' + token;
+
+function identidadLocal(token){
+  try{ return JSON.parse(localStorage.getItem(identLocalKey(token)) || 'null'); }
+  catch(e){ return null; }
+}
+function guardarIdentidadLocal(token, persona){
+  try{ localStorage.setItem(identLocalKey(token), JSON.stringify({id:persona.id, nombre:persona.nombre, ts:Date.now()})); }catch(e){}
+}
+function olvidarIdentidadLocal(token){
+  try{ localStorage.removeItem(identLocalKey(token)); }catch(e){}
+}
+
+/* La geolocalización se pide una sola vez por carga: reclamar identidad
+   y registrar el acceso ocurren seguidos y no tiene sentido llamar dos
+   veces al servicio (que además tiene límite de uso por IP). */
+let _geoCache;
+async function geoCacheada(){
+  if(_geoCache !== undefined) return _geoCache;
+  _geoCache = await geoAproximada();
+  return _geoCache;
+}
+
+/* Registra CADA intento de apertura, permitido o bloqueado, con el
+   nombre que se usó. No bloquea nada si falla: el registro es
+   complementario y nunca debe impedir que alguien legítimo vea el
+   informe por un fallo de red al escribir el log. */
+async function registrarAcceso(token, resultado, opts = {}){
+  const geo = await geoCacheada();
   const entrada = {
     ts: Date.now(),
-    resultado,                    // 'permitido' | 'bloqueado'
+    resultado,                          // 'permitido' | 'bloqueado'
+    persona: opts.persona || '',        // nombre elegido en la lista
+    motivo: opts.motivo || '',          // por qué se bloqueó, si se bloqueó
     dispositivo: dispositivoLegible(),
     ciudad: geo?.ciudad || '',
     pais: geo?.pais || '',
@@ -2311,6 +2534,162 @@ async function registrarAcceso(token, resultado, deviceId){
     const actual = snap.exists() ? (snap.data().accesos||[]) : [];
     await setDoc(doc(db,'analisisShares',token), {accesos:[...actual, entrada]}, {merge:true});
   }catch(e){ console.error('[registrarAcceso]', e); }
+}
+
+/* Intenta vincular una persona a este dispositivo.
+   → {ok:true}                        nombre libre, o ya era suyo
+   → {ok:false, motivo:'ocupado'}     ese nombre es de otro dispositivo
+   → {ok:false, motivo:'error'}       no se pudo leer/escribir en Firestore */
+async function reclamarIdentidad(token, persona, deviceId){
+  const ref = doc(db,'analisisShares',token);
+  let s = null;
+  try{
+    const snap = await getDoc(ref);
+    if(snap.exists()) s = snap.data();
+  }catch(e){ console.error('[reclamarIdentidad] lectura', e); return {ok:false, motivo:'error'}; }
+  if(!s) return {ok:false, motivo:'error'};
+
+  const previa = (s.identidades || {})[persona.id];
+  if(previa && previa.deviceId && previa.deviceId !== deviceId) return {ok:false, motivo:'ocupado'};
+
+  const geo = await geoCacheada();
+  const ahora = Date.now();
+  const registro = previa
+    ? { ...previa, ultimaApertura: ahora, aperturas: (previa.aperturas || 1) + 1 }
+    : { deviceId, nombre: persona.nombre, dispositivo: dispositivoLegible(),
+        ciudad: geo?.ciudad || '', pais: geo?.pais || '',
+        primeraApertura: ahora, ultimaApertura: ahora, aperturas: 1 };
+  try{
+    /* merge:true fusiona mapas anidados campo a campo, así que escribir
+       solo esta persona no pisa las identidades de los demás aunque dos
+       jugadores entren a la vez. */
+    await setDoc(ref, {identidades:{[persona.id]: registro}}, {merge:true});
+  }catch(e){ console.error('[reclamarIdentidad] escritura', e); return {ok:false, motivo:'error'}; }
+  return {ok:true};
+}
+
+/* Veta este dispositivo para este enlace tras un intento con nombre
+   ajeno. Se guarda en los dos sitios a propósito: en el navegador para
+   que el corte sea inmediato, y en Firestore para que siga en pie
+   aunque cierre y vuelva a abrir. */
+async function bloquearDispositivo(token, deviceId, persona){
+  /* Se guarda la HORA del bloqueo, no un simple "1": así, si más tarde
+     el analista levanta los bloqueos, este navegador sabe que su veto
+     es anterior al levantamiento y se libera solo. */
+  try{ localStorage.setItem(blockLocalKey(token), String(Date.now())); }catch(e){}
+  const geo = await geoCacheada();
+  try{
+    await setDoc(doc(db,'analisisShares',token), {devicesBloqueados:{[deviceId]:{
+      ts: Date.now(),
+      personaIntentada: persona ? persona.nombre : '',
+      dispositivo: dispositivoLegible(),
+      ciudad: geo?.ciudad || '', pais: geo?.pais || '',
+    }}}, {merge:true});
+  }catch(e){ console.error('[bloquearDispositivo]', e); }
+}
+
+function personasPorGrupo(){
+  const g = {};
+  PERSONAS.forEach(p => { (g[p.grupo] = g[p.grupo] || []).push(p); });
+  return GRUPOS_ORDEN.filter(k => g[k]).map(k => ({grupo:k, personas:g[k]}));
+}
+
+/* La lista NO marca qué nombres están ya cogidos, y es deliberado: si
+   se viera cuáles quedan libres, cualquiera que recibiese el enlace de
+   rebote sabría exactamente cuál elegir para pasar desapercibido. */
+function identOpcionesHtml(filtro){
+  const f = (filtro || '').trim().toLowerCase();
+  let html = '';
+  personasPorGrupo().forEach(({grupo, personas}) => {
+    const vis = personas.filter(p => !f ||
+      p.nombre.toLowerCase().includes(f) || (p.completo || '').toLowerCase().includes(f));
+    if(!vis.length) return;
+    html += `<div class="ident-grp">${grupo}</div>`;
+    vis.forEach(p => {
+      html += `<button class="ident-opt" data-id="${p.id}">
+        <span class="ident-dors">${p.dorsal != null ? '#' + p.dorsal : '··'}</span>
+        <span>${esc(p.nombre)}</span>
+      </button>`;
+    });
+  });
+  return html || '<div class="ident-empty">Ningún nombre coincide con la búsqueda.</div>';
+}
+
+/* Devuelve la persona identificada, o null si el intento acabó
+   bloqueado (en ese caso ya ha pintado la pantalla de corte). */
+function pantallaIdentificacion(token, share, deviceId){
+  return new Promise(resolve => {
+    const ov = document.createElement('div');
+    ov.className = 'ident-ov';
+    ov.innerHTML = `<div class="ident-card">
+      <div class="ident-head">
+        <div class="ident-eyebrow">Racing Club Portuense · Análisis de rival</div>
+        <div class="ident-title">${esc(share.rivalName || 'Informe')}</div>
+        <div class="ident-sub">${share.jornada ? 'Jornada ' + esc(String(share.jornada)) + ' · ' : ''}Documento interno del club</div>
+      </div>
+      <div class="ident-body">
+        <div class="ident-q">¿Quién eres?</div>
+        <div class="ident-hint">Busca y selecciona tu nombre para abrir el informe. Tu nombre quedará vinculado a este dispositivo: podrás volver a entrar siempre que quieras desde él.</div>
+        <input class="ident-search" id="identBuscar" placeholder="Escribe tu nombre o dorsal…" autocomplete="off"/>
+        <div class="ident-list" id="identLista">${identOpcionesHtml('')}</div>
+        <div class="ident-foot">
+          <button class="btn btn-primary ident-go" id="identGo" disabled>Entrar al informe</button>
+          <div class="ident-err" id="identErr"></div>
+          <div class="ident-warn">Cada nombre se puede usar desde un solo dispositivo. Si eliges un nombre que no es el tuyo, el acceso se bloquea y queda registrado con la hora y la ubicación.</div>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+
+    const lista  = ov.querySelector('#identLista');
+    const buscar = ov.querySelector('#identBuscar');
+    const go     = ov.querySelector('#identGo');
+    const err    = ov.querySelector('#identErr');
+    let sel = null;
+
+    buscar.addEventListener('input', () => {
+      lista.innerHTML = identOpcionesHtml(buscar.value);
+      sel = null; go.disabled = true;
+    });
+
+    lista.addEventListener('click', e => {
+      const btn = e.target.closest('.ident-opt');
+      if(!btn) return;
+      lista.querySelectorAll('.ident-opt').forEach(b => b.classList.remove('sel'));
+      btn.classList.add('sel');
+      sel = personaById(btn.dataset.id);
+      go.disabled = !sel;
+      err.style.display = 'none';
+    });
+
+    go.addEventListener('click', async () => {
+      if(!sel) return;
+      go.disabled = true;
+      go.textContent = 'Comprobando…';
+      const r = await reclamarIdentidad(token, sel, deviceId);
+
+      if(r.ok){
+        guardarIdentidadLocal(token, sel);
+        registrarAcceso(token, 'permitido', {persona: sel.nombre});
+        ov.remove();
+        resolve(sel);
+        return;
+      }
+      if(r.motivo === 'ocupado'){
+        await registrarAcceso(token, 'bloqueado', {persona: sel.nombre, motivo:'nombre-ya-vinculado'});
+        await bloquearDispositivo(token, deviceId, sel);
+        pantallaEnlaceNoDisponible(`El nombre de <b>${esc(sel.nombre)}</b> ya está vinculado a otro dispositivo, así que este acceso se ha bloqueado y registrado.<br/><br/>Si eres tú y has cambiado de móvil o borrado los datos del navegador, pídele al analista que libere tu nombre.`);
+        resolve(null);
+        return;
+      }
+      go.disabled = false;
+      go.textContent = 'Entrar al informe';
+      err.textContent = 'No se ha podido comprobar tu identidad. Revisa la conexión e inténtalo otra vez.';
+      err.style.display = 'block';
+    });
+
+    setTimeout(() => buscar.focus(), 80);
+  });
 }
 
 async function iniciarVistaCompartida(token){
@@ -2329,25 +2708,54 @@ async function iniciarVistaCompartida(token){
     return;
   }
 
-  /* Candado de "solo el primer dispositivo": la primera apertura real
-     reclama el enlace para ese navegador. Cualquier apertura posterior
-     desde un navegador distinto queda bloqueada — no basta con tener el
-     enlace, hace falta ser el dispositivo que lo abrió primero. Esto no
-     identifica a la persona, solo el navegador: alguien que borre sus
-     datos o use incógnito parecería "un dispositivo nuevo" — es una
-     barrera contra el reenvío casual, no a prueba de alguien decidido
-     a saltársela. */
   const miDeviceId = dispositivoIdLocal();
-  if(!s.deviceId){
-    try{ await setDoc(doc(db,'analisisShares',token), {deviceId: miDeviceId}, {merge:true}); }
-    catch(e){ console.error('[iniciarVistaCompartida] no se pudo fijar el dispositivo', e); }
-    registrarAcceso(token, 'permitido', miDeviceId);
-  } else if(s.deviceId === miDeviceId){
-    registrarAcceso(token, 'permitido', miDeviceId);
-  } else {
-    registrarAcceso(token, 'bloqueado', miDeviceId);
-    pantallaEnlaceNoDisponible('Este enlace ya está vinculado a otro dispositivo. Pide uno nuevo a quien te lo compartió.');
+
+  /* 1 · Dispositivo ya vetado en un intento anterior. El veto vive en
+     Firestore y también en el navegador; si el analista lo levantó
+     después de que se pusiera, la marca local se descarta sola. */
+  let vetoLocalTs = 0;
+  try{ vetoLocalTs = parseInt(localStorage.getItem(blockLocalKey(token)) || '0', 10) || 0; }catch(e){}
+  if(vetoLocalTs && vetoLocalTs < (s.bloqueosLevantadosAt || 0)){
+    try{ localStorage.removeItem(blockLocalKey(token)); }catch(e){}
+    vetoLocalTs = 0;
+  }
+  if(vetoLocalTs || (s.devicesBloqueados && s.devicesBloqueados[miDeviceId])){
+    registrarAcceso(token, 'bloqueado', {motivo:'dispositivo-vetado'});
+    pantallaEnlaceNoDisponible('Este dispositivo quedó bloqueado al intentar entrar con un nombre que ya estaba en uso. Habla con el analista si ha sido un error.');
     return;
+  }
+
+  /* 2 · ¿Ya se identificó antes desde este navegador? Se comprueba
+     igualmente contra Firestore: si su nombre fue liberado y lo ha
+     reclamado otro dispositivo entretanto, vuelve a la pantalla de
+     identificación en vez de colarse por la puerta de atrás. */
+  let persona = null;
+  const guardada = identidadLocal(token);
+  if(guardada) persona = personaById(guardada.id);
+
+  if(persona){
+    const reg = (s.identidades || {})[persona.id];
+    if(reg && reg.deviceId && reg.deviceId !== miDeviceId){
+      olvidarIdentidadLocal(token);
+      persona = null;
+    } else {
+      const r = await reclamarIdentidad(token, persona, miDeviceId);
+      if(r.ok){
+        registrarAcceso(token, 'permitido', {persona: persona.nombre});
+      } else if(r.motivo === 'ocupado'){
+        olvidarIdentidadLocal(token);
+        persona = null;
+      }
+      /* Si fue un error de red, se le deja pasar: ya se identificó en
+         su día desde este mismo dispositivo y no tiene sentido cerrarle
+         el informe por un fallo puntual al escribir el contador. */
+    }
+  }
+
+  /* 3 · Primera vez en este dispositivo: que diga quién es. */
+  if(!persona){
+    persona = await pantallaIdentificacion(token, s, miDeviceId);
+    if(!persona) return;
   }
 
   await openInforme(s.informeId);
@@ -2356,7 +2764,10 @@ async function iniciarVistaCompartida(token){
   if(closeBtn) closeBtn.style.display = 'none';
   const aviso = document.createElement('div');
   aviso.className = 'share-banner';
-  aviso.textContent = `Enlace temporal · caduca el ${fmtHora(s.expiresAt)}`;
+  /* Mostrarle su propio nombre no es decorativo: le recuerda que la
+     apertura queda registrada a su nombre, que es la mitad del efecto
+     disuasorio de todo esto. */
+  aviso.innerHTML = `Abierto por <b>${esc(persona.nombre)}</b> · enlace temporal, caduca el ${fmtHora(s.expiresAt)}`;
   document.getElementById('infSidebar').prepend(aviso);
 }
 
