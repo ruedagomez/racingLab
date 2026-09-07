@@ -333,7 +333,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
@@ -512,58 +512,121 @@ function seededRandom(seed){
   let x = Math.sin(seed)*10000;
   return x - Math.floor(x);
 }
-function loadSancionesWidget(players){
+async function loadSancionesWidget(players){
   const body = document.getElementById('w-sanciones-body');
-  if(!players || !players.length){
-    body.innerHTML = '<div class="widget-empty">Sin datos de plantilla</div>';
+  /* Antes este widget elegía 5 jugadores AL AZAR (semilla del día) y les
+     pintaba un 0 escrito en el HTML: no leía ninguna tarjeta real, así que
+     mostraba siempre ceros aunque las actas estuvieran cargadas y el motor
+     hubiera contado las tarjetas. Ahora sale de rivalStats/racing, que es
+     donde Marcelo deja la disciplina calculada desde las actas. */
+  let jugadores = [];
+  try{
+    const snap = await getDoc(doc(db,'rivalStats','racing'));
+    if(snap.exists()) jugadores = snap.data()?.disciplina?.jugadores || [];
+  }catch(e){ console.error('[Tarjetas]', e); }
+
+  if(!jugadores.length){
+    body.innerHTML = `<div style="padding:22px 14px;text-align:center;color:var(--faint);font-size:12.5px;line-height:1.5;">
+      Todavía no hay tarjetas registradas.<br/>
+      Carga una jornada con el pipeline de actas para verlas aquí.</div>`;
     return;
   }
-  // Semilla basada en el día (YYYYMMDD) para que la selección sea estable durante el día y cambie a diario
-  const todayKey = parseInt(new Date().toISOString().slice(0,10).replace(/-/g,''));
-  const shuffled = [...players]
-    .map((p,i)=>({p, r:seededRandom(todayKey+i*7919)}))
-    .sort((a,b)=>a.r-b.r)
-    .slice(0,5)
-    .map(x=>x.p);
 
-  body.innerHTML = shuffled.map(p=>`
-    <div class="sanc-row">
-      <div class="sanc-dorsal">${p.d?'#'+p.d:'—'}</div>
-      <div class="sanc-name">${p.nick||p.n}</div>
+  /* Los más sancionados primero: es lo accionable de un vistazo (quién está
+     cerca del ciclo). Solo se listan los que tienen alguna tarjeta. */
+  const conTarjetas = jugadores
+    .filter(j => (j.amarillas||0) > 0 || (j.rojas||0) > 0)
+    .sort((a,b) => (b.rojas||0)-(a.rojas||0) || (b.amarillas||0)-(a.amarillas||0))
+    .slice(0,5);
+
+  if(!conTarjetas.length){
+    body.innerHTML = '<div class="widget-empty">Sin tarjetas todavía esta temporada</div>';
+    return;
+  }
+
+  /* El dorsal no viene en disciplina: se cruza con la plantilla por nombre
+     normalizado (sin tildes ni mayúsculas), y si no casa se deja en blanco
+     en vez de inventarlo. */
+  const norm = s => String(s||'').toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+  const porNombre = {};
+  (players||[]).forEach(p => {
+    if(p.n)    porNombre[norm(p.n)] = p;
+    if(p.nick) porNombre[norm(p.nick)] = p;
+  });
+
+  body.innerHTML = conTarjetas.map(j=>{
+    const p = porNombre[norm(j.nombre)];
+    const dorsal = p && p.d ? '#'+p.d : '—';
+    const nombre = p ? (p.nick || p.n) : j.nombre;
+    return `<div class="sanc-row">
+      <div class="sanc-dorsal">${dorsal}</div>
+      <div class="sanc-name">${nombre}</div>
       <div class="sanc-cards">
-        <span class="sanc-card-badge"><span class="card-icon card-y"></span>0</span>
-        <span class="sanc-card-badge"><span class="card-icon card-r"></span>0</span>
+        <span class="sanc-card-badge"><span class="card-icon card-y"></span>${j.amarillas||0}</span>
+        <span class="sanc-card-badge"><span class="card-icon card-r"></span>${j.rojas||0}</span>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 /* ══════════ WIDGET: CLASIFICACIÓN — Tercera RFEF Grupo X ══════════ */
-/* Editable: reflejar aquí cada jornada. Todos a 0 al inicio de temporada. */
-const STANDINGS = [
-  {pos:1, club:'Racing C. Portuense', us:true,  pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0},
-  {pos:2, club:'Dos Hermanas 1971',   us:false, pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0},
-  {pos:3, club:'RB Linense',          us:false, pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0},
-  {pos:4, club:'Bollullos CF',        us:false, pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0},
-  {pos:5, club:'Sevilla FC C',        us:false, pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0},
-  {pos:6, club:'Egabrense',           us:false, pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0},
-];
-function loadStandingsWidget(){
+/* Lee la clasificación REAL que calcula el motor (Marcelo) a partir de las
+   actas de la RFAF, en rivalStats/racing. Antes esta tabla era una lista
+   escrita a mano con todos los valores a 0, que había que "reflejar aquí
+   cada jornada" manualmente — y como nunca se actualizaba, el dashboard
+   mostraba ceros indefinidamente aunque las actas estuvieran cargadas. */
+const CLUB_NOMBRES = {
+  'racing':'Racing C. Portuense', 'xerez-dfc':'Xerez DFC', 'conil':'Conil CF',
+  'pozoblanco':'CD Pozoblanco', 'chiclana':'Chiclana CF', 'linense':'RB Linense',
+  'onubense':'At. Onubense', 'bollullos':'Bollullos CF', 'dos-hermanas':'Dos Hermanas 1971',
+  'utrera':'CD Utrera', 'tomares':'UD Tomares', 'cadiz-b':'Cádiz CF Mirandilla',
+  'egabrense':'Egabrense', 'cordoba-b':'Córdoba CF B', 'betis-c':'Real Betis C',
+  'sevilla-c':'Sevilla FC C', 'san-roque':'San Roque de Lepe', 'ceuta-b':'AD Ceuta B',
+};
+const nombreClub = id => CLUB_NOMBRES[id] || String(id||'')
+  .split('-').map(p => p ? p[0].toUpperCase()+p.slice(1) : p).join(' ');
+
+async function loadStandingsWidget(){
   const body = document.getElementById('w-standings-body');
+  let tabla = [];
+  try{
+    const snap = await getDoc(doc(db,'rivalStats','racing'));
+    if(snap.exists()) tabla = snap.data()?.clasificacion?.tabla || [];
+  }catch(e){ console.error('[Clasificación]', e); }
+
+  if(!tabla.length){
+    body.innerHTML = `<div style="padding:22px 14px;text-align:center;color:var(--faint);font-size:12.5px;line-height:1.5;">
+      Todavía no hay clasificación calculada.<br/>
+      Carga una jornada con el pipeline de actas para verla aquí.</div>`;
+    return;
+  }
+
+  /* Se muestran las 6 primeras posiciones, que es lo que cabe en el widget
+     sin comprimir. Si el Racing cae fuera de ese corte, se añade su fila al
+     final: el dashboard propio nunca debe dejar de mostrar dónde estamos. */
+  const top = tabla.slice(0,6);
+  const nuestra = tabla.find(r => r.equipo === 'racing');
+  const filas = (nuestra && !top.some(r => r.equipo === 'racing'))
+    ? [...top, nuestra] : top;
+
   body.innerHTML = `
     <table class="standings-tbl">
       <thead><tr>
         <th></th><th>Club</th><th class="c">PJ</th><th class="c">PG</th><th class="c">PE</th><th class="c">PP</th><th class="c">GF</th><th class="c">GC</th><th class="c">Pts</th>
       </tr></thead>
       <tbody>
-        ${STANDINGS.map(s=>{
-          const rowCls = s.pos===1 ? 'st-row-1' : (s.pos>=2&&s.pos<=5) ? 'st-row-promo' : '';
-          const pillCls = s.pos===1 ? 'pill-asc' : (s.pos>=2&&s.pos<=5) ? 'pill-promo' : 'pill-none';
+        ${filas.map(s=>{
+          const pos = s.pos;
+          const us = s.equipo === 'racing';
+          const rowCls = pos===1 ? 'st-row-1' : (pos>=2&&pos<=5) ? 'st-row-promo' : '';
+          const pillCls = pos===1 ? 'pill-asc' : (pos>=2&&pos<=5) ? 'pill-promo' : 'pill-none';
           return `<tr class="${rowCls}">
-            <td class="st-pos">${s.pos}</td>
-            <td class="st-club${s.us?' us':''}"><span class="st-pill ${pillCls}"></span>${s.club}</td>
-            <td class="c">${s.pj}</td><td class="c">${s.pg}</td><td class="c">${s.pe}</td><td class="c">${s.pp}</td>
-            <td class="c">${s.gf}</td><td class="c">${s.gc}</td>
-            <td class="c st-pts">${s.pts}</td>
+            <td class="st-pos">${pos}</td>
+            <td class="st-club${us?' us':''}"><span class="st-pill ${pillCls}"></span>${nombreClub(s.equipo)}</td>
+            <td class="c">${s.pj??0}</td><td class="c">${s.pg??0}</td><td class="c">${s.pe??0}</td><td class="c">${s.pp??0}</td>
+            <td class="c">${s.gf??0}</td><td class="c">${s.gc??0}</td>
+            <td class="c st-pts">${s.pts??0}</td>
           </tr>`;
         }).join('')}
       </tbody>
@@ -576,9 +639,12 @@ function loadStandingsWidget(){
 
 /* ══════════ INIT WIDGETS ══════════ */
 async function loadWidgets(){
-  loadStandingsWidget();
   const { players } = await loadSquadWidget();
-  loadSancionesWidget(players);
+  // Ambos leen de Firestore: se lanzan en paralelo y se espera a los dos.
+  await Promise.all([
+    loadStandingsWidget(),
+    loadSancionesWidget(players),
+  ]);
   loadCalendarWidgets();
 }
 
