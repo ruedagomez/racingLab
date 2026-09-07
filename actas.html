@@ -85,9 +85,17 @@ select{font-family:inherit;}
 .dsec:last-child{margin-bottom:0;}
 .dsec-t{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
 .dsec-t::after{content:'';flex:1;height:1px;background:var(--bdr);}
-.goal-row{display:flex;align-items:center;gap:9px;font-size:13px;padding:5px 0;}
-.goal-row .gmin{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);min-width:32px;}
-.goal-row .gtag{font-size:9.5px;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:3px;background:var(--r2);color:var(--r);}
+.goal-row,.card-row,.sust-row{display:flex;align-items:center;gap:9px;font-size:13px;padding:5px 0;flex-wrap:wrap;}
+/* .gmin y .gtag se comparten entre goles, tarjetas y sustituciones: antes
+   estaban acotados a .goal-row y no se aplicaban en las filas nuevas. */
+.gmin{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);min-width:32px;}
+.gtag{font-size:9.5px;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:3px;background:var(--r2);color:var(--r);}
+.card-chip{width:11px;height:15px;border-radius:2px;flex-shrink:0;display:inline-block;}
+.card-chip.amarilla{background:#eab308;}
+.card-chip.roja{background:#dc2626;}
+.sust-row .sust-out{color:#b91c1c;font-size:12.5px;}
+.sust-row .sust-in{color:var(--fit,#15803d);font-size:12.5px;}
+.sust-row .lud{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);margin-right:3px;}
 .ref-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;}
 .ref-row .rname{font-weight:600;}
 .ref-row .rrole{font-size:10.5px;color:var(--faint);text-transform:uppercase;}
@@ -289,14 +297,18 @@ window.abrirDetalle = async function(codActa){
   document.getElementById('detail-bg').classList.add('open');
 
   try{
-    const [golesSnap, arbSnap, alinSnap] = await Promise.all([
+    const [golesSnap, arbSnap, alinSnap, tarjSnap, sustSnap] = await Promise.all([
       getDocs(query(collection(db,'goles'), where('cod_acta','==',codActa))),
       getDocs(query(collection(db,'arbitrosActa'), where('cod_acta','==',codActa))),
       getDocs(query(collection(db,'alineaciones'), where('cod_acta','==',codActa))),
+      getDocs(query(collection(db,'tarjetas'), where('cod_acta','==',codActa))),
+      getDocs(query(collection(db,'sustituciones'), where('cod_acta','==',codActa))),
     ]);
     const goles = golesSnap.docs.map(d=>d.data()).sort((x,y)=>(parseInt(x.minuto)||0)-(parseInt(y.minuto)||0));
     const arbitros = arbSnap.docs.map(d=>d.data()).sort((x,y)=>x.rol_idx-y.rol_idx);
     const alin = alinSnap.docs.map(d=>d.data());
+    const tarjetas = tarjSnap.docs.map(d=>d.data()).sort((x,y)=>(parseInt(x.minuto)||0)-(parseInt(y.minuto)||0));
+    const susts = sustSnap.docs.map(d=>d.data()).sort((x,y)=>(parseInt(x.minuto)||0)-(parseInt(y.minuto)||0));
 
     const alinDe = (equipoId,cond) => alin.filter(x=>x.equipo_id===equipoId && x.condicion===cond)
       .sort((x,y)=>(parseInt(x.dorsal)||99)-(parseInt(y.dorsal)||99));
@@ -327,11 +339,38 @@ window.abrirDetalle = async function(codActa){
       </div>
     </div>` : '<div class="dpending">Sin alineaciones registradas.</div>';
 
+    /* Tarjetas y sustituciones: hasta ahora esta sección era un texto fijo
+       ("Pendiente — próxima iteración del scraper"), porque cuando se
+       escribió la pantalla el scraper todavía no extraía estos datos. Ya
+       los extrae y los guarda, así que aquí se leen y se muestran como el
+       resto. El nombre del equipo se resuelve por equipo_id, igual que en
+       los goles. */
+    const nombreDe = id => id===a.equipo_local
+      ? (a.nombre_local||nombreProvisional(a.equipo_local))
+      : (a.nombre_visitante||nombreProvisional(a.equipo_visitante));
+
+    const tarjHtml = tarjetas.length ? tarjetas.map(t=>`
+      <div class="card-row">
+        <span class="gmin">${t.minuto}′</span>
+        <span class="card-chip ${t.tipo==='ROJA'?'roja':'amarilla'}"></span>
+        <span class="gtag">${nombreDe(t.equipo_id)}</span>
+        <span>${t.jugador}</span>
+      </div>`).join('') : '<div class="dpending">Sin tarjetas en el acta.</div>';
+
+    const sustHtml = susts.length ? susts.map(s=>`
+      <div class="sust-row">
+        <span class="gmin">${s.minuto}′</span>
+        <span class="gtag">${nombreDe(s.equipo_id)}</span>
+        <span class="sust-out">↓ ${s.sale_dorsal?`<span class="lud">${s.sale_dorsal}</span>`:''}${s.jugador_sale||s.sale||''}</span>
+        <span class="sust-in">↑ ${s.entra_dorsal?`<span class="lud">${s.entra_dorsal}</span>`:''}${s.jugador_entra||s.entra||''}</span>
+      </div>`).join('') : '<div class="dpending">Sin sustituciones en el acta.</div>';
+
     document.querySelector('#detail .detail-body').innerHTML = `
       <div class="dsec"><div class="dsec-t">Goles</div>${golesHtml}</div>
+      <div class="dsec"><div class="dsec-t">Tarjetas</div>${tarjHtml}</div>
+      <div class="dsec"><div class="dsec-t">Sustituciones</div>${sustHtml}</div>
       <div class="dsec"><div class="dsec-t">Árbitros</div>${arbHtml}</div>
       <div class="dsec"><div class="dsec-t">Alineaciones</div>${luHtml}</div>
-      <div class="dsec"><div class="dsec-t">Tarjetas y sustituciones</div><div class="dpending">Pendiente — próxima iteración del scraper (Pep).</div></div>
     `;
   }catch(e){
     console.error('[Detalle]', e);
