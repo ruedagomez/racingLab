@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="theme-color" content="#e8192c"/>
+<meta name="theme-color" content="#CC3334"/>
 <title>Racing Lab · Racing Club Portuense</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -27,7 +27,11 @@
 
 :root{
   /* — Identidad, constante en ambos temas — */
-  --racing:#e8192c;
+  /* Rojo oficial del Racing Club Portuense, del manual de marca.
+     Se usa TAL CUAL en ambos temas: da 4.92:1 sobre la tarjeta clara
+     (cumple AA para texto normal) y 5.13:1 con blanco encima, así que
+     sirve sin retoques para cabecera, botones, barras y acentos. */
+  --racing:#CC3334;
   --racing-ink:#ffffff;
 
   /* — Tipografía — */
@@ -60,14 +64,12 @@
   --ink-4:#979087;
   --line:#e2ddd5;
   --line-2:#cfc8be;
-  --racing-soft:rgba(232,25,44,.07);
-  --racing-line:rgba(232,25,44,.22);
-  /* El rojo del club (#e8192c) da 4.37:1 sobre la tarjeta clara: vale
-     para superficies grandes y titulares, pero se queda corto para
-     texto pequeño (mínimo WCAG 4.5). Esta variante, apenas distinguible
-     a simple vista, sube a 5.55:1 y se usa solo donde el rojo es texto
-     fino: nombre del club en la clasificación, enlaces, etiquetas. */
-  --racing-text:#c9152a;
+  --racing-soft:rgba(204,51,52,.08);
+  --racing-line:rgba(204,51,52,.24);
+  /* En claro no hace falta aclarar ni oscurecer: el rojo de marca ya
+     da 4.92:1 sobre la tarjeta, por encima del mínimo para texto
+     normal. Se respeta el color oficial sin ninguna desviación. */
+  --racing-text:#CC3334;
   --win:#12734a; --win-bg:rgba(18,115,74,.09);
   --draw:#a86b12; --draw-bg:rgba(168,107,18,.10);
   --loss:#c02231; --loss-bg:rgba(192,34,49,.09);
@@ -93,10 +95,15 @@
   --ink-4:#5e636e;
   --line:#252932;
   --line-2:#333844;
-  --racing:#ff2f42;
-  --racing-soft:rgba(255,47,66,.11);
-  --racing-line:rgba(255,47,66,.30);
-  --racing-text:#ff2f42;   /* en oscuro el rojo ya da 4.94:1, sirve tal cual */
+  /* El rojo de marca se conserva para superficies (cabecera, botones,
+     barras): con blanco encima da 5.13:1, perfecto. Pero como TEXTO
+     fino sobre el carbón se queda en 3.52:1, por debajo del mínimo
+     para texto normal — por eso el texto rojo en oscuro usa una
+     versión apenas aclarada que llega a 4.64:1. El color oficial no
+     se toca donde se ve como color; solo donde se lee como letra. */
+  --racing-soft:rgba(204,51,52,.16);
+  --racing-line:rgba(204,51,52,.38);
+  --racing-text:#e74748;
   --win:#3ddc90; --win-bg:rgba(61,220,144,.11);
   --draw:#f0b846; --draw-bg:rgba(240,184,70,.12);
   --loss:#ff5f6d; --loss-bg:rgba(255,95,109,.11);
