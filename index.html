@@ -364,6 +364,15 @@ a.widget-link:hover{color:var(--racing-text);}
   white-space:nowrap;color:var(--ink);}
 .cal-type{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--ink-3);margin-top:2px;}
+/* Punto de color por tipo de evento: lectura instantánea de qué toca
+   cada día sin leer la etiqueta. El JS emite dot-<tipo>. */
+.cal-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--ink-4);}
+.dot-entrenamiento{background:var(--racing);}
+.dot-liga{background:var(--win);}
+.dot-amistoso{background:var(--draw);}
+.dot-libre{background:var(--ink-4);}
+.dot-club{background:#6b8fd4;}
+.dot-festivo{background:#b07fd4;}
 
 /* — Plantilla — */
 .squad-bars{display:flex;flex-direction:column;}
@@ -383,19 +392,33 @@ a.widget-link:hover{color:var(--racing-text);}
 
 /* — Próximo rival: pieza dramática, el dato más consultado — */
 .rival-name{
-  font-family:var(--f-display);font-size:clamp(19px,2.4vw,26px);font-weight:800;
-  line-height:1.05;letter-spacing:-.02em;font-variation-settings:'wdth' 84;
-  margin-bottom:7px;
+  font-family:var(--f-display);font-size:clamp(16px,1.6vw,20px);font-weight:800;
+  line-height:1.15;letter-spacing:-.015em;font-variation-settings:'wdth' 88;
+  margin-bottom:6px;
 }
 .rival-date{font-family:var(--f-mono);font-size:11px;color:var(--ink-3);letter-spacing:.06em;}
+/* El JS emite DOS bloques con esta misma clase: el contador ("En 2
+   días") y una línea con hora y campo. Por eso no lleva tamaño de
+   titular ni sufijo automático — antes ponía la hora y el estadio a
+   38px en rojo y añadía un "DÍAS" que sobraba. El primero se destaca
+   con :first-of-type; el segundo queda como línea de detalle. */
 .rival-countdown{
-  font-family:var(--f-display);font-size:38px;font-weight:800;color:var(--racing);
-  line-height:1;margin-top:13px;font-variation-settings:'wdth' 80;
-  display:flex;align-items:baseline;gap:7px;
+  font-family:var(--f-display);font-size:15px;font-weight:700;color:var(--ink-2);
+  line-height:1.35;margin-top:9px;font-variation-settings:'wdth' 92;
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
 }
-.rival-countdown::after{
-  content:'días';font-family:var(--f-mono);font-size:11px;font-weight:400;
-  color:var(--ink-3);letter-spacing:.1em;text-transform:uppercase;
+/* El primer .rival-countdown es el contador y va grande; el segundo es
+   la línea de hora y campo. No se usa :first-of-type porque cuenta
+   entre TODOS los <div> hermanos, y antes van el nombre y la fecha:
+   señalaría al elemento equivocado. Con el combinador de hermano se
+   empequeñece cualquiera que venga DESPUÉS de otro, que es lo exacto. */
+.rival-countdown{
+  font-size:30px;font-weight:800;color:var(--racing-text);margin-top:14px;
+  letter-spacing:-.02em;font-variation-settings:'wdth' 82;line-height:1;
+}
+.rival-countdown ~ .rival-countdown{
+  font-size:14px;font-weight:600;color:var(--ink-2);margin-top:10px;
+  letter-spacing:0;font-variation-settings:'wdth' 95;line-height:1.4;
 }
 .rival-empty-icon{font-size:32px;text-align:center;opacity:.28;margin-bottom:6px;}
 
@@ -441,31 +464,72 @@ a.widget-link:hover{color:var(--racing-text);}
 .card-icon{width:10px;height:14px;border-radius:2px;display:inline-block;}
 .card-y{background:var(--draw);} .card-r{background:var(--loss);}
 
-/* ══════════ MÓDULOS ══════════ */
+/* ══════════ MÓDULOS ══════════
+   El JS genera cada tarjeta con class="mc" (no ".mod-card"): al
+   rediseñar se escribió el CSS con otro nombre y las tarjetas salían
+   SIN NINGÚN ESTILO — planas, sin caja y sin pinta de ser pulsables,
+   que es justo lo que había que evitar. Aquí van con caja, relieve,
+   número de módulo de fondo y respuesta clara al pasar y al pulsar. */
 .modules-grid{display:grid;gap:14px;
-  grid-template-columns:repeat(auto-fill,minmax(216px,1fr));}
-.mod-card{
-  position:relative;background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--r-lg);padding:20px 18px 17px;overflow:hidden;
-  box-shadow:var(--shadow-s);display:block;
+  grid-template-columns:repeat(auto-fill,minmax(228px,1fr));}
+
+.mc{
+  position:relative;display:flex;flex-direction:column;justify-content:space-between;
+  gap:16px;min-height:152px;cursor:pointer;overflow:hidden;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:18px 17px 15px;box-shadow:var(--shadow-s);
   transition:transform var(--mid) var(--ease),box-shadow var(--mid) var(--ease),
-             border-color var(--mid);
+             border-color var(--mid) var(--ease);
   animation:riseIn var(--slow) var(--ease) both;
 }
-.mod-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-l);border-color:var(--racing-line);}
-/* Halo rojo que aparece desde la esquina: da profundidad sin tapar el texto. */
-.mod-card::after{
-  content:'';position:absolute;top:-46px;right:-46px;width:120px;height:120px;
-  border-radius:50%;background:var(--racing-soft);
-  opacity:0;transform:scale(.5);transition:all var(--slow) var(--ease);
+/* Número de módulo enorme al fondo: da jerarquía y carácter de panel
+   de instrumentos sin robar protagonismo al nombre. */
+.mc::before{
+  content:attr(data-num);position:absolute;right:-6px;bottom:-20px;
+  font-family:var(--f-display);font-size:78px;font-weight:800;line-height:1;
+  color:var(--ink);opacity:.045;pointer-events:none;
+  font-variation-settings:'wdth' 75;transition:opacity var(--mid) var(--ease);
 }
-.mod-card:hover::after{opacity:1;transform:scale(1);}
-.cn{position:relative;z-index:1;font-family:var(--f-display);font-size:17px;font-weight:700;
-  letter-spacing:-.01em;margin-bottom:5px;font-variation-settings:'wdth' 88;}
-.cdesc{position:relative;z-index:1;font-size:12.5px;color:var(--ink-3);line-height:1.5;}
-.cname{position:relative;z-index:1;}
-.cs-dot{width:7px;height:7px;border-radius:50%;background:var(--win);display:inline-block;
-  margin-right:6px;}
+/* Barra roja inferior que se despliega al pasar: la señal de "esto se
+   pulsa" más clara sin alterar la maqueta. */
+.mc::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;height:3px;
+  background:var(--racing);transform:scaleX(0);transform-origin:left;
+  transition:transform var(--mid) var(--ease);
+}
+.mc:hover{transform:translateY(-4px);box-shadow:var(--shadow-l);border-color:var(--racing-line);}
+.mc:hover::after{transform:scaleX(1);}
+.mc:hover::before{opacity:.10;}
+.mc:active{transform:translateY(-1px);box-shadow:var(--shadow-m);}
+.mc:focus-visible{outline:2px solid var(--racing);outline-offset:3px;}
+
+.cn{
+  font-family:var(--f-mono);font-size:10px;font-weight:600;letter-spacing:.16em;
+  color:var(--ink-4);margin-bottom:7px;
+}
+.cname{
+  font-family:var(--f-display);font-size:17.5px;font-weight:700;line-height:1.15;
+  letter-spacing:-.012em;color:var(--ink);margin-bottom:6px;
+  font-variation-settings:'wdth' 90;
+}
+.cdesc{font-size:12.5px;color:var(--ink-3);line-height:1.5;}
+
+/* Pastilla de estado */
+.cs{
+  display:inline-flex;align-items:center;gap:6px;align-self:flex-start;
+  font-family:var(--f-mono);font-size:9.5px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;padding:4px 10px;border-radius:20px;border:1px solid;
+}
+.cs-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.s-active{color:var(--win);background:var(--win-bg);border-color:transparent;}
+.s-active .cs-dot{animation:pulse 2.4s var(--ease) infinite;}
+.s-dev{color:var(--draw);background:var(--draw-bg);border-color:transparent;}
+.s-soon{color:var(--ink-3);background:var(--surface-2);border-color:var(--line);}
+
+/* Módulo no disponible: se ve que existe pero no invita a pulsarlo. */
+.mc.disabled{cursor:not-allowed;opacity:.62;}
+.mc.disabled:hover{transform:none;box-shadow:var(--shadow-s);border-color:var(--line);}
+.mc.disabled:hover::after{transform:scaleX(0);}
 
 /* ══════════ TOAST ══════════ */
 #toast{
