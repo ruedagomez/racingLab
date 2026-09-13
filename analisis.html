@@ -1733,10 +1733,19 @@ window.dbxSubirClip = async function(bkey, tipo, file){
 function renderEditor(){
   const inf = currentInforme;
   const d = inf.datos;
-  /* Referencia para detectar ediciones manuales al guardar */
+  /* Referencia para detectar ediciones manuales al guardar.
+     OJO con el ?? null: si el campo no existe en el informe (porque se
+     añadió al sistema DESPUÉS de crearlo), aquí se guardaba null pero al
+     comparar seguía siendo undefined, y JSON.stringify(undefined) no es
+     "null" — así que el campo se marcaba como "editado a mano" solo, sin
+     que nadie lo tocara, y quedaba bloqueado para siempre frente a
+     "Cargar de actas". Guardando undefined tal cual, la comparación de
+     abajo lo ignora, que es lo correcto: un campo que no existe no se ha
+     editado. */
   inf._snapAuto = {};
   Object.keys(CAMPOS_AUTO).forEach(k=>{
-    inf._snapAuto[k] = JSON.parse(JSON.stringify(k==='convocatorias'?inf.convocatorias:d[k]??null));
+    const v = k==='convocatorias' ? inf.convocatorias : d[k];
+    inf._snapAuto[k] = v === undefined ? undefined : JSON.parse(JSON.stringify(v));
   });
   const condLabel = inf.condicion==='casa' ? 'fuera de casa (visitan El Puerto)' : 'en casa (les visitamos)';
   let html = `<div class="ed-meta">
@@ -1858,29 +1867,65 @@ window.recargarActas = async function(){
   if(!st){ toast('Todavía no hay datos de actas para este rival'); return; }
   const editados = currentInforme.datosMeta?.camposEditados || [];
   const nombres = editados.map(k=>CAMPOS_AUTO[k]||k);
+  /* Si TODOS los bloques están marcados, recargar no cambiaría nada: hay
+     que decirlo antes, no después. Antes el aviso se mezclaba con el
+     resto del texto y el mensaje final decía "datos recargados" igual,
+     así que parecía que el informe se había actualizado cuando no. */
+  const todos = Object.keys(CAMPOS_AUTO).length;
   document.getElementById('recTxt').innerHTML = editados.length
-    ? `Se traerán los datos de actas hasta la <b>jornada ${st.hastaJornada}</b>.<br/><br/>
-       Estos bloques los has editado a mano y <b>se conservarán</b>: ${nombres.join(', ')}.<br/><br/>
-       Para que uno se sobrescriba, vacía su cuadro antes de recargar.`
-    : `Se traerán los datos de actas hasta la <b>jornada ${st.hastaJornada}</b>, sobrescribiendo los bloques automáticos. Lo cualitativo (momentos, ABP, fortalezas, plan) no se toca nunca.`;
+    ? `${editados.length === todos
+        ? `<b style="color:var(--i-red)">Atención: los ${todos} bloques automáticos están
+           marcados como editados a mano, así que una recarga normal NO cambiaría nada.</b><br/><br/>`
+        : ''}
+       Se traerán los datos de actas hasta la <b>jornada ${st.hastaJornada}</b>.<br/><br/>
+       Estos bloques constan como editados a mano y <b>se conservarán</b>:
+       ${nombres.join(', ')}.<br/><br/>
+       <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;
+                     background:var(--bg);padding:10px 12px;border-radius:6px;
+                     border:1px solid var(--bdr);">
+         <input type="checkbox" id="recForzar" style="margin-top:2px;accent-color:var(--r)"/>
+         <span>Traer <b>también</b> esos bloques, descartando mis ediciones.<br/>
+           <span style="color:var(--mid);font-size:11.5px;">Úsalo si ves datos de
+           jornadas anteriores que deberían haberse actualizado.</span></span>
+       </label>`
+    : `Se traerán los datos de actas hasta la <b>jornada ${st.hastaJornada}</b>,
+       sobrescribiendo los bloques automáticos. Lo cualitativo (momentos, ABP,
+       fortalezas, plan) no se toca nunca.`;
   document.getElementById('recModal').classList.add('open');
 };
+
 window.confirmRecargar = async function(){
   const st = await fetchRivalStats(currentInforme.clubId);
   if(!st){ closeModal('recModal'); return; }
   const snap2 = snapshotStats(st, currentInforme.condicion);
-  const editados = currentInforme.datosMeta?.camposEditados || [];
+  const forzar = !!document.getElementById('recForzar')?.checked;
+  const editados = forzar ? [] : (currentInforme.datosMeta?.camposEditados || []);
+
+  /* Se cuenta lo que de verdad cambia, para poder informar con exactitud
+     en vez de decir siempre "datos recargados". */
+  const actualizados = [], conservados = [];
   Object.keys(CAMPOS_AUTO).forEach(k=>{
-    if(editados.includes(k)) return;                  // respetar lo manual
+    if(editados.includes(k)){ conservados.push(CAMPOS_AUTO[k]||k); return; }
     if(k==='convocatorias') currentInforme.convocatorias = snap2.convocatorias;
     else currentInforme.datos[k] = snap2.datos[k];
+    actualizados.push(CAMPOS_AUTO[k]||k);
   });
+
   currentInforme.datos.fuente = 'actas';
   currentInforme.datos.plantillaMinutos = snap2.datos.plantillaMinutos;
+  /* Al forzar se limpian las marcas: los bloques vuelven a ser
+     automáticos, que es lo que se acaba de pedir explícitamente. */
   currentInforme.datosMeta = { ...snap2.meta, camposEditados: editados };
   closeModal('recModal');
   renderEditor();
-  toast(`Datos recargados hasta J${st.hastaJornada} — recuerda guardar`);
+
+  if(!actualizados.length){
+    toast(`No se ha actualizado ningún bloque: los ${conservados.length} constan como editados a mano`);
+  } else if(conservados.length){
+    toast(`${actualizados.length} bloques actualizados a J${st.hastaJornada} · ${conservados.length} conservados — recuerda guardar`);
+  } else {
+    toast(`Datos recargados hasta J${st.hastaJornada} — recuerda guardar`);
+  }
 };
 
 /* LUCHO · escribes el nombre del árbitro y sus estadísticas llegan solas
