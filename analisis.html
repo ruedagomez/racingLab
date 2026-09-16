@@ -155,6 +155,64 @@ img,svg,video{max-width:100%;}
 .share-dur{max-width:190px;}
 .share-acc-head{display:flex;align-items:center;justify-content:space-between;gap:8px;
   margin:12px 0 6px;}
+/* ── Portero en el informe publicado ── */
+.gk-atacar{background:var(--r2);border-left:3px solid var(--i-red);border-radius:10px;
+  padding:14px 18px;margin-bottom:18px;}
+.gk-atacar-t{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--i-red);margin-bottom:8px;}
+.gk-areas{width:100%;border-collapse:collapse;font-size:12.5px;}
+.gk-areas th{text-align:left;font-size:9.5px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--i-muted);padding:0 8px 8px;
+  border-bottom:1px solid var(--i-border);}
+.gk-areas td{padding:8px;border-bottom:1px solid var(--i-border);vertical-align:top;
+  line-height:1.45;}
+.gk-areas tr:last-child td{border-bottom:none;}
+.gk-area-n{font-weight:700;color:var(--i-text);white-space:nowrap;}
+.gk-area-f{color:var(--i-green);}
+.gk-area-d{color:var(--i-red);}
+@media(max-width:700px){
+  .gk-areas,.gk-areas tbody,.gk-areas tr,.gk-areas td{display:block;width:100%;}
+  .gk-areas thead{display:none;}
+  .gk-areas tr{border-bottom:1px solid var(--i-border);padding:8px 0;}
+  .gk-areas td{border:none;padding:2px 0;}
+  .gk-area-f::before{content:'+ ';font-weight:700;}
+  .gk-area-d::before{content:'− ';font-weight:700;}
+}
+
+/* ── Importación del informe del EDP ── */
+.edp-import{border-left:3px solid var(--r);}
+.edp-btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px;}
+.edp-fuente{font-size:11.5px;color:var(--mid);font-family:var(--f-mono);}
+.edp-estado{margin-top:10px;font-size:12.5px;padding:8px 11px;border-radius:7px;}
+.edp-estado.cargando{background:var(--r2);color:var(--r-text);}
+.edp-estado.error{background:var(--inj-bg);color:var(--inj);}
+.edp-tabla{width:100%;border-collapse:collapse;font-size:12.5px;}
+.edp-tabla th{text-align:left;font-size:10px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--faint);padding:0 6px 7px;border-bottom:1px solid var(--bdr);}
+.edp-tabla td{padding:5px 6px;border-bottom:1px solid var(--bdr);vertical-align:middle;}
+.edp-tabla tr:last-child td{border-bottom:none;}
+.edp-tabla td:first-child{width:130px;font-size:12px;}
+.edp-tabla input{width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--bdr);
+  border-radius:6px;background:var(--wh);color:var(--txt);font-family:inherit;}
+.edp-tabla input:focus{border-color:var(--r3);outline:none;}
+/* Pantalla de revisión */
+.edp-rev{max-height:58vh;overflow-y:auto;margin:14px 0 4px;padding-right:6px;}
+.edp-rev-file{font-family:var(--f-mono);font-size:11px;color:var(--faint);margin-bottom:10px;}
+.edp-rev-sec{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--r-text);margin:16px 0 7px;padding-bottom:4px;border-bottom:1px solid var(--bdr);}
+.edp-rev-row{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:4px 0;}
+.edp-rev-row span{color:var(--mid);}
+.edp-rev-list{margin:0;padding-left:18px;font-size:13px;line-height:1.6;}
+.edp-rev-vacio{font-size:12.5px;color:var(--faint);font-style:italic;}
+.edp-rev-obs{font-size:12.5px;line-height:1.55;background:var(--bg);padding:10px 12px;
+  border-radius:7px;}
+.edp-rev-tabla{width:100%;border-collapse:collapse;font-size:12px;}
+.edp-rev-tabla th{text-align:left;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--faint);padding:0 7px 6px;border-bottom:1px solid var(--bdr);}
+.edp-rev-tabla td{padding:6px 7px;border-bottom:1px solid var(--bdr);vertical-align:top;line-height:1.45;}
+.edp-avisos{background:var(--warn-bg);color:var(--warn);font-size:12.5px;padding:10px 13px;
+  border-radius:8px;margin-bottom:12px;line-height:1.5;}
+.edp-avisos ul{margin:5px 0 0;padding-left:18px;}
 .ed-field label{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--mid);margin-bottom:5px;}
 .ed-field input,.ed-field select{width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--bdr);border-radius:7px;background:var(--wh);}
 .ed-field input:focus,.ed-field select:focus{border-color:var(--r3);}
@@ -546,6 +604,21 @@ body.modo-compartido .inf-sidebar{padding-top:8px;}
     <div class="m-actions">
       <button class="btn btn-ghost" onclick="closeModal('recModal')">Cancelar</button>
       <button class="btn btn-primary" onclick="confirmRecargar()">Recargar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL REVISIÓN DEL INFORME DEL EDP ══ -->
+<div class="modal-bg" id="edpRevModal">
+  <div class="modal" style="max-width:820px;">
+    <h3>Esto es lo que se ha leído del PDF</h3>
+    <p style="font-size:12.5px;color:var(--mid);margin-bottom:4px;">
+      Revísalo antes de aplicarlo al informe. Si algo no cuadra, cancela y
+      dímelo: probablemente el EDP ha cambiado la plantilla del documento.</p>
+    <div id="edpRevBody" class="edp-rev"></div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeModal('edpRevModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="aplicarInformeEDP()">Aplicar al informe</button>
     </div>
   </div>
 </div>
@@ -1489,10 +1562,19 @@ function plantillaInforme(j){
        automáticos porque es análisis puramente cualitativo: lo escribe
        el analista viendo vídeo, no sale de las actas. Por eso "Cargar de
        actas" no lo toca nunca, igual que momentos, ABP o el plan. */
+    /* Portero rival. La sección refleja EXACTAMENTE el informe que pasa
+       el entrenador de porteros: se importa de su PDF y se puede matizar
+       aquí, pero no hay campos paralelos que rellenar a mano — así no
+       conviven dos versiones del mismo dato, que es de donde salen las
+       contradicciones. */
     portero: {
-      nombre:'', dorsal:'', altura:'', pieDominante:'',
-      salidaAereas:'', blocajes:'', unoContraUno:'', penaltis:'',
-      juegoPies:'', saqueLargo:'', puntosFuertes:[], puntosDebiles:[], notas:[],
+      nombre:'', dorsal:'', altura:'', pieDominante:'', edad:'', club:'', mano:'',
+      areas:[],            // [{area, fortaleza, debilidad}] — tabla del EDP
+      comoAtacarle:[],     // columna "¿Cómo podemos atacarle?"
+      puntosFuertes:[],    // "Fortalezas clave"
+      puntosDebiles:[],    // "Debilidades / oportunidades"
+      notas:[],            // "Observaciones del rival"
+      fuenteEDP:null,      // {analista, importadoEl}
     },
     planPartido: [],   // síntesis libre del plan de partido: una observación por línea, como el resto del informe
     createdAt: new Date().toISOString(),
@@ -1508,7 +1590,7 @@ function hydrate(inf){
      la plantilla (bien), pero uno guardado a medias podría traerlo sin
      algún campo nuevo y dar undefined al pintar. Así siempre están todos. */
   out.portero = { ...base.portero, ...(inf.portero||{}) };
-  ['puntosFuertes','puntosDebiles','notas'].forEach(k=>{
+  ['puntosFuertes','puntosDebiles','notas','areas','comoAtacarle'].forEach(k=>{
     if(!Array.isArray(out.portero[k])) out.portero[k] = [];
   });
   out.datos = { ...emptyDatos(), ...(inf.datos&&!Array.isArray(inf.datos)?inf.datos:{}) };
@@ -1960,6 +2042,21 @@ function renderEditor(){
      ningún dato de aquí se sobrescribe al recargar de actas. */
   const p = inf.portero;
   html += `<div class="ed-sec">07 · Portero rival</div>
+  <div class="ed-block edp-import">
+    <div class="ed-block-title">Informe del entrenador de porteros</div>
+    <div class="ed-hint">Sube el PDF que pasa el EDP y se rellena esta sección sola.
+      Verás lo leído antes de aplicarlo, por si hay que corregir algo.</div>
+    <div class="edp-btn-row">
+      <label class="btn btn-primary btn-sm" style="cursor:pointer;">
+        Subir PDF del EDP
+        <input type="file" accept="application/pdf" style="display:none"
+               onchange="importarInformeEDP(this)"/>
+      </label>
+      ${p.fuenteEDP ? `<span class="edp-fuente">Importado de
+        ${esc(p.fuenteEDP.analista||'EDP')} · ${fmtDate(p.fuenteEDP.importadoEl.slice(0,10))}</span>` : ''}
+    </div>
+    <div id="edp-estado" class="edp-estado" style="display:none"></div>
+  </div>
   <div class="ed-block">
     <div class="ed-block-title">Identificación</div>
     <div class="ed-grid">
@@ -1967,26 +2064,36 @@ function renderEditor(){
       <div class="ed-field"><label>Dorsal</label><input id="ed-gk-dorsal" value="${esc(p.dorsal)}" inputmode="numeric" placeholder="1"/></div>
       <div class="ed-field"><label>Altura</label><input id="ed-gk-altura" value="${esc(p.altura)}" placeholder="1,88 m"/></div>
       <div class="ed-field"><label>Pie dominante</label><input id="ed-gk-pie" value="${esc(p.pieDominante)}" placeholder="Diestro / Zurdo"/></div>
-    </div>
-  </div>
-  <div class="ed-block">
-    <div class="ed-block-title">Comportamiento bajo palos</div>
-    <div class="ed-hint">Lo que se ve en vídeo: cómo responde en cada situación. Sé concreto — esto es lo que usa el delantero.</div>
-    <div class="ed-grid">
-      <div class="ed-field"><label>Salida en balones aéreos</label><input id="ed-gk-aereas" value="${esc(p.salidaAereas)}" placeholder="Sale poco, duda en el área grande…"/></div>
-      <div class="ed-field"><label>Blocaje y rechaces</label><input id="ed-gk-blocajes" value="${esc(p.blocajes)}" placeholder="Blocá seguro / suelta rechaces al centro…"/></div>
-      <div class="ed-field"><label>Uno contra uno</label><input id="ed-gk-1v1" value="${esc(p.unoContraUno)}" placeholder="Se tira pronto, achica bien…"/></div>
-      <div class="ed-field"><label>Penaltis</label><input id="ed-gk-penaltis" value="${esc(p.penaltis)}" placeholder="Se tira antes a su derecha…"/></div>
-    </div>
-  </div>
-  <div class="ed-block">
-    <div class="ed-block-title">Con balón</div>
-    <div class="ed-hint">Determina si conviene presionar su salida o replegar.</div>
-    <div class="ed-grid">
-      <div class="ed-field"><label>Juego con los pies</label><input id="ed-gk-pies" value="${esc(p.juegoPies)}" placeholder="Cómodo, participa en la salida…"/></div>
-      <div class="ed-field"><label>Saque largo</label><input id="ed-gk-saque" value="${esc(p.saqueLargo)}" placeholder="Busca al 9 directo, poca precisión…"/></div>
+      <div class="ed-field"><label>Edad</label><input id="ed-gk-edad" value="${esc(p.edad)}" inputmode="numeric" placeholder="28"/></div>
+      <div class="ed-field"><label>Club</label><input id="ed-gk-club" value="${esc(p.club)}" placeholder="CD Egabrense"/></div>
+      <div class="ed-field"><label>Mano dominante</label><input id="ed-gk-mano" value="${esc(p.mano)}" placeholder="Derecha / Izquierda"/></div>
     </div>
   </div>`;
+
+  /* Los bloques "Comportamiento bajo palos" y "Con balón" se han retirado:
+     duplicaban lo que ya trae la tabla por áreas del EDP (aéreo, blocaje,
+     rechaces, 1x1, juego de pies) y obligaban a mantener el mismo dato en
+     dos sitios, que es de donde salen las contradicciones. */
+
+  /* Tabla por áreas del EDP. Solo aparece si se ha importado un informe:
+     quien trabaje a mano no ve un bloque vacío que no entiende. */
+  if(p.areas.length){
+    html += `<div class="ed-block">
+      <div class="ed-block-title">Análisis por áreas · del informe del EDP</div>
+      <div class="ed-hint">Tal cual lo pasa el entrenador de porteros. Se puede editar aquí.</div>
+      <table class="edp-tabla">
+        <thead><tr><th>Área</th><th>Fortaleza</th><th>Debilidad</th></tr></thead>
+        <tbody>${p.areas.map((a,i)=>`<tr>
+          <td><b>${esc(a.area)}</b></td>
+          <td><input id="edp-a-f-${i}" value="${esc(a.fortaleza)}" placeholder="—"/></td>
+          <td><input id="edp-a-d-${i}" value="${esc(a.debilidad)}" placeholder="—"/></td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+  }
+  html += taBlock('ta-gk-atacar','Portero · Cómo atacarle',
+    'La columna más útil del informe del EDP: qué hacer con lo que sabemos. Una por línea.',
+    arrToLines(p.comoAtacarle));
   html += taBlock('ta-gk-fuertes','Portero · Puntos fuertes','Una por línea.',arrToLines(p.puntosFuertes));
   html += taBlock('ta-gk-debiles','Portero · Puntos débiles / a explotar','Una por línea. Es lo que más se usa del bloque.',arrToLines(p.puntosDebiles));
   html += taBlock('ta-gk-notas','Portero · Otras notas','',arrToLines(p.notas));
@@ -2142,12 +2249,18 @@ window.saveInforme = async function(){
   };
   inf.fortalezas  = linesToArr(V('ta-fortalezas'));
   inf.debilidades = linesToArr(V('ta-debilidades'));
+  const p0 = inf.portero || {};
   inf.portero = {
     nombre: V('ed-gk-nombre'), dorsal: V('ed-gk-dorsal'),
     altura: V('ed-gk-altura'), pieDominante: V('ed-gk-pie'),
-    salidaAereas: V('ed-gk-aereas'), blocajes: V('ed-gk-blocajes'),
-    unoContraUno: V('ed-gk-1v1'), penaltis: V('ed-gk-penaltis'),
-    juegoPies: V('ed-gk-pies'), saqueLargo: V('ed-gk-saque'),
+    edad: V('ed-gk-edad'), club: V('ed-gk-club'), mano: V('ed-gk-mano'),
+    fuenteEDP: p0.fuenteEDP,
+    areas: (p0.areas||[]).map((a,i)=>({
+      area: a.area,
+      fortaleza: V(`edp-a-f-${i}`) ?? a.fortaleza,
+      debilidad: V(`edp-a-d-${i}`) ?? a.debilidad,
+    })),
+    comoAtacarle: linesToArr(V('ta-gk-atacar')),
     puntosFuertes: linesToArr(V('ta-gk-fuertes')),
     puntosDebiles: linesToArr(V('ta-gk-debiles')),
     notas: linesToArr(V('ta-gk-notas')),
@@ -2454,32 +2567,38 @@ window.openInforme = async function(iid){
     <div class="sec-title">El portero: cómo atacarle</div>
     ${(() => {
       const p = inf.portero || {};
-      const algo = p.nombre || p.salidaAereas || p.blocajes || p.unoContraUno
-        || p.penaltis || p.juegoPies || p.saqueLargo
+      const algo = p.nombre || (p.areas||[]).length || (p.comoAtacarle||[]).length
         || (p.puntosFuertes||[]).length || (p.puntosDebiles||[]).length || (p.notas||[]).length;
       if(!algo) return '<div class="icard">' + bulletsHtml([]) + '</div>';
-
-      const fila = (etiqueta, valor) => valor
-        ? `<div class="gk-row"><span class="gk-k">${etiqueta}</span><span class="gk-v">${esc(valor)}</span></div>` : '';
-      const bajoPalos = fila('Balones aéreos', p.salidaAereas)
-                      + fila('Blocaje y rechaces', p.blocajes)
-                      + fila('Uno contra uno', p.unoContraUno)
-                      + fila('Penaltis', p.penaltis);
-      const conBalon  = fila('Juego con los pies', p.juegoPies)
-                      + fila('Saque largo', p.saqueLargo);
 
       return `
       <div class="gk-head">
         ${p.dorsal?`<div class="gk-dorsal">${esc(p.dorsal)}</div>`:''}
         <div>
           <div class="gk-nombre">${esc(p.nombre)||'Portero sin identificar'}</div>
-          <div class="gk-meta">${[p.altura, p.pieDominante].filter(Boolean).map(esc).join(' · ')}</div>
+          <div class="gk-meta">${[p.club, p.edad?p.edad+' años':'', p.altura,
+            p.pieDominante?'Pie '+p.pieDominante.toLowerCase():'',
+            p.mano?'Mano '+p.mano:''].filter(Boolean).map(esc).join(' · ')}</div>
         </div>
       </div>
-      <div class="ig2" style="margin-bottom:18px;">
-        ${bajoPalos?`<div class="icard"><div class="subsection-title">Bajo palos</div>${bajoPalos}</div>`:''}
-        ${conBalon?`<div class="icard"><div class="subsection-title">Con balón</div>${conBalon}</div>`:''}
-      </div>
+      ${(p.comoAtacarle||[]).length?`
+      <div class="gk-atacar">
+        <div class="gk-atacar-t">Cómo atacarle</div>
+        ${bulletsHtml(p.comoAtacarle)}
+      </div>`:''}
+      ${(p.areas||[]).length?`
+      <div class="icard" style="margin-bottom:18px;">
+        <div class="subsection-title">Análisis por áreas${
+          p.fuenteEDP?.analista?` · ${esc(p.fuenteEDP.analista)}`:''}</div>
+        <table class="gk-areas">
+          <thead><tr><th>Área</th><th>Fortaleza</th><th>Debilidad</th></tr></thead>
+          <tbody>${p.areas.map(a=>`<tr>
+            <td class="gk-area-n">${esc(a.area)}</td>
+            <td class="gk-area-f">${esc(a.fortaleza)||'—'}</td>
+            <td class="gk-area-d">${esc(a.debilidad)||'—'}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>`:''}
       <div class="ig2">
         ${(p.puntosFuertes||[]).length?`<div class="icard" style="border-left:3px solid var(--i-green);">
           <div class="subsection-title" style="color:var(--i-green)">Puntos fuertes</div>
@@ -3148,6 +3267,286 @@ async function iniciarVistaCompartida(token){
   aviso.innerHTML = `Abierto por <b>${esc(persona.nombre)}</b> · enlace temporal, caduca el ${fmtHora(s.expiresAt)}`;
   document.getElementById('infSidebar').prepend(aviso);
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   IMPORTAR EL INFORME DE PORTERO DEL EDP
+   ══════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════
+   LECTOR DEL INFORME DE PORTERO DEL EDP (FB-Goalkeeper)
+   ══════════════════════════════════════════════════════════════════════
+   Lee el PDF que pasa cada semana el entrenador de porteros y rellena la
+   sección 07 del informe.
+
+   Cómo separa las columnas: el PDF es una tabla de tres columnas (Área /
+   Fortalezas / Debilidades) y al extraer texto plano se mezclan cuando
+   una celda ocupa dos líneas. Por eso NO se usa el texto seguido: se
+   agrupan los fragmentos por su coordenada vertical (cada fila) y se
+   reparten por la horizontal (cada columna). Comprobado contra el
+   informe real: las tres columnas caen siempre en x≈36, x≈160 y x≈365.
+
+   Lo que extrae se muestra SIEMPRE para revisar antes de guardar. Un
+   lector automático que se equivoca en silencio es peor que no tenerlo:
+   así, si algún día el EDP cambia la plantilla del documento, se ve al
+   momento en vez de colarse un dato falso en el informe.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const EDP_AREAS = ['Juego de pies','Inicio de juego','Blocaje','Rechaces',
+                          'Juego aéreo','1x1','Trayectoria y experiencia'];
+
+/* Umbrales entre columnas, a media distancia de los centros reales: así
+   aguantan pequeños desplazamientos de maquetación entre versiones. */
+const COL_1 = 98;    // entre Área (36) y Fortalezas (160)
+const COL_2 = 262;   // entre Fortalezas (160) y Debilidades (365)
+/* En CONCLUSIONES las tres columnas están más a la derecha */
+const CONC_1 = 190;
+const CONC_2 = 390;
+
+function agruparFilas(items){
+  /* Agrupa por coordenada vertical con tolerancia de 4pt: los
+     fragmentos de una misma fila comparten Y salvo redondeos. */
+  const filas = new Map();
+  for(const it of items){
+    const t = (it.str||'').trim();
+    if(!t) continue;
+    const x = it.transform[4], y = it.transform[5];
+    const clave = Math.round(y / 4);
+    if(!filas.has(clave)) filas.set(clave, []);
+    filas.get(clave).push({x, y, t});
+  }
+  /* De arriba abajo (en PDF la Y crece hacia arriba) */
+  return [...filas.entries()]
+    .sort((a,b) => b[0] - a[0])
+    .map(([,v]) => v.sort((a,b) => a.x - b.x));
+}
+
+const unir = arr => arr.map(w=>w.t).join(' ').replace(/\s+/g,' ').trim();
+const limpiar = s => (s||'').replace(/^[–—-]\s*$/,'').replace(/\s+/g,' ').trim();
+
+function parsearInformeEDP(items){
+  const filas = agruparFilas(items);
+  const plano = filas.map(unir);
+
+  const out = {
+    nombre:'', dorsal:'', edad:'', altura:'', pie:'', mano:'', club:'',
+    areas:[], fortalezasClave:[], debilidadesClave:[], comoAtacarle:[],
+    observaciones:'', analista:'', avisos:[],
+  };
+
+  /* ── Cabecera ─────────────────────────────────────────────────────
+     Se localiza por POSICIÓN, no por orden de líneas: el dorsal va en su
+     recuadro a la izquierda (x≈53) y el nombre con el club a la derecha
+     de la foto (x≈221), más abajo que el título. Buscarlos como "líneas
+     seguidas" fallaba porque entre medias hay foto y escudo, que no
+     producen texto pero sí rompen la secuencia. */
+  const arriba = items
+    .map(it => ({x: it.transform[4], y: it.transform[5],
+                 alto: it.height || 0, t: (it.str||'').trim()}))
+    .filter(w => w.t && w.y > 660);
+
+  /* Nombre y club: los dos textos más altos del bloque derecho. El
+     nombre siempre va en cuerpo mayor que el club. */
+  const derecha = arriba.filter(w => w.x > 200 && w.y < 760).sort((a,b) => b.y - a.y);
+  if(derecha.length >= 1) out.nombre = derecha[0].t;
+  if(derecha.length >= 2 && derecha[1].alto < derecha[0].alto) out.club = derecha[1].t;
+
+  /* Dorsal: el número suelto del recuadro izquierdo. */
+  const dor = arriba.find(w => w.x < 200 && /^\d{1,2}$/.test(w.t));
+  if(dor) out.dorsal = dor.t;
+  const todo = plano.join('\n');
+  let m;
+  if((m = todo.match(/(\d{1,2})\s*años/)))        out.edad   = m[1];
+  if((m = todo.match(/([\d]+[,.][\d]+)\s*m\b/)))  out.altura = m[1].replace('.',',')+' m';
+  if((m = todo.match(/Pie\s+(\w+)/i)))            out.pie    = m[1].toLowerCase();
+  if((m = todo.match(/Mano\s+(\w+)/i)))           out.mano   = m[1].toLowerCase();
+  if((m = todo.match(/Analista:\s*(.+?)\s+FB-Goalkeeper/i))) out.analista = m[1].trim();
+
+  /* ── Tabla RESUMEN ────────────────────────────────────────────────
+     Una celda puede ocupar varias líneas: mientras no aparezca un área
+     nueva en la columna izquierda, lo que llegue se acumula en la fila
+     que esté abierta. */
+  let enTabla = false, actual = null;
+  const cerrar = () => {
+    if(actual && actual.area){
+      actual.fortaleza = limpiar(actual.fortaleza);
+      actual.debilidad = limpiar(actual.debilidad);
+      /* No se repite un área ya cerrada: el pie de tabla puede
+         reproducir la última fila y duplicarla. */
+      if(!out.areas.some(a => a.area === actual.area)) out.areas.push(actual);
+    }
+    actual = null;
+  };
+
+  for(const fila of filas){
+    const texto = unir(fila);
+    if(/ÁREA\s+FORTALEZAS/i.test(texto)){ enTabla = true; continue; }
+    if(/^CONCLUSIONES/i.test(texto)){ cerrar(); enTabla = false; continue; }
+    if(!enTabla) continue;
+
+    const izq = unir(fila.filter(w => w.x <  COL_1));
+    const cen = unir(fila.filter(w => w.x >= COL_1 && w.x < COL_2));
+    const der = unir(fila.filter(w => w.x >= COL_2));
+
+    /* ¿Empieza un área nueva? Se compara sin acentos ni mayúsculas para
+       que una tilde de más no rompa el reconocimiento. */
+    const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const area = EDP_AREAS.find(a => izq && norm(izq).startsWith(norm(a).slice(0,7)));
+    if(area){
+      cerrar();
+      actual = {area, fortaleza:'', debilidad:''};
+    }
+    if(actual){
+      if(cen) actual.fortaleza += (actual.fortaleza?' ':'') + cen;
+      if(der) actual.debilidad += (actual.debilidad?' ':'') + der;
+    }
+  }
+  cerrar();
+
+  /* ── CONCLUSIONES ─────────────────────────────────────────────────
+     Tres columnas de viñetas. Una viñeta puede seguir en la línea de
+     abajo ("ATACAR SEGUNDA JUGADA" / "DESPUES DE RECHACE"): se detecta
+     porque la fila siguiente NO trae nada en las otras columnas. */
+  let enConc = false;
+  const conc = {f:[], d:[], a:[]};
+  for(const fila of filas){
+    const texto = unir(fila);
+    if(/FORTALEZAS\s+CLAVE/i.test(texto)){ enConc = true; continue; }
+    if(/^OBSERVACIONES/i.test(texto)){ enConc = false; continue; }
+    if(!enConc) continue;
+
+    const c = [
+      unir(fila.filter(w => w.x <  CONC_1)),
+      unir(fila.filter(w => w.x >= CONC_1 && w.x < CONC_2)),
+      unir(fila.filter(w => w.x >= CONC_2)),
+    ];
+    const llenas = c.filter(Boolean).length;
+    ['f','d','a'].forEach((k,i)=>{
+      if(!c[i]) return;
+      /* Si es la única columna con texto y ya hay algo empezado ahí,
+         es la continuación de la viñeta anterior, no una nueva. */
+      if(llenas === 1 && conc[k].length) conc[k][conc[k].length-1] += ' ' + c[i];
+      else conc[k].push(c[i]);
+    });
+  }
+  out.fortalezasClave  = conc.f.map(limpiar).filter(Boolean);
+  out.debilidadesClave = conc.d.map(limpiar).filter(Boolean);
+  out.comoAtacarle     = conc.a.map(limpiar).filter(Boolean);
+
+  /* ── OBSERVACIONES ────────────────────────────────────────────────*/
+  const iObs = plano.findIndex(l => /^OBSERVACIONES DEL RIVAL/i.test(l));
+  if(iObs >= 0){
+    const fin = plano.findIndex((l,i) => i > iObs && /^Analista:/i.test(l));
+    out.observaciones = plano.slice(iObs+1, fin > 0 ? fin : iObs+4)
+      .join(' ').replace(/\s+/g,' ').trim();
+  }
+
+  /* ── Avisos: lo que no se ha podido leer ──────────────────────────
+     Se informa en vez de callar: si el EDP cambia la plantilla del
+     documento, se ve al momento. */
+  if(!out.nombre) out.avisos.push('No se ha encontrado el nombre del portero');
+  if(!out.areas.length) out.avisos.push('No se ha encontrado la tabla de análisis por áreas');
+  else if(out.areas.length < 5) out.avisos.push(`Solo se han leído ${out.areas.length} áreas de las 7 habituales`);
+  if(!out.comoAtacarle.length) out.avisos.push('No se ha encontrado la columna "¿Cómo podemos atacarle?"');
+
+  return out;
+}
+
+
+/* pdf.js se carga bajo demanda: solo hace falta al importar un PDF, y
+   son ~350 KB que no tienen por qué pesar en cada apertura del editor. */
+let _pdfjs = null;
+async function cargarPdfJs(){
+  if(_pdfjs) return _pdfjs;
+  const mod = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.mjs');
+  mod.GlobalWorkerOptions.workerSrc =
+    'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs';
+  _pdfjs = mod;
+  return mod;
+}
+
+let _edpLeido = null;   // lo último leído, a la espera de que Carlos confirme
+
+window.importarInformeEDP = async function(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const est = document.getElementById('edp-estado');
+  est.style.display = '';
+  est.className = 'edp-estado cargando';
+  est.textContent = 'Leyendo el PDF…';
+  try{
+    const pdfjs = await cargarPdfJs();
+    const buf = await file.arrayBuffer();
+    const doc = await pdfjs.getDocument({data:new Uint8Array(buf)}).promise;
+    const tc = await (await doc.getPage(1)).getTextContent();
+    _edpLeido = parsearInformeEDP(tc.items);
+    mostrarRevisionEDP(_edpLeido, file.name);
+  }catch(e){
+    console.error('[importarInformeEDP]', e);
+    est.className = 'edp-estado error';
+    est.textContent = 'No se ha podido leer el PDF: ' + e.message;
+  }
+  input.value = '';   // permite volver a subir el mismo archivo
+};
+
+/* Nada se aplica sin revisar. Un lector automático que se equivoca en
+   silencio es peor que no tenerlo: si el EDP cambia la plantilla del
+   documento, aquí se ve antes de que entre nada al informe. */
+function mostrarRevisionEDP(d, nombreArchivo){
+  const est = document.getElementById('edp-estado');
+  est.style.display = 'none';
+  const fila = (k,v) => v ? `<div class="edp-rev-row"><span>${esc(k)}</span><b>${esc(v)}</b></div>` : '';
+  const lista = arr => arr.length
+    ? `<ul class="edp-rev-list">${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`
+    : '<div class="edp-rev-vacio">— nada leído —</div>';
+
+  document.getElementById('edpRevBody').innerHTML = `
+    ${d.avisos.length ? `<div class="edp-avisos">
+      <b>Revisa esto antes de aplicar:</b>
+      <ul>${d.avisos.map(a=>`<li>${esc(a)}</li>`).join('')}</ul></div>` : ''}
+    <div class="edp-rev-file">${esc(nombreArchivo)}</div>
+    <div class="edp-rev-sec">Portero</div>
+    ${fila('Nombre', d.nombre)}${fila('Dorsal', d.dorsal)}${fila('Club', d.club)}
+    ${fila('Edad', d.edad ? d.edad+' años' : '')}${fila('Altura', d.altura)}
+    ${fila('Pie', d.pie)}${fila('Mano', d.mano)}${fila('Analista', d.analista)}
+    <div class="edp-rev-sec">Análisis por áreas (${d.areas.length})</div>
+    ${d.areas.length ? `<table class="edp-rev-tabla">
+      <thead><tr><th>Área</th><th>Fortaleza</th><th>Debilidad</th></tr></thead>
+      <tbody>${d.areas.map(a=>`<tr><td><b>${esc(a.area)}</b></td>
+        <td>${esc(a.fortaleza)||'—'}</td><td>${esc(a.debilidad)||'—'}</td></tr>`).join('')}
+      </tbody></table>` : '<div class="edp-rev-vacio">— no se ha leído la tabla —</div>'}
+    <div class="edp-rev-sec">Fortalezas clave</div>${lista(d.fortalezasClave)}
+    <div class="edp-rev-sec">Debilidades / oportunidades</div>${lista(d.debilidadesClave)}
+    <div class="edp-rev-sec">Cómo atacarle</div>${lista(d.comoAtacarle)}
+    ${d.observaciones ? `<div class="edp-rev-sec">Observaciones</div>
+      <div class="edp-rev-obs">${esc(d.observaciones)}</div>` : ''}`;
+  document.getElementById('edpRevModal').classList.add('open');
+}
+
+window.aplicarInformeEDP = function(){
+  if(!_edpLeido) return;
+  const d = _edpLeido;
+  const p = currentInforme.portero;
+
+  /* Identificación */
+  if(d.nombre) p.nombre = d.nombre;
+  if(d.dorsal) p.dorsal = d.dorsal;
+  if(d.altura) p.altura = d.altura;
+  if(d.pie)    p.pieDominante = d.pie.charAt(0).toUpperCase()+d.pie.slice(1);
+  p.edad = d.edad; p.club = d.club; p.mano = d.mano;
+
+  /* Estructura completa del EDP */
+  p.areas = d.areas;
+  p.comoAtacarle = d.comoAtacarle;
+  p.fuenteEDP = { analista: d.analista, importadoEl: new Date().toISOString() };
+
+  if(d.fortalezasClave.length)  p.puntosFuertes = d.fortalezasClave;
+  if(d.debilidadesClave.length) p.puntosDebiles = d.debilidadesClave;
+  if(d.observaciones)           p.notas = [d.observaciones];
+
+  closeModal('edpRevModal');
+  renderEditor();
+  toast('Informe del EDP aplicado — recuerda guardar');
+};
 
 /* ══════════ VÍDEO MODAL ══════════ */
 window.openVideo = function(url){
