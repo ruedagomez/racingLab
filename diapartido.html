@@ -132,51 +132,62 @@ select{font-family:inherit;}
    una ventana ni una pestaña aparte. */
 #print-conv{display:none;}
 @media print{
-  @page{size:A4 portrait;margin:12mm 14mm;}
+  @page{size:A4 portrait;margin:10mm 12mm;}
   .nav,.jsel,#content,.toast,#umodal-bg{display:none !important;}
   html,body{height:auto;background:#fff;}
   .wrap{display:block;height:auto;overflow:visible;max-width:none;padding:0;}
   #print-conv{display:block;color:#111;font-family:'Barlow',sans-serif;}
 
-  .pc-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;
-    background:#0b0b0b;color:#fff;padding:12px 16px;margin-bottom:10px;}
-  .pc-kicker{font-family:'Barlow Condensed',sans-serif;font-size:7.5pt;font-weight:700;
-    letter-spacing:.22em;text-transform:uppercase;color:#e8192c;}
-  .pc-title{font-family:'Bebas Neue',sans-serif;font-size:25pt;line-height:.92;letter-spacing:1px;}
-  .pc-sub{font-family:'Barlow Condensed',sans-serif;font-size:8pt;letter-spacing:.14em;
-    text-transform:uppercase;color:rgba(255,255,255,.65);margin-top:2px;}
-  .pc-meta{text-align:right;font-family:'Barlow Condensed',sans-serif;}
-  .pc-meta b{display:block;font-size:12pt;font-weight:800;}
-  .pc-meta span{font-size:7pt;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.5);}
+  /* Cabecera compacta: cede altura a las filas, que es lo que de verdad
+     necesita crecer cuando hay muchos convocados. */
+  .pc-head{display:flex;justify-content:space-between;align-items:center;gap:14px;
+    background:#0b0b0b;color:#fff;padding:7px 13px;margin-bottom:6px;}
+  .pc-kicker{font-family:'Barlow Condensed',sans-serif;font-size:6.5pt;font-weight:700;
+    letter-spacing:.18em;text-transform:uppercase;color:#e8192c;}
+  .pc-title{font-family:'Bebas Neue',sans-serif;font-size:17pt;line-height:1;letter-spacing:.5px;}
+  .pc-sub{font-family:'Barlow Condensed',sans-serif;font-size:7pt;letter-spacing:.1em;
+    text-transform:uppercase;color:rgba(255,255,255,.65);}
+  .pc-meta{text-align:right;font-family:'Barlow Condensed',sans-serif;line-height:1.15;}
+  .pc-meta b{display:block;font-size:9.5pt;font-weight:800;}
+  .pc-meta span{font-size:6pt;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5);}
 
   .pc-count{display:flex;justify-content:space-between;align-items:baseline;
-    font-family:'Barlow Condensed',sans-serif;font-size:9pt;letter-spacing:.05em;
-    color:#444;margin-bottom:8px;padding-bottom:6px;border-bottom:1.5px solid #111;}
-  .pc-count b{font-family:'Bebas Neue',sans-serif;font-size:13pt;color:#111;letter-spacing:.5px;}
+    font-family:'Barlow Condensed',sans-serif;font-size:7.5pt;letter-spacing:.04em;
+    color:#444;margin-bottom:5px;padding-bottom:4px;border-bottom:1.25pt solid #111;}
+  .pc-count b{font-family:'Bebas Neue',sans-serif;font-size:10pt;color:#111;}
 
-  /* Una fila por convocado, con su propio cuadro de firma a la derecha.
-     grid en vez de tabla: así cada fila controla su propia altura y el
-     cuadro de firma queda con proporción constante sea cual sea el
-     nombre. */
-  .pc-tabla{display:flex;flex-direction:column;}
-  .pc-row{display:grid;grid-template-columns:9mm 11mm 1fr 20mm 40mm;
-    align-items:center;gap:8px;padding:5.5mm 2mm;border-bottom:0.75pt solid #ccc;
-    break-inside:avoid;}
-  .pc-row:nth-child(even){background:#fafafa;}
-  .pc-n{font-family:'Barlow Condensed',sans-serif;font-size:9pt;color:#999;text-align:center;}
-  .pc-dorsal{font-family:'Bebas Neue',sans-serif;font-size:15pt;color:#e8192c;text-align:center;}
-  .pc-nombre{font-family:'Barlow Condensed',sans-serif;font-size:12pt;font-weight:700;
-    text-transform:uppercase;letter-spacing:.02em;}
-  .pc-pos{font-family:'Barlow Condensed',sans-serif;font-size:8pt;font-weight:700;
-    letter-spacing:.1em;text-transform:uppercase;color:#777;text-align:center;}
-  /* El cuadro de firma: recuadro vacío, sin más adorno que la línea del
-     marco, para que quede sitio real donde firmar con boli. */
-  .pc-firma{height:14mm;border:1pt solid #111;border-radius:2px;}
+  /* ══ DOS COLUMNAS ══
+     Con hasta 24-25 convocados reales, una sola columna obliga a elegir
+     entre cuadros de firma minúsculos o desbordar la página (medido con
+     Chromium: 15 convocados ya pasaban de 273mm a 314mm). Repartiendo en
+     dos columnas se dobla la capacidad vertical sin encoger el cuadro de
+     firma por debajo de un tamaño cómodo. `columns` reparte y equilibra
+     las filas solo; `break-inside:avoid` impide que una fila quede
+     partida entre las dos columnas. */
+  /* La altura de fila y el tamaño del cuadro NO son fijos: los calcula
+     JS según cuántos convocados haya (ver calcularTallaFilas en el
+     script), para que 18 convocados llenen la hoja igual de bien que 25,
+     en vez de dejar media página en blanco cuando hay pocos. El grid usa
+     'auto' en la última columna porque el ancho del cuadro es variable:
+     un valor fijo aquí dejaría hueco o recortaría el cuadro según el
+     caso. */
+  .pc-tabla{column-count:2;column-gap:7mm;column-rule:0.5pt solid #ddd;}
+  .pc-row{display:grid;grid-template-columns:7mm 1fr 8mm auto;column-gap:2.5mm;
+    align-items:center;border-bottom:0.5pt solid #ddd;break-inside:avoid;}
+  .pc-dorsal{font-family:'Bebas Neue',sans-serif;font-size:12pt;color:#e8192c;text-align:center;}
+  .pc-nombre{font-family:'Barlow Condensed',sans-serif;font-size:9.5pt;font-weight:700;
+    text-transform:uppercase;letter-spacing:.01em;line-height:1.1;overflow-wrap:break-word;}
+  .pc-pos{font-family:'Barlow Condensed',sans-serif;font-size:6.5pt;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;color:#888;text-align:center;}
+  /* Cuadrado de verdad (ancho = alto siempre, lo fija JS inline), vacío
+     por dentro salvo el marco, con sitio real para firmar a boli. */
+  .pc-firma{border:1pt solid #111;border-radius:2px;}
 
-  .pc-foot{margin-top:8mm;display:flex;justify-content:space-between;
-    font-family:'Barlow Condensed',sans-serif;font-size:7.5pt;color:#999;
-    letter-spacing:.04em;padding-top:5mm;border-top:0.75pt solid #ccc;}
+  .pc-foot{margin-top:4mm;display:flex;justify-content:space-between;
+    font-family:'Barlow Condensed',sans-serif;font-size:6.5pt;color:#999;
+    letter-spacing:.03em;padding-top:3mm;border-top:0.5pt solid #ccc;}
 }
+
 #umodal-bg{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:20px;animation:fadeIn .15s;}
 #umodal-bg.open{display:flex;}
 .umodal{background:var(--wh);border-radius:14px;width:min(440px,100%);padding:26px;animation:fadeUp .2s;}
@@ -649,6 +660,33 @@ window.togglePlayer = function(id){
    última versión guardada, se avisa antes de imprimir para que la hoja
    en papel y lo que quede en Firestore no diverjan sin que Carlos lo
    sepa. */
+/* Altura de fila y talla del cuadro de firma, calculadas para que la
+   hoja quepa SIEMPRE en una A4 y aproveche el espacio disponible en vez
+   de dejar media página en blanco con pocos convocados.
+
+   236mm es el espacio real que queda para las dos columnas de filas una
+   vez descontados cabecera, contador y pie — medido renderizando la
+   hoja con Chromium (dio 243.9mm; se deja un margen de seguridad de
+   ~8mm por si el navegador de destino difiere un poco en el alto real
+   de fuentes/cabecera). Con dos columnas, cada una necesita space para
+   ceil(n/2) filas.
+
+   Los topes (15–25mm de alto de fila, 10–19mm de cuadro) evitan dos
+   extremos: filas gigantescas cuando hay pocos convocados (se ve raro
+   pasado cierto punto) y cuadros minúsculos si algún día se convocara
+   a un número inusualmente alto. Verificado con Chromium real de 3 a
+   25 convocados, incluidos números impares (columnas descompensadas en
+   1 fila) y nombres largos que envuelven a dos líneas: siempre 1 página,
+   nunca se corta contenido. */
+function calcularTallaFilas(n){
+  const DISPONIBLE_MM = 236;
+  const filasPorColumna = Math.max(1, Math.ceil(n/2));
+  const bruto = DISPONIBLE_MM / filasPorColumna;
+  const altoFila = Math.max(15, Math.min(25, bruto));
+  const cuadro = Math.max(10, Math.min(19, altoFila - 6));
+  return { altoFila, cuadro };
+}
+
 window.imprimirConvocatoria = function(){
   const sel = seleccionActual();
   if(!sel.size){ toast('No hay ningún jugador seleccionado'); return; }
@@ -668,6 +706,7 @@ window.imprimirConvocatoria = function(){
   const j = calendario.jornadas.find(x=>x.n===jornadaActual);
   const club = j ? clubById(j.clubId) : null;
   const fecha = JORNADA_DATES[jornadaActual-1];
+  const { altoFila, cuadro } = calcularTallaFilas(convocados.length);
 
   document.getElementById('print-conv').innerHTML = `
     <div class="pc-head">
@@ -687,12 +726,11 @@ window.imprimirConvocatoria = function(){
     </div>
     <div class="pc-tabla">
       ${convocados.map((p,i)=>`
-        <div class="pc-row">
-          <div class="pc-n">${i+1}</div>
+        <div class="pc-row" style="height:${altoFila.toFixed(2)}mm">
           <div class="pc-dorsal">${p.d??'—'}</div>
           <div class="pc-nombre">${p.nick||''}</div>
           <div class="pc-pos">${p.pos||''}</div>
-          <div class="pc-firma"></div>
+          <div class="pc-firma" style="width:${cuadro.toFixed(2)}mm;height:${cuadro.toFixed(2)}mm"></div>
         </div>`).join('')}
     </div>
     <div class="pc-foot">
