@@ -454,6 +454,13 @@ input,select,textarea{font-family:inherit;outline:none;}
           <p style="font-size:12px;color:var(--faint);">JPG · PNG · Vertical</p>
         </div>
       </div>
+      <div style="text-align:center;margin-top:10px;">
+        <a href="#" style="font-size:12px;color:var(--mid);" onclick="event.preventDefault();togglePhotoUrlInput()">¿Ya tienes el enlace de una foto subida a Cloudinary? Pégalo en vez de subir el archivo</a>
+        <div id="att-url-box" style="display:none;margin-top:8px;gap:6px;">
+          <input type="text" id="att-url-input" placeholder="https://res.cloudinary.com/.../racing-lab/asistencia/..." style="flex:1;font-size:12px;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;"/>
+          <button class="btn btn-ghost btn-sm" onclick="usarFotoUrlDirecta()">Usar</button>
+        </div>
+      </div>
     </div>
     <div id="reg-processing" style="display:none;">
       <div class="processing-overlay">
@@ -755,15 +762,40 @@ const storage = getStorage(app);
 const CLOUD  = 'dprtymvge';
 const PRESET = 'racing_lab';
 
+/* Genera un nombre de archivo garantizado único, distinto en cada
+   llamada aunque el archivo de origen se llame siempre igual (muy
+   habitual: el móvil exporta la foto compartida como "image.jpg" cada
+   vez). Es relevante porque el preset 'racing_lab' YA causó un
+   problema de colisión antes (asset_folder fijo → todo a la misma
+   carpeta, corregido en su día vaciando ese campo en la consola de
+   Cloudinary). Si el preset tiene "Unique filename" desactivado y dos
+   fotos llegan con el mismo nombre, Cloudinary puede tratarlas como el
+   MISMO archivo: sobrescribe en silencio, o directamente devuelve la
+   URL de la que ya existía sin subir nada nuevo — la petición responde
+   bien igualmente, así que la app nunca se entera de que no subió la
+   foto correcta.
+   Forzando aquí un nombre único, el resultado deja de depender de una
+   casilla marcada en un panel externo que nadie vuelve a mirar. */
+function nombreUnico(file) {
+  const ext = (file.name.match(/\.[a-zA-Z0-9]+$/) || ['.jpg'])[0];
+  const azar = Math.random().toString(36).slice(2, 8);
+  return `asistencia_${Date.now()}_${azar}${ext}`;
+}
+
 async function uploadToCloudinary(file) {
   const fd = new FormData();
-  fd.append('file', file);
+  const archivo = new File([file], nombreUnico(file), { type: file.type });
+  fd.append('file', archivo);
   fd.append('upload_preset', PRESET);
   fd.append('folder', 'racing-lab/asistencia');
   const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, {
     method: 'POST', body: fd
   });
   const data = await res.json();
+  if(!data.secure_url){
+    console.error('[Cloudinary] respuesta sin URL:', data);
+    throw new Error(data.error?.message || 'Cloudinary no devolvió una URL válida');
+  }
   return data.secure_url;
 }
 
@@ -826,6 +858,7 @@ let isDrawing      = false;
 let startX = 0, startY = 0;
 let currentPhotoFile = null;
 let currentPhotoB64  = null;
+let currentPhotoUrlDirecta = null;  // URL de Cloudinary ya existente, re-vinculada sin volver a subir
 let attendanceResults = [];
 let editingSessionId = null;          // id de la sesión en edición, null = sesión nueva
 let editingSessionExistingPhoto = null; // foto ya guardada, se conserva si no se sube otra
@@ -1077,10 +1110,41 @@ function buildRosterFromSheet(){
 
 const STATUS_LABELS = {presente:'Presente', retraso:'Retraso', ausencia:'Ausencia', justificada:'Justificada'};
 
+/* Re-vincular una foto ya subida a Cloudinary, sin volver a subir el
+   archivo. Se añadió a raíz de un episodio de datos mal enlazados (foto
+   de un día quedó asociada a otras sesiones): si la foto correcta de un
+   día concreto sigue existiendo en Cloudinary (buscable por fecha real de
+   subida en su Media Library, que no depende de qué documento la
+   referencia), esto permite re-engancharla a la sesión correcta sin
+   descargarla y volver a subirla como archivo duplicado. */
+window.togglePhotoUrlInput = function(){
+  const box = document.getElementById('att-url-box');
+  box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+};
+window.usarFotoUrlDirecta = function(){
+  const url = document.getElementById('att-url-input').value.trim();
+  if(!url || !url.includes('cloudinary.com')){
+    showToast('Pega un enlace de Cloudinary válido', 'err');
+    return;
+  }
+  currentPhotoFile = null;
+  currentPhotoUrlDirecta = url;
+  currentPhotoB64 = url;
+  document.getElementById('reg-upload').style.display='none';
+  document.getElementById('reg-processing').style.display='none';
+  if(!editingSessionId){
+    attendanceResults = buildRosterFromSheet().map(r => ({
+      ...r, status:'presente', fine:false, fineTypeId:''
+    }));
+  }
+  showResults();
+};
+
 window.handlePhoto = async function(input) {
   const file = input.files[0];
   if(!file) return;
   currentPhotoFile = file;
+  currentPhotoUrlDirecta = null;
   const reader = new FileReader();
   reader.onload = e => {
     currentPhotoB64 = e.target.result;
@@ -1201,7 +1265,9 @@ window.saveSession = async function() {
   // manual o no — esto no depende de si hay detección automática.
   // En edición: si no se eligió una foto nueva, se conserva la existente.
   let photoUrl = editingSessionId ? editingSessionExistingPhoto : null;
-  if(currentPhotoFile){
+  if(currentPhotoUrlDirecta){
+    photoUrl = currentPhotoUrlDirecta;   // re-vinculación directa: no se sube nada
+  } else if(currentPhotoFile){
     try {
       photoUrl = await uploadToCloudinary(currentPhotoFile);
     } catch(e) {
@@ -1265,9 +1331,11 @@ window.saveSession = async function() {
 };
 
 window.resetReg = function() {
-  currentPhotoFile = null; currentPhotoB64 = null; attendanceResults = [];
+  currentPhotoFile = null; currentPhotoB64 = null; currentPhotoUrlDirecta = null; attendanceResults = [];
   editingSessionId = null; editingSessionExistingPhoto = null;
   document.getElementById('att-file').value = '';
+  const urlInput = document.getElementById('att-url-input'); if(urlInput) urlInput.value = '';
+  const urlBox = document.getElementById('att-url-box'); if(urlBox) urlBox.style.display = 'none';
   document.getElementById('reg-results').style.display='none';
   document.getElementById('reg-processing').style.display='none';
   document.getElementById('reg-upload').style.display='block';
