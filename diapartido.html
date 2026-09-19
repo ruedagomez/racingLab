@@ -118,9 +118,65 @@ select{font-family:inherit;}
 .pc.sel .pcck{display:flex;}
 .savebar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--bdr);flex-wrap:wrap;}
 .savebar .sb-meta{font-size:11.5px;color:var(--faint);}
+.sb-btns{display:flex;gap:10px;flex-wrap:wrap;}
 .btn-save{background:var(--r);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:11px 26px;border-radius:9px;transition:.15s;}
 .btn-save:hover:not(:disabled){background:#c8102c;}
 .btn-save:disabled{opacity:.4;cursor:default;}
+.btn-print{background:var(--wh);color:var(--txt);border:1.5px solid var(--bdr);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:10px 22px;border-radius:9px;transition:.15s;}
+.btn-print:hover:not(:disabled){border-color:var(--r);color:var(--r);}
+.btn-print:disabled{opacity:.4;cursor:default;}
+
+/* ══ HOJA DE CONVOCATORIA IMPRIMIBLE (A4 vertical) ══
+   Mismo patrón que el parte de multas de Asistencia: un contenedor
+   oculto que solo se muestra en @media print, para no tener que montar
+   una ventana ni una pestaña aparte. */
+#print-conv{display:none;}
+@media print{
+  @page{size:A4 portrait;margin:12mm 14mm;}
+  .nav,.jsel,.toast,#umodal-bg{display:none !important;}
+  html,body{height:auto;background:#fff;}
+  .wrap{display:block;height:auto;overflow:visible;max-width:none;padding:0;}
+  #print-conv{display:block;color:#111;font-family:'Barlow',sans-serif;}
+
+  .pc-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;
+    background:#0b0b0b;color:#fff;padding:12px 16px;margin-bottom:10px;}
+  .pc-kicker{font-family:'Barlow Condensed',sans-serif;font-size:7.5pt;font-weight:700;
+    letter-spacing:.22em;text-transform:uppercase;color:#e8192c;}
+  .pc-title{font-family:'Bebas Neue',sans-serif;font-size:25pt;line-height:.92;letter-spacing:1px;}
+  .pc-sub{font-family:'Barlow Condensed',sans-serif;font-size:8pt;letter-spacing:.14em;
+    text-transform:uppercase;color:rgba(255,255,255,.65);margin-top:2px;}
+  .pc-meta{text-align:right;font-family:'Barlow Condensed',sans-serif;}
+  .pc-meta b{display:block;font-size:12pt;font-weight:800;}
+  .pc-meta span{font-size:7pt;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.5);}
+
+  .pc-count{display:flex;justify-content:space-between;align-items:baseline;
+    font-family:'Barlow Condensed',sans-serif;font-size:9pt;letter-spacing:.05em;
+    color:#444;margin-bottom:8px;padding-bottom:6px;border-bottom:1.5px solid #111;}
+  .pc-count b{font-family:'Bebas Neue',sans-serif;font-size:13pt;color:#111;letter-spacing:.5px;}
+
+  /* Una fila por convocado, con su propio cuadro de firma a la derecha.
+     grid en vez de tabla: así cada fila controla su propia altura y el
+     cuadro de firma queda con proporción constante sea cual sea el
+     nombre. */
+  .pc-tabla{display:flex;flex-direction:column;}
+  .pc-row{display:grid;grid-template-columns:9mm 11mm 1fr 20mm 40mm;
+    align-items:center;gap:8px;padding:5.5mm 2mm;border-bottom:0.75pt solid #ccc;
+    break-inside:avoid;}
+  .pc-row:nth-child(even){background:#fafafa;}
+  .pc-n{font-family:'Barlow Condensed',sans-serif;font-size:9pt;color:#999;text-align:center;}
+  .pc-dorsal{font-family:'Bebas Neue',sans-serif;font-size:15pt;color:#e8192c;text-align:center;}
+  .pc-nombre{font-family:'Barlow Condensed',sans-serif;font-size:12pt;font-weight:700;
+    text-transform:uppercase;letter-spacing:.02em;}
+  .pc-pos{font-family:'Barlow Condensed',sans-serif;font-size:8pt;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;color:#777;text-align:center;}
+  /* El cuadro de firma: recuadro vacío, sin más adorno que la línea del
+     marco, para que quede sitio real donde firmar con boli. */
+  .pc-firma{height:14mm;border:1pt solid #111;border-radius:2px;}
+
+  .pc-foot{margin-top:8mm;display:flex;justify-content:space-between;
+    font-family:'Barlow Condensed',sans-serif;font-size:7.5pt;color:#999;
+    letter-spacing:.04em;padding-top:5mm;border-top:0.75pt solid #ccc;}
+}
 #umodal-bg{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:20px;animation:fadeIn .15s;}
 #umodal-bg.open{display:flex;}
 .umodal{background:var(--wh);border-radius:14px;width:min(440px,100%);padding:26px;animation:fadeUp .2s;}
@@ -542,9 +598,14 @@ function convocatoriaHtml(){
       ${secciones}
       <div class="savebar">
         <div class="sb-meta">${meta}</div>
-        <button class="btn-save" id="btn-save" ${(!cambios||guardando)?'disabled':''} onclick="guardarConvocatoria()">
-          ${guardando?'Guardando…':'Guardar convocatoria'}
-        </button>
+        <div class="sb-btns">
+          <button class="btn-print" ${total?'':'disabled'} onclick="imprimirConvocatoria()" title="Hoja para firmar, un cuadro por convocado">
+            ⎙ Imprimir convocatoria
+          </button>
+          <button class="btn-save" id="btn-save" ${(!cambios||guardando)?'disabled':''} onclick="guardarConvocatoria()">
+            ${guardando?'Guardando…':'Guardar convocatoria'}
+          </button>
+        </div>
       </div>
     </div>`;
 }
@@ -579,6 +640,67 @@ window.togglePlayer = function(id){
   if(sel.has(id)) sel.delete(id);
   else sel.add(id);
   render();
+};
+
+/* Hoja de firmas de convocados. Solo los marcados como convocados en
+   pantalla ahora mismo — no depende de que ya esté guardada, porque el
+   caso normal es: cerrar la lista y querer la hoja ya, sin dar un paso
+   de guardado intermedio. Si hay cambios sin guardar respecto a la
+   última versión guardada, se avisa antes de imprimir para que la hoja
+   en papel y lo que quede en Firestore no diverjan sin que Carlos lo
+   sepa. */
+window.imprimirConvocatoria = function(){
+  const sel = seleccionActual();
+  if(!sel.size){ toast('No hay ningún jugador seleccionado'); return; }
+
+  if(hayCambios()){
+    const seguir = confirm(
+      'Hay cambios sin guardar en la convocatoria.\n\n'+
+      'Se imprimirá la lista tal y como está en pantalla ahora mismo, '+
+      'que no coincide con la última versión guardada.\n\n'+
+      '¿Imprimir de todas formas?');
+    if(!seguir) return;
+  }
+
+  const convocados = PLAYERS.filter(p=>sel.has(p.id))
+    .sort((a,b)=> POS_ORDER.indexOf(a.pos)-POS_ORDER.indexOf(b.pos) || (a.d??99)-(b.d??99));
+
+  const j = calendario.jornadas.find(x=>x.n===jornadaActual);
+  const club = j ? clubById(j.clubId) : null;
+  const fecha = JORNADA_DATES[jornadaActual-1];
+
+  document.getElementById('print-conv').innerHTML = `
+    <div class="pc-head">
+      <div>
+        <div class="pc-kicker">Racing Club Portuense · Convocatoria</div>
+        <div class="pc-title">JORNADA ${jornadaActual}</div>
+        <div class="pc-sub">${j&&club? (j.condicion==='casa'?'vs ':'en ') + club.name : ''}</div>
+      </div>
+      <div class="pc-meta">
+        <b>${fmtDate(fecha)}</b>
+        <span>${diaSemana(fecha)}</span>
+      </div>
+    </div>
+    <div class="pc-count">
+      <span>Firma de recepción de la convocatoria</span>
+      <span><b>${convocados.length}</b> de ${OBJETIVO_CONVOCADOS} convocados</span>
+    </div>
+    <div class="pc-tabla">
+      ${convocados.map((p,i)=>`
+        <div class="pc-row">
+          <div class="pc-n">${i+1}</div>
+          <div class="pc-dorsal">${p.d??'—'}</div>
+          <div class="pc-nombre">${p.nick||''}</div>
+          <div class="pc-pos">${p.pos||''}</div>
+          <div class="pc-firma"></div>
+        </div>`).join('')}
+    </div>
+    <div class="pc-foot">
+      <span>Generado ${fmtFechaHora(new Date().toISOString())} · ${currentUser||'—'}</span>
+      <span>Racing Lab · Documento de uso interno</span>
+    </div>`;
+
+  window.print();
 };
 
 window.guardarConvocatoria = async function(){
@@ -651,5 +773,6 @@ window.selectUser = function(n){
   render();
 })();
 </script>
+<div id="print-conv"></div>
 </body>
 </html>
