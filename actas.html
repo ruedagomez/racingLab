@@ -85,6 +85,68 @@ select{font-family:inherit;}
 .dsec:last-child{margin-bottom:0;}
 .dsec-t{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
 .dsec-t::after{content:'';flex:1;height:1px;background:var(--bdr);}
+/* ══════════ PESTAÑAS ══════════ */
+.tabs{display:flex;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--bdr);}
+.tab{background:none;border:none;padding:10px 18px;font-family:'Barlow Condensed',sans-serif;
+  font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--mid);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:.15s;}
+.tab:hover{color:var(--txt);}
+.tab.active{color:var(--r);border-bottom-color:var(--r);}
+
+/* ══════════ SANCIONES ══════════ */
+.sanc-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin-bottom:16px;flex-wrap:wrap;}
+.vsel{display:flex;border:1.5px solid var(--bdr);border-radius:7px;overflow:hidden;}
+.vbtn{background:var(--wh);border:none;padding:7px 15px;font-family:'Barlow Condensed',sans-serif;
+  font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--mid);cursor:pointer;transition:.15s;}
+.vbtn:not(:last-child){border-right:1px solid var(--bdr);}
+.vbtn:hover{background:var(--bg);}
+.vbtn.active{background:var(--r);color:#fff;}
+.sanc-meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);}
+.sanc-vacio{text-align:center;padding:50px 20px;color:var(--faint);
+  font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:.06em;
+  text-transform:uppercase;line-height:1.7;}
+
+.sgrupo{background:var(--wh);border:1px solid var(--bdr);border-radius:10px;
+  margin-bottom:14px;overflow:hidden;}
+.sgrupo-h{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:11px 15px;background:var(--bg);border-bottom:1px solid var(--bdr);}
+.sgrupo-t{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;
+  letter-spacing:.04em;}
+.sgrupo-n{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);}
+
+.srow{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;
+  padding:10px 15px;border-bottom:1px solid var(--bdr);font-size:13px;}
+.srow:last-child{border-bottom:none;}
+.srow.susp{background:rgba(232,25,44,.04);}
+.srow.revisar{background:#fff7ed;}
+.sper{font-weight:600;}
+.sper small{display:block;font-weight:400;font-size:11.5px;color:var(--mid);
+  margin-top:2px;line-height:1.4;}
+.sbadge{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:20px;
+  white-space:nowrap;}
+.b-amon{background:#fef3c7;color:#92400e;}
+.b-susp{background:var(--r2);color:var(--r);}
+.b-club{background:#e0e7ff;color:#3730a3;}
+.b-rev{background:#fed7aa;color:#9a3412;}
+.spart{display:flex;align-items:center;gap:6px;}
+.spart input{width:46px;text-align:center;font-family:'JetBrains Mono',monospace;
+  font-size:12px;padding:5px 4px;border:1px solid var(--bdr);border-radius:6px;
+  background:var(--wh);color:var(--txt);}
+.spart input:focus{border-color:var(--r);outline:none;}
+.spart label{font-family:'Barlow Condensed',sans-serif;font-size:10px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--faint);}
+.sguardar{background:var(--r);color:#fff;border:none;border-radius:6px;padding:5px 11px;
+  font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:.15s;}
+.sguardar:hover{background:#c8102c;}
+.sguardar:disabled{opacity:.4;cursor:default;}
+.srevisado{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--fit);
+  white-space:nowrap;}
+
 .goal-row,.card-row,.sust-row{display:flex;align-items:center;gap:9px;font-size:13px;padding:5px 0;flex-wrap:wrap;}
 /* .gmin y .gtag se comparten entre goles, tarjetas y sustituciones: antes
    estaban acotados a .goal-row y no se aplicaban en las filas nuevas. */
@@ -123,6 +185,12 @@ select{font-family:inherit;}
 </nav>
 
 <div class="wrap">
+  <div class="tabs">
+    <button class="tab active" id="tab-partidos" onclick="verPestana('partidos')">Partidos</button>
+    <button class="tab" id="tab-sanciones" onclick="verPestana('sanciones')">Sanciones</button>
+  </div>
+
+  <div id="pane-partidos">
   <div class="summary" id="summary"></div>
 
   <div class="jsel">
@@ -137,6 +205,18 @@ select{font-family:inherit;}
   <div class="jprogress"><div class="jprogress-fill" id="jprogress-fill" style="width:0%"></div></div>
 
   <div class="mgrid" id="mgrid"></div>
+  </div>
+
+  <div id="pane-sanciones" style="display:none">
+    <div class="sanc-bar">
+      <div class="vsel">
+        <button class="vbtn active" id="v-jornada" onclick="verVista('jornada')">Por jornada</button>
+        <button class="vbtn" id="v-equipo" onclick="verVista('equipo')">Por equipo</button>
+      </div>
+      <div class="sanc-meta" id="sanc-meta"></div>
+    </div>
+    <div id="sanc-body"><div class="sanc-vacio">Cargando sanciones…</div></div>
+  </div>
 </div>
 
 <div id="detail-bg" onclick="if(event.target===this)cerrarDetalle()">
@@ -147,7 +227,7 @@ select{font-family:inherit;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, where, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app = initializeApp({
   apiKey: "AIzaSyBNDylPVfge6SFXVfJAcna9v7qh_CffI7Y",
@@ -172,6 +252,12 @@ function nombreProvisional(clubId){
 let SHIELDS = {};
 let ACTAS = [];          // todas las actas de la temporada, en memoria
 let jornadaActual = 1;
+
+/* Escapa el texto que viene de la RFAF antes de meterlo en el HTML: los
+   nombres traen comillas y acentos, y un apellido como O'DONNELL rompería
+   la plantilla o abriría la puerta a inyección. */
+const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 
 function toast(msg){
   const t=document.getElementById('toast');
@@ -380,8 +466,168 @@ window.abrirDetalle = async function(codActa){
 window.cerrarDetalle = function(){ document.getElementById('detail-bg').classList.remove('open'); };
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') cerrarDetalle(); });
 
+
+/* ══════════════════════════════════════════════════════════════════════
+   SANCIONES · lo que publica Pier Luigi desde el Comité de Competición
+   ══════════════════════════════════════════════════════════════════════
+   Dos vistas del mismo dato:
+     · por jornada → qué resolvió el Comité esa semana
+     · por equipo  → a quién tiene sancionado cada club, para preparar
+                     el informe de rival
+   Los partidos de suspensión se pueden corregir aquí mismo: al guardar
+   se firma con 'revisadoPor', y el agente ya NO vuelve a pisar ese valor
+   en cargas posteriores. Lo que fija Carlos es ley. */
+let SANCIONES = [];
+let vistaSanc = 'jornada';
+
+async function cargarSanciones(){
+  try{
+    const q = query(collection(db,'sanciones'), where('temporada','==',TEMPORADA));
+    const snap = await getDocs(q);
+    SANCIONES = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  }catch(e){
+    console.error('[Sanciones]', e);
+    SANCIONES = [];
+  }
+}
+
+window.verPestana = function(cual){
+  document.getElementById('pane-partidos').style.display  = cual==='partidos' ? '' : 'none';
+  document.getElementById('pane-sanciones').style.display = cual==='sanciones' ? '' : 'none';
+  document.getElementById('tab-partidos').classList.toggle('active', cual==='partidos');
+  document.getElementById('tab-sanciones').classList.toggle('active', cual==='sanciones');
+  if(cual==='sanciones') renderSanciones();
+};
+
+window.verVista = function(cual){
+  vistaSanc = cual;
+  document.getElementById('v-jornada').classList.toggle('active', cual==='jornada');
+  document.getElementById('v-equipo').classList.toggle('active', cual==='equipo');
+  renderSanciones();
+};
+
+function badgeDe(s){
+  if(s.requiereRevision) return '<span class="sbadge b-rev">revisar</span>';
+  if(s.destinatario==='club') return '<span class="sbadge b-club">club</span>';
+  if(s.partidos) return `<span class="sbadge b-susp">${s.partidos} ${s.partidos===1?'partido':'partidos'}</span>`;
+  return '<span class="sbadge b-amon">amonestación</span>';
+}
+
+function filaSancion(s){
+  const clase = s.requiereRevision ? ' revisar' : (s.partidos ? ' susp' : '');
+  const quien = s.persona || s.club;
+  const sub = [s.destinatario==='tecnico' ? 'Cuerpo técnico' : '',
+               s.articulo ? 'Art. '+s.articulo : '',
+               s.motivo_corto || ''].filter(Boolean).join(' · ');
+  /* El campo editable solo aparece donde tiene sentido: una amonestación
+     simple no tiene partidos que ajustar. */
+  const editable = s.destinatario!=='club' && (s.partidos || s.requiereRevision);
+  return `<div class="srow${clase}">
+    <div class="sper">${esc(quien)}<small>${esc(sub)}</small></div>
+    ${badgeDe(s)}
+    <div class="spart">
+      ${editable ? `
+        <label>partidos</label>
+        <input type="number" min="0" max="20" id="sp-${s.id}" value="${s.partidos??''}"
+               placeholder="?"/>
+        <button class="sguardar" onclick="guardarSancion('${s.id}')">Fijar</button>` : ''}
+      ${s.revisadoPor ? `<span class="srevisado">✓ ${esc(s.revisadoPor)}</span>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderSanciones(){
+  const body = document.getElementById('sanc-body');
+  const meta = document.getElementById('sanc-meta');
+
+  if(!SANCIONES.length){
+    meta.textContent = '';
+    body.innerHTML = `<div class="sanc-vacio">
+      Todavía no hay sanciones cargadas.<br/>
+      Ejecuta <b>cargar_sanciones.py</b> para traerlas del Comité.</div>`;
+    return;
+  }
+
+  const jornadas = [...new Set(SANCIONES.map(s=>s.jornada))].sort((a,b)=>a-b);
+  const pendientes = SANCIONES.filter(s=>s.requiereRevision).length;
+  meta.innerHTML = `${SANCIONES.length} sanciones · J${jornadas[0]}–J${jornadas[jornadas.length-1]}`
+    + (pendientes ? ` · <b style="color:var(--warn)">${pendientes} por revisar</b>` : '');
+
+  if(vistaSanc === 'jornada'){
+    /* Más reciente arriba: lo que interesa el miércoles es lo que acaba
+       de resolver el Comité, no la jornada 1. */
+    body.innerHTML = jornadas.slice().reverse().map(j=>{
+      const dej = SANCIONES.filter(s=>s.jornada===j);
+      const susp = dej.filter(s=>s.partidos).length;
+      const fecha = dej[0]?.fecha_comite || '';
+      return `<div class="sgrupo">
+        <div class="sgrupo-h">
+          <div class="sgrupo-t">Jornada ${j}</div>
+          <div class="sgrupo-n">${fecha ? 'Comité '+esc(fecha)+' · ' : ''}${dej.length} sanciones${susp?` · ${susp} suspensiones`:''}</div>
+        </div>
+        ${ordenar(dej).map(filaSancion).join('')}
+      </div>`;
+    }).join('');
+  } else {
+    /* Por equipo: primero los que tienen suspensiones, que es lo
+       accionable al preparar un partido. */
+    const clubes = [...new Set(SANCIONES.map(s=>s.club))].sort();
+    const conSusp = c => SANCIONES.filter(s=>s.club===c && s.partidos).length;
+    clubes.sort((a,b)=> conSusp(b)-conSusp(a) || a.localeCompare(b));
+    body.innerHTML = clubes.map(c=>{
+      const dec = SANCIONES.filter(s=>s.club===c);
+      const susp = conSusp(c);
+      return `<div class="sgrupo">
+        <div class="sgrupo-h">
+          <div class="sgrupo-t">${esc(c)}</div>
+          <div class="sgrupo-n">${dec.length} sanciones${susp?` · <b style="color:var(--r)">${susp} suspensiones</b>`:''}</div>
+        </div>
+        ${ordenar(dec).map(filaSancion).join('')}
+      </div>`;
+    }).join('');
+  }
+}
+
+/* Orden dentro de cada grupo: lo que requiere acción primero. */
+function ordenar(lista){
+  return lista.slice().sort((a,b)=>
+    (b.requiereRevision?1:0)-(a.requiereRevision?1:0)
+    || (b.partidos||0)-(a.partidos||0)
+    || (a.persona||'').localeCompare(b.persona||''));
+}
+
+window.guardarSancion = async function(id){
+  const s = SANCIONES.find(x=>x.id===id);
+  const input = document.getElementById('sp-'+id);
+  if(!s || !input) return;
+  const valor = input.value.trim();
+  if(valor === ''){ toast('Escribe el número de partidos'); return; }
+  const partidos = parseInt(valor, 10);
+  if(isNaN(partidos) || partidos < 0){ toast('Número de partidos no válido'); return; }
+
+  const quien = prompt('¿Quién confirma esta sanción?', s.revisadoPor || 'Carlos');
+  if(!quien) return;
+
+  try{
+    /* merge:true → se actualizan solo estos campos, sin tocar el resto de
+       lo que publicó la federación. */
+    await setDoc(doc(db,'sanciones',id), {
+      partidos,
+      revisadoPor: quien.trim(),
+      revisadoEl: new Date().toISOString().slice(0,10),
+      requiereRevision: false,
+    }, {merge:true});
+    Object.assign(s, {partidos, revisadoPor:quien.trim(), requiereRevision:false});
+    renderSanciones();
+    toast('Sanción fijada · el agente ya no la sobrescribirá');
+  }catch(e){
+    console.error('[guardarSancion]', e);
+    toast('No se pudo guardar');
+  }
+};
+
 (async function init(){
-  await Promise.all([cargarShields(), cargarActas()]);
+  await Promise.all([cargarShields(), cargarActas(), cargarSanciones()]);
   renderSummary();
   renderJornada();
 })();
