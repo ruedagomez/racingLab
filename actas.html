@@ -82,6 +82,12 @@ select{font-family:inherit;}
 .dt-score{font-family:'Bebas Neue',cursive;font-size:40px;color:var(--r);display:flex;gap:10px;align-items:center;}
 .detail-body{padding:22px 26px;}
 .dsec{margin-bottom:22px;}
+.video-links{display:flex;gap:10px;flex-wrap:wrap;}
+.video-btn{display:inline-flex;align-items:center;gap:7px;background:var(--r);color:#fff;
+  padding:9px 18px;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px;
+  font-weight:700;letter-spacing:.05em;text-transform:uppercase;text-decoration:none;
+  transition:.15s;}
+.video-btn:hover{background:#c8102c;transform:translateY(-1px);}
 .dsec:last-child{margin-bottom:0;}
 .dsec-t{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
 .dsec-t::after{content:'';flex:1;height:1px;background:var(--bdr);}
@@ -451,7 +457,21 @@ window.abrirDetalle = async function(codActa){
         <span class="sust-in">↑ ${s.entra_dorsal?`<span class="lud">${s.entra_dorsal}</span>`:''}${s.jugador_entra||s.entra||''}</span>
       </div>`).join('') : '<div class="dpending">Sin sustituciones en el acta.</div>';
 
+    /* Vídeos del partido, enlazados por Jürgen desde Dropbox. Van arriba
+       del todo: es lo primero que se busca en día de análisis. Un solo
+       vídeo → un botón sin más; varios → uno por cada etiqueta, para no
+       tener que adivinar cuál es el bueno. */
+    const videos = a.videos || [];
+    const videosHtml = videos.length ? `
+      <div class="dsec"><div class="dsec-t">Vídeo</div>
+        <div class="video-links">
+          ${videos.map(v=>`<a class="video-btn" href="${esc(v.url)}" target="_blank" rel="noopener">
+            ▶ ${v.etiqueta ? esc(v.etiqueta) : 'Ver partido'}</a>`).join('')}
+        </div>
+      </div>` : '';
+
     document.querySelector('#detail .detail-body').innerHTML = `
+      ${videosHtml}
       <div class="dsec"><div class="dsec-t">Goles</div>${golesHtml}</div>
       <div class="dsec"><div class="dsec-t">Tarjetas</div>${tarjHtml}</div>
       <div class="dsec"><div class="dsec-t">Sustituciones</div>${sustHtml}</div>
