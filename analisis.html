@@ -704,12 +704,17 @@ function nombreEquipo(id){
 }
 
 /* Fechas fijas: domingos desde 06/09/2026, sin 27/12 ni 03/01 */
+/* Corregido: faltaban el 08-12-2026 (J15, entre semana) y el 03-01-2027
+   (J18), lo que desplazaba las 17 jornadas siguientes una posición cada
+   vez — la J17 de esta lista terminaba siendo en realidad la fecha de la
+   J19, y así hasta el final. Verificado contra el calendario oficial de
+   la RFAF (temporada 2026-27, Grupo 10) recibido el 21/09/2026. */
 const JORNADA_DATES = [
   '2026-09-06','2026-09-13','2026-09-20','2026-09-27','2026-10-04','2026-10-11','2026-10-18','2026-10-25',
-  '2026-11-01','2026-11-08','2026-11-15','2026-11-22','2026-11-29','2026-12-06','2026-12-13','2026-12-20',
-  '2027-01-10','2027-01-17','2027-01-24','2027-01-31','2027-02-07','2027-02-14','2027-02-21','2027-02-28',
-  '2027-03-07','2027-03-14','2027-03-21','2027-03-28','2027-04-04','2027-04-11','2027-04-18','2027-04-25',
-  '2027-05-02','2027-05-09'
+  '2026-11-01','2026-11-08','2026-11-15','2026-11-22','2026-11-29','2026-12-06','2026-12-08','2026-12-13',
+  '2026-12-20','2027-01-03','2027-01-10','2027-01-17','2027-01-24','2027-01-31','2027-02-07','2027-02-14',
+  '2027-02-21','2027-02-28','2027-03-07','2027-03-14','2027-03-21','2027-04-04','2027-04-11','2027-04-18',
+  '2027-04-25','2027-05-02'
 ];
 const fmtDate = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.slice(2)}`; };
 const todayIso = () => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; };
@@ -1338,25 +1343,52 @@ function actualizarBotonDropbox(){
     : `<button class="btn btn-ghost btn-sm" onclick="dbxConectar()">🔗 Conectar Dropbox</button>`;
 }
 
-/* ══════════ CALENDARIO ══════════ */
+/* ══════════ CALENDARIO ══════════
+   ANTES: defaultCalendario() emparejaba por CLUBS[n-1] — el rival de cada
+   jornada dependía del ORDEN en que están declarados los clubes en el
+   array de arriba, sin ninguna relación con el calendario real de la
+   RFAF. Bastaba con reordenar CLUBS (por ejemplo al añadir un dato) para
+   que las 34 jornadas quedaran mal, sin ningún aviso. Es la causa más
+   probable de que Análisis y Día de Partido mostraran rivales distintos
+   para la misma jornada.
+
+   AHORA: el emparejamiento real de la 1ª vuelta, calcado del oficial de
+   la RFAF (temporada 2026-27, Grupo 10) y CONFIRMADO IDÉNTICO al que ya
+   usaba diapartido.html — así los dos módulos leen, por fin, el mismo
+   calendario. La 2ª vuelta es el espejo exacto de la 1ª (mismo rival,
+   condición contraria), verificado partido a partido contra el PDF
+   oficial: no hay ninguna excepción. */
+const CAL_OFICIAL_IDA = [
+  ['xerez-dfc','fuera'],   ['san-roque','casa'],   ['egabrense','fuera'],  ['chiclana','casa'],
+  ['tomares','fuera'],     ['dos-hermanas','casa'],['conil','fuera'],      ['pozoblanco','casa'],
+  ['utrera','fuera'],      ['cadiz-b','casa'],     ['linense','fuera'],    ['cordoba-b','casa'],
+  ['ceuta-b','fuera'],     ['onubense','casa'],    ['sevilla-c','casa'],   ['bollullos','fuera'],
+  ['betis-c','casa'],
+];
 function defaultCalendario(){
-  const jornadas = [];
-  for(let n=1;n<=17;n++){
-    const club = CLUBS[n-1];
-    const cond = n%2===1 ? 'casa' : 'fuera';
-    jornadas.push({ n, clubId:club.id, condicion:cond });
-  }
-  for(let n=18;n<=34;n++){
-    const ida = jornadas[n-18];
-    jornadas.push({ n, clubId:ida.clubId, condicion: ida.condicion==='casa'?'fuera':'casa' });
-  }
-  return { jornadas, provisional:true };
+  const ida = CAL_OFICIAL_IDA.map(([clubId,condicion],i)=>({ n:i+1, clubId, condicion }));
+  const vuelta = CAL_OFICIAL_IDA.map(([clubId,condicion],i)=>({
+    n:i+18, clubId, condicion: condicion==='casa'?'fuera':'casa' }));
+  return { jornadas:[...ida,...vuelta], provisional:true };
 }
 async function loadCalendario(){
   try{
     const snap = await getDoc(doc(db,'analisisCalendario',TEMPORADA));
-    if(snap.exists()){ calendario = snap.data(); }
-    else {
+    if(snap.exists()){
+      calendario = snap.data();
+      /* Autocorrección SOLO si nadie ha confirmado el calendario todavía
+         (provisional === true): significa que aquí puede seguir el
+         reparto viejo por orden de CLUBS, mal desde el origen, y nadie
+         lo ha revisado ni tocado a mano. Se sobrescribe con el oficial
+         correcto sin pedir nada — no hay ninguna edición de Carlos que
+         proteger en ese estado. En cuanto se confirma como oficial
+         (calConfirmOficial), esta función ya NO vuelve a tocarlo nunca,
+         igual que el resto de campos editados a mano en este archivo. */
+      if(calendario.provisional !== false){
+        calendario = defaultCalendario();
+        await setDoc(doc(db,'analisisCalendario',TEMPORADA), calendario);
+      }
+    } else {
       calendario = defaultCalendario();
       await setDoc(doc(db,'analisisCalendario',TEMPORADA), calendario);
     }
