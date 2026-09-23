@@ -245,6 +245,12 @@ img,svg,video{max-width:100%;}
 .cl-prog-fill{height:100%;background:var(--r,#c0392b);transition:width .2s;}
 .cl-prog-ok{color:var(--fit,#15803d);}
 .cl-prog-err{color:var(--inj,#c0392b);}
+.cl-bulk-row{display:flex;flex-direction:column;gap:6px;margin-top:2px;}
+.cl-bulk-btn{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;
+  font-size:11.5px;padding:6px 11px;border:1.5px dashed var(--bdr);border-radius:7px;
+  cursor:pointer;color:var(--mid);transition:.15s;}
+.cl-bulk-btn:hover{border-color:var(--r);color:var(--r);border-style:solid;}
+.cl-bulk-progress{font-size:11.5px;color:var(--mid);display:flex;flex-direction:column;gap:4px;}
 .dbx-status{display:flex;align-items:center;gap:6px;font-size:11.5px;margin-right:10px;}
 .dbx-status .dbx-ok{display:flex;align-items:center;gap:5px;color:var(--fit,#15803d);font-weight:600;}
 .ed-savebar{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:18px 0 8px;display:flex;gap:10px;justify-content:flex-end;}
@@ -1920,6 +1926,14 @@ function bloqueEditorHtml(b, hint){
           📤<input type="file" accept="video/*" style="display:none" onchange="dbxSubirClip('${b.key}','video',this.files[0])"/>
         </label>
       </div>
+      <div class="cl-bulk-row">
+        <label class="cl-bulk-btn" title="Sube varios vídeos de golpe a esta carpeta; les pones el nombre después con el lápiz ✎ de cada clip">
+          📤📤 Subir varios de golpe
+          <input type="file" accept="video/*" multiple style="display:none"
+                 onchange="dbxSubirClipsBulk('${b.key}',this.files);this.value=''"/>
+        </label>
+        <div class="cl-bulk-progress" id="cl-bulk-prog-${b.key}" style="display:none"></div>
+      </div>
       <div class="cl-upload-row">
         <input id="cl-thu-${b.key}" placeholder="Enlace Dropbox de la miniatura (.png) — opcional"/>
         <label class="cl-upload-btn" title="Subir miniatura directamente a Dropbox">
@@ -1966,6 +1980,68 @@ window.dbxSubirClip = async function(bkey, tipo, file){
     prog.innerHTML = `<span class="cl-prog-err">✕ ${e.message}</span>`;
   }
 };
+/* Sube VARIOS vídeos de golpe a la carpeta del bloque (p. ej. cinco
+   ejemplos de "Salida de balón" de distintos partidos), uno detrás de
+   otro — no en paralelo, para no saturar la conexión ni la API de
+   Dropbox con varios vídeos grandes a la vez. Cada uno entra en la
+   lista de clips en cuanto termina su propia subida, con el nombre del
+   archivo como etiqueta de partida: la idea es subirlos todos ya y
+   ponerles el nombre bueno después, uno a uno, con el lápiz ✎ que ya
+   existe en cada clip — no hace falta ninguna pantalla nueva para eso.
+
+   Un fallo en un archivo NO para los demás: sigue con el resto y avisa
+   al final de cuáles no entraron, para poder reintentar solo esos. */
+window.dbxSubirClipsBulk = async function(bkey, fileList){
+  const files = Array.from(fileList || []);
+  if(!files.length) return;
+  if(!window.dbxConectado()){
+    toast('Conecta Dropbox primero (arriba a la derecha)');
+    return;
+  }
+  const folderUrl = currentInforme?.dropboxFolder;
+  const rutaManual = currentInforme?.dropboxPath;
+  if(!folderUrl && !rutaManual){
+    toast('Rellena antes la "Carpeta Dropbox del rival" (o la ruta interna) de este informe');
+    return;
+  }
+
+  const prog = document.getElementById(`cl-bulk-prog-${bkey}`);
+  prog.style.display = '';
+  const fallidos = [];
+
+  for(let i = 0; i < files.length; i++){
+    const file = files[i];
+    const nombreSinExt = file.name.replace(/\.[a-zA-Z0-9]+$/, '');
+    prog.innerHTML = `<div class="cl-prog-bar"><div class="cl-prog-fill" style="width:0%"></div></div>
+      <span>${i+1} de ${files.length} · ${esc(file.name)}</span>`;
+    const fill = () => prog.querySelector('.cl-prog-fill');
+    try{
+      // Etiqueta vacía a propósito: así el archivo se guarda en Dropbox
+      // con su nombre original, en vez de forzar un nombre genérico que
+      // luego habría que descifrar para saber qué clip es cuál.
+      const url = await dbxSubirYEnlazar(file, folderUrl, '', (p)=>{
+        const f = fill(); if(f) f.style.width = Math.round(p*100)+'%';
+      }, bkey, rutaManual);
+      getBloqueRef(bkey).clips.push({ label: nombreSinExt, video: url, thumb: '' });
+      document.getElementById(`clips-${bkey}`).innerHTML = clipListHtml(bkey);
+    }catch(e){
+      console.error('[dbxSubirClipsBulk]', file.name, e);
+      fallidos.push({ nombre: file.name, motivo: e.message });
+    }
+  }
+
+  const ok = files.length - fallidos.length;
+  if(fallidos.length){
+    prog.innerHTML = `<span class="cl-prog-err">✓ ${ok} subido(s) · ✕ ${fallidos.length} sin subir: ${
+      fallidos.map(f=>esc(f.nombre)).join(', ')}</span>`;
+    toast(`${ok} clips subidos, ${fallidos.length} fallaron — revisa cuáles arriba`);
+  } else {
+    prog.innerHTML = `<span class="cl-prog-ok">✓ ${ok} clip(s) subidos — ponles ya el nombre con el ✎ de cada uno</span>`;
+    toast(`${ok} clips subidos. Recuerda guardar el informe.`);
+    setTimeout(()=>{ prog.style.display = 'none'; }, 4000);
+  }
+};
+
 function renderEditor(){
   const inf = currentInforme;
   const d = inf.datos;
