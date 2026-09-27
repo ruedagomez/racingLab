@@ -1700,6 +1700,28 @@ function parseTable(txt, cols){
   return linesToArr(txt).map(l=>{ const p=splitPipe(l); const o={}; cols.forEach((c,i)=>o[c]=p[i]??''); return o; });
 }
 const tableToLines = (arr, cols) => (arr||[]).map(o=>cols.map(c=>o[c]??'').join(' | ')).join('\n');
+/* Columnas EDITABLES de las tablas de tarjetas. Tienen que ser las mismas en
+   el editor (serializar), al guardar (parsear) y al detectar si Carlos ha
+   editado a mano: antes el editor seguía en 2 columnas (amarillas | rojas)
+   y cada "Guardar" tiraba las dobles amarillas y marcaba el bloque como
+   editado, con lo que el siguiente "Recargar" ya no lo tocaba. */
+const COLS_TARJ_JUG   = ['nombre','amarillas','dobles','rojas'];
+const COLS_TARJ_STAFF = ['nombre','cargo','amarillas','dobles','rojas'];
+const COLS_EDITABLES  = { tarjetasJugadores: COLS_TARJ_JUG, tarjetasStaff: COLS_TARJ_STAFF };
+/* Los avisos que calcula el motor (sancionado, sinCruzar) no se editan en la
+   caja de texto: se conservan por nombre al guardar, en vez de perderse. */
+function conservarAvisos(nuevas, previas){
+  const porNombre = {};
+  (previas||[]).forEach(p=>{ porNombre[normNombre(p.nombre)] = p; });
+  return nuevas.map(n=>{
+    const p = porNombre[normNombre(n.nombre)];
+    if(!p) return n;
+    const o = { ...n };
+    if(p.sancionado) o.sancionado = true;
+    if(p.sinCruzar)  o.sinCruzar  = true;
+    return o;
+  });
+}
 function parseTramos(txt){
   const gf=zeros6(), gc=zeros6();
   linesToArr(txt).slice(0,6).forEach((l,i)=>{ const p=splitPipe(l); gf[i]=parseInt(p[0])||0; gc[i]=parseInt(p[1])||0; });
@@ -2120,8 +2142,8 @@ function renderEditor(){
   html += taBlock('ta-clasificacion','Clasificación','⚙ Se rellena solo desde las actas. Edítalo únicamente para corregir (R7: sanciones administrativas). Formato: <b>pos | equipo | pj | pts</b>',tableToLines(d.clasificacion,['pos','equipo','pj','pts']),true);
   html += taBlock('ta-racha','Racha · últimos 5 partidos','⚙ Se rellena solo desde las actas. Formato: <b>jornada | C/F | V/E/D | marcador | rival</b>',tableToLines(d.racha,['jornada','cond','res','marcador','rival']),true);
   html += taBlock('ta-goleadores','Goleadores','⚙ Se rellena solo desde las actas (propias puertas excluidas, R3). Formato: <b>nombre | goles</b>',tableToLines(d.goleadores,['nombre','goles']),true);
-  html += taBlock('ta-tarjJug','Tarjetas · Jugadores','⚙ Se rellena solo desde las actas aplicando R1 (doble amarilla = 1 amarilla + 1 roja). Con 4 amarillas se marca «al límite» automáticamente.',tableToLines(d.tarjetasJugadores,['nombre','amarillas','rojas']),true);
-  html += taBlock('ta-tarjStaff','Tarjetas · Cuerpo técnico','⚙ Se rellena solo desde las actas. R2: el staff nunca se mezcla con jugadores.',tableToLines(d.tarjetasStaff,['nombre','cargo','amarillas','rojas']),true);
+  html += taBlock('ta-tarjJug','Tarjetas · Jugadores','⚙ Se rellena solo desde las actas. Formato: <b>nombre | amarillas | dobles amarillas | rojas directas</b>. Una doble amarilla cuenta solo en su columna, no como amarilla ni como roja. Con 4 amarillas se marca «al límite» automáticamente.',tableToLines(d.tarjetasJugadores,COLS_TARJ_JUG),true);
+  html += taBlock('ta-tarjStaff','Tarjetas · Cuerpo técnico','⚙ Se rellena solo desde las actas. R2: el staff nunca se mezcla con jugadores. Formato: <b>nombre | cargo | amarillas | dobles amarillas | rojas directas</b>',tableToLines(d.tarjetasStaff,COLS_TARJ_STAFF),true);
 
   html += `<div class="ed-sec">02 · Formación</div>`;
   html += taBlock('ta-convocatorias','Últimas 5 convocatorias','⚙ Las últimas 5 se rellenan solas desde las actas, con los 18 convocados y los minutos de cambio. <b>El sistema NO viene en el acta</b>: añádelo tú al final de la cabecera para que se dibuje el campograma.<br/>Cabecera: <b>J28 | C | V | 3-1 | Montilla | 4-2-3-1</b> (sistema opcional → dibuja el campograma).<br/>Jugadores: <b>13 Ortiz Muñoz</b> · sale al 76: <b>8 Caballero &gt;76</b> · entra al 62: <b>22 Ariza &lt;62</b> · <b>--</b> separa titulares de suplentes.<br/>Sin posición: el orden coloca el campograma (portero primero, luego líneas de atrás hacia delante, reparto uniforme). <b>Para formaciones no uniformes (rombos, etc.) añade la posición real tras "|"</b> — en cuanto un titular la lleva, TODOS se colocan por su etiqueta y el orden deja de importar: <b>13 Ortiz Muñoz | POR</b> · <b>8 Caballero &gt;76 | PIV</b>.<br/>Códigos: POR · LI CI CD LD (línea de 4) · CDI LIB CDD (línea de 3) · CAI CAD (carrileros) · PIV / PIVI PIVD (pivote único o doble) · MI MC MD (mediocentros) · BI BD (bandas) · MP (mediapunta/enganche) · EI ED (extremos) · DC / DCI DCD (delantero único o dos).<br/>Ejemplo rombo 1-4-4-2: POR, LI CI CD LD, PIV, BI BD, MP, DCI DCD.',convocatoriasToText(inf.convocatorias),true);
@@ -2355,8 +2377,8 @@ window.saveInforme = async function(){
   inf.datos.clasificacion     = parseTable(V('ta-clasificacion'),['pos','equipo','pj','pts']);
   inf.datos.racha             = parseTable(V('ta-racha'),['jornada','cond','res','marcador','rival']);
   inf.datos.goleadores        = parseTable(V('ta-goleadores'),['nombre','goles']);
-  inf.datos.tarjetasJugadores = parseTable(V('ta-tarjJug'),['nombre','amarillas','rojas']);
-  inf.datos.tarjetasStaff     = parseTable(V('ta-tarjStaff'),['nombre','cargo','amarillas','rojas']);
+  inf.datos.tarjetasJugadores = conservarAvisos(parseTable(V('ta-tarjJug'),COLS_TARJ_JUG), inf.datos.tarjetasJugadores);
+  inf.datos.tarjetasStaff     = conservarAvisos(parseTable(V('ta-tarjStaff'),COLS_TARJ_STAFF), inf.datos.tarjetasStaff);
   inf.datos.golesTramos.total = parseTramos(V('ta-tramosTotal'));
   inf.datos.golesTramos.cond  = parseTramos(V('ta-tramosCond'));
   inf.datos.rankings          = parseTable(V('ta-rankings'),['metrica','rival','racing']);
@@ -2396,7 +2418,15 @@ window.saveInforme = async function(){
   const editados = new Set(inf.datosMeta?.camposEditados || []);
   Object.keys(CAMPOS_AUTO).forEach(k=>{
     const actual = k==='convocatorias' ? inf.convocatorias : inf.datos[k];
-    if(prevSnap[k]!==undefined && JSON.stringify(actual)!==JSON.stringify(prevSnap[k])) editados.add(k);
+    if(prevSnap[k]===undefined) return;
+    /* En las tablas de tarjetas solo cuenta lo que se puede editar en la
+       caja de texto: los avisos del motor (sancionado, sinCruzar) no son
+       una edición de Carlos y no deben marcar el bloque como editado. */
+    const cols = COLS_EDITABLES[k];
+    const distinto = cols
+      ? tableToLines(actual, cols) !== tableToLines(prevSnap[k], cols)
+      : JSON.stringify(actual) !== JSON.stringify(prevSnap[k]);
+    if(distinto) editados.add(k);
   });
   inf.datosMeta = { ...(inf.datosMeta||{}), camposEditados:[...editados] };
   delete inf._snapAuto;
