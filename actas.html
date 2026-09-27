@@ -161,6 +161,11 @@ select{font-family:inherit;}
 .card-chip{width:11px;height:15px;border-radius:2px;flex-shrink:0;display:inline-block;}
 .card-chip.amarilla{background:#eab308;}
 .card-chip.roja{background:#dc2626;}
+.card-row-expulsion{background:rgba(220,38,38,.08);border-radius:6px;padding-left:4px;}
+.card-tag-doble{font-size:9.5px;font-weight:700;text-transform:uppercase;padding:1px 6px;
+  border-radius:3px;background:#dc2626;color:#fff;}
+.card-tag-tecnico{font-size:9.5px;font-weight:600;text-transform:uppercase;padding:1px 6px;
+  border-radius:3px;background:var(--bdr);color:var(--faint);}
 .sust-row .sust-out{color:#b91c1c;font-size:12.5px;}
 .sust-row .sust-in{color:var(--fit,#15803d);font-size:12.5px;}
 .sust-row .lud{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);margin-right:3px;}
@@ -441,13 +446,30 @@ window.abrirDetalle = async function(codActa){
       ? (a.nombre_local||nombreProvisional(a.equipo_local))
       : (a.nombre_visitante||nombreProvisional(a.equipo_visitante));
 
-    const tarjHtml = tarjetas.length ? tarjetas.map(t=>`
-      <div class="card-row">
+    // Doble amarilla: la RFAF guarda cada tarjeta como fila suelta, sin
+    // marcar la 2ª amarilla de un jugador como expulsión. Se detecta aquí
+    // contando amarillas por (equipo, jugador) DENTRO de este acta — igual
+    // que hace Marcelo (stats_engine.py) para el informe de Análisis — y se
+    // resalta la fila que la provoca.
+    const conteoAmarillas = {};
+    const tarjHtml = tarjetas.length ? tarjetas.map(t=>{
+      let dobleAmarilla = false;
+      if(t.tipo === 'AMARILLA'){
+        const clave = `${t.equipo_id}|${t.jugador_norm || t.jugador}`;
+        conteoAmarillas[clave] = (conteoAmarillas[clave]||0) + 1;
+        dobleAmarilla = conteoAmarillas[clave] >= 2;
+      }
+      const esExpulsion = t.tipo === 'ROJA' || dobleAmarilla;
+      return `
+      <div class="card-row${esExpulsion?' card-row-expulsion':''}">
         <span class="gmin">${t.minuto}′</span>
         <span class="card-chip ${t.tipo==='ROJA'?'roja':'amarilla'}"></span>
         <span class="gtag">${nombreDe(t.equipo_id)}</span>
         <span>${t.jugador}</span>
-      </div>`).join('') : '<div class="dpending">Sin tarjetas en el acta.</div>';
+        ${dobleAmarilla?'<span class="card-tag-doble">🟨🟨 Doble amarilla · expulsión</span>':''}
+        ${t.esTecnico?`<span class="card-tag-tecnico">Cuerpo técnico${t.cargo?' · '+t.cargo:''}</span>`:''}
+      </div>`;
+    }).join('') : '<div class="dpending">Sin tarjetas en el acta.</div>';
 
     const sustHtml = susts.length ? susts.map(s=>`
       <div class="sust-row">
