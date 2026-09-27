@@ -1555,15 +1555,16 @@ function snapshotStats(st, condicionPartido){
          Análisis. Los expulsados van siempre primero y fuera del cupo. */
       tarjetasJugadores: (()=>{
         const todos = st.disciplina?.jugadores || [];
-        const expulsados = todos.filter(t=>(t.rojas||0)>0);
-        const resto = todos.filter(t=>!((t.rojas||0)>0)).slice(0, Math.max(0, 12-expulsados.length));
+        const esExpulsion = t => (t.rojas||0)>0 || (t.dobles||0)>0;
+        const expulsados = todos.filter(esExpulsion);
+        const resto = todos.filter(t=>!esExpulsion(t)).slice(0, Math.max(0, 12-expulsados.length));
         return [...expulsados, ...resto].map(t=>({
-          nombre:t.nombre, amarillas:String(t.amarillas), rojas:String(t.rojas),
-          dobles:String(t.dobles||0), sinCruzar: !!t.sinCruzar,
+          nombre:t.nombre, amarillas:String(t.amarillas), dobles:String(t.dobles||0), rojas:String(t.rojas),
+          sinCruzar: !!t.sinCruzar, sancionado: !!t.sancionado,
         }));
       })(),
       tarjetasStaff: (st.disciplina?.staff||[])
-        .map(t=>({nombre:t.nombre, cargo:t.cargo||'', amarillas:String(t.amarillas), rojas:String(t.rojas), dobles:String(t.dobles||0)})),
+        .map(t=>({nombre:t.nombre, cargo:t.cargo||'', amarillas:String(t.amarillas), dobles:String(t.dobles||0), rojas:String(t.rojas), sancionado: !!t.sancionado})),
       rankings: (st.rankings||[]).map(r=>({
         metrica: r.metrica + (r.rivalPos?` (${r.rivalPos}º/${r.racingPos}º)`:''),
         rival: String(r.rival), racing: String(r.racing) })),
@@ -2493,9 +2494,10 @@ function plantillaMinutosHtml(rows){
   return `<table class="tbl"><thead><tr><th>#</th><th>Jugador</th><th class="num">Conv.</th><th class="num">Tit.</th><th class="num">Min.</th><th class="num">⚽</th><th class="num">🟨</th><th class="num">🟥</th></tr></thead><tbody>` +
     rows.map(p=>{
       const expulsado = (parseInt(p.rojas)||0)>0;
+      const sancionTag = p.sancionado ? ' <span class="risk-b" style="color:var(--i-red);border-color:rgba(232,25,44,.4)" title="Expulsado en la última jornada disputada: sanción de al menos un partido">⛔</span>' : '';
       return `<tr${expulsado?' style="background:rgba(232,25,44,.14)"':''}>
       <td><span class="pos-b">${esc(p.dorsalHabitual||'—')}</span>${p.dorsalVariable?'<span class="risk-b" style="margin-left:4px" title="Rota dorsal entre jornadas">↻</span>':''}</td>
-      <td style="font-weight:600;color:${expulsado?'var(--i-red)':'var(--i-text)'}">${esc(p.nombre)}</td>
+      <td style="font-weight:600;color:${expulsado?'var(--i-red)':'var(--i-text)'}">${esc(p.nombre)}${sancionTag}</td>
       <td class="num">${esc(p.convocatorias)}</td><td class="num">${esc(p.titularidades)}</td>
       <td class="num" style="font-weight:700">${esc(p.minutos)}′</td>
       <td class="num" style="color:var(--i-green);font-weight:700">${p.goles||''}</td>
@@ -2600,24 +2602,32 @@ window.openInforme = async function(iid){
         ${d.goleadores.length ? `<table class="tbl"><tbody>${d.goleadores.map(g=>`<tr><td style="font-weight:600;color:var(--i-text)">${esc(g.nombre)}</td><td class="num" style="font-family:var(--f-display);font-size:16px;font-weight:800;color:var(--i-green)">${esc(g.goles)} ⚽</td></tr>`).join('')}</tbody></table>` : bulletsHtml([])}
       </div>
       <div class="icard"><div class="subsection-title">Tarjetas · Jugadores</div>
-        ${d.tarjetasJugadores.length ? `<table class="tbl"><thead><tr><th>Jugador</th><th class="num">🟨</th><th class="num">🟥</th><th></th></tr></thead><tbody>${d.tarjetasJugadores.map(t=>{
+        ${d.tarjetasJugadores.length ? `<table class="tbl"><thead><tr><th>Jugador</th><th class="num">🟨</th><th class="num">🟨🟨</th><th class="num">🟥</th><th></th></tr></thead><tbody>${d.tarjetasJugadores.map(t=>{
           const am = parseInt(t.amarillas)||0;
-          const ro = parseInt(t.rojas)||0;
           const dobles = parseInt(t.dobles)||0;
-          const expulsado = ro>0;
-          const motivo = dobles>0 ? '🟥 Doble amarilla · expulsión' : (ro>0 ? '🟥 Roja directa' : (am>=4?'<span class="risk-b">⚠ Al límite</span>':''));
+          const ro = parseInt(t.rojas)||0;
+          const expulsado = dobles>0 || ro>0;
+          const avisos = [];
+          if(t.sancionado) avisos.push('<span class="risk-b" style="color:var(--i-red);border-color:rgba(232,25,44,.4)" title="Expulsado en la última jornada disputada: sanción de al menos un partido">⛔ Sancionado próx. partido</span>');
+          else if(dobles>0) avisos.push('🟥 Doble amarilla · expulsión');
+          else if(ro>0) avisos.push('🟥 Roja directa');
+          else if(am>=4) avisos.push('<span class="risk-b">⚠ Al límite</span>');
           const sinCruzarTag = t.sinCruzar ? ' <span class="risk-b" title="No se pudo cruzar el nombre contra la alineación; revisar">⚠ revisar nombre</span>' : '';
-          return `<tr${expulsado?' style="background:rgba(232,25,44,.14)"':''}><td style="font-weight:600;color:${expulsado?'var(--i-red)':'var(--i-text)'}">${esc(t.nombre)}${sinCruzarTag}</td><td class="num" style="color:var(--i-amber);font-weight:700">${esc(t.amarillas)}</td><td class="num" style="color:var(--i-red);font-weight:700">${esc(t.rojas)}</td><td>${motivo}</td></tr>`;
+          return `<tr${expulsado?' style="background:rgba(232,25,44,.14)"':''}><td style="font-weight:600;color:${expulsado?'var(--i-red)':'var(--i-text)'}">${esc(t.nombre)}${sinCruzarTag}</td><td class="num" style="color:var(--i-amber);font-weight:700">${am||''}</td><td class="num" style="color:var(--i-red);font-weight:700">${dobles||''}</td><td class="num" style="color:var(--i-red);font-weight:700">${ro||''}</td><td>${avisos.join(' ')}</td></tr>`;
         }).join('')}</tbody></table>` : bulletsHtml([])}
       </div>
     </div>
     ${d.tarjetasStaff.length ? `<div class="icard"><div class="subsection-title">Tarjetas · Cuerpo técnico</div>
-      <table class="tbl"><thead><tr><th>Nombre</th><th>Cargo</th><th class="num">🟨</th><th class="num">🟥</th><th></th></tr></thead><tbody>${d.tarjetasStaff.map(t=>{
-        const roS = parseInt(t.rojas)||0;
+      <table class="tbl"><thead><tr><th>Nombre</th><th>Cargo</th><th class="num">🟨</th><th class="num">🟨🟨</th><th class="num">🟥</th><th></th></tr></thead><tbody>${d.tarjetasStaff.map(t=>{
+        const amS = parseInt(t.amarillas)||0;
         const doblesS = parseInt(t.dobles)||0;
-        const expulsadoS = roS>0;
-        const motivoS = doblesS>0 ? '🟥 Doble amarilla · expulsión' : (roS>0 ? '🟥 Roja directa' : '');
-        return `<tr${expulsadoS?' style="background:rgba(232,25,44,.14)"':''}><td style="font-weight:600;color:${expulsadoS?'var(--i-red)':'var(--i-text)'}">${esc(t.nombre)}</td><td>${esc(t.cargo)}</td><td class="num" style="color:var(--i-amber);font-weight:700">${esc(t.amarillas)}</td><td class="num" style="color:var(--i-red);font-weight:700">${esc(t.rojas)}</td><td>${motivoS}</td></tr>`;
+        const roS = parseInt(t.rojas)||0;
+        const expulsadoS = doblesS>0 || roS>0;
+        const avisosS = [];
+        if(t.sancionado) avisosS.push('<span class="risk-b" style="color:var(--i-red);border-color:rgba(232,25,44,.4)" title="Expulsado en la última jornada disputada: sanción de al menos un partido">⛔ Sancionado próx. partido</span>');
+        else if(doblesS>0) avisosS.push('🟥 Doble amarilla · expulsión');
+        else if(roS>0) avisosS.push('🟥 Roja directa');
+        return `<tr${expulsadoS?' style="background:rgba(232,25,44,.14)"':''}><td style="font-weight:600;color:${expulsadoS?'var(--i-red)':'var(--i-text)'}">${esc(t.nombre)}</td><td>${esc(t.cargo)}</td><td class="num" style="color:var(--i-amber);font-weight:700">${amS||''}</td><td class="num" style="color:var(--i-red);font-weight:700">${doblesS||''}</td><td class="num" style="color:var(--i-red);font-weight:700">${roS||''}</td><td>${avisosS.join(' ')}</td></tr>`;
       }).join('')}</tbody></table></div>` : ''}
   </section>
 
