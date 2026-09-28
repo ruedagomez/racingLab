@@ -216,6 +216,14 @@ img,svg,video{max-width:100%;}
 .ed-field label{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--mid);margin-bottom:5px;}
 .ed-field input,.ed-field select{width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--bdr);border-radius:7px;background:var(--wh);}
 .ed-field input:focus,.ed-field select:focus{border-color:var(--r3);}
+.rcsw-grid{display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:2px 0 0;}
+.rcsw{width:26px;height:26px;border-radius:7px;cursor:pointer;border:2px solid var(--bdr);box-shadow:var(--shadow-sm);transition:transform var(--fast) var(--ease),border-color var(--fast) var(--ease);flex-shrink:0;}
+.rcsw:hover{transform:scale(1.08);}
+.rcsw.on{border-color:var(--txt);box-shadow:0 0 0 2px var(--wh),0 0 0 4px var(--txt);}
+.rcsw-custom{width:30px;height:30px;border:1px solid var(--bdr);border-radius:7px;background:none;cursor:pointer;padding:0;flex-shrink:0;}
+.rcsw-hex{width:92px;font-family:var(--f-mono);font-size:12px;text-transform:uppercase;}
+.rcsw-preview{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--faint);margin-top:8px;}
+.rcsw-preview-dot{width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(0,0,0,.15);flex-shrink:0;}
 .ed-block{background:var(--wh);border:1px solid var(--bdr);border-radius:10px;padding:18px 20px;margin-bottom:14px;animation:fadeUp .3s both;}
 .ed-block-title{font-family:var(--f-display);font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:4px;}
 .ed-block-title::before{content:'';display:block;width:3px;height:16px;background:var(--r);border-radius:2px;}
@@ -1560,6 +1568,7 @@ function plantillaInforme(j){
     condicion: j.condicion, fecha: JORNADA_DATES[j.n-1],
     rivalName: club ? club.name : '', estado: 'borrador',
     sistema: '', dropboxFolder: '', dropboxPath: '',
+    colorRival: (club && club.color) || '',
     visionado: [], videosVistos: [], contexto: [],
     bloques,
     convocatorias: [],
@@ -1703,6 +1712,14 @@ const POSICIONES = {
   EI :{x:40, y:110,label:'Extremo izquierdo'},        ED :{x:260,y:110,label:'Extremo derecho'},
   DC :{x:150,y:70, label:'Delantero centro'},
   DCI:{x:105,y:70, label:'Delantero izquierdo'},      DCD:{x:195,y:70, label:'Delantero derecho'},
+};
+const RCSW_PRESETS = ['#1f55cc','#cc1f1f','#22c55e','#f59e0b','#ec4899','#8b5cf6','#06b6d4','#f97316','#111111','#ffffff'];
+window.setEdColorRival = function(c, fromCustom){
+  const hex = /^#[0-9a-fA-F]{6}$/.test(c) ? c : '#d01020';
+  document.getElementById('ed-colorRival').value = hex;
+  document.getElementById('ed-colorRival-preview').style.background = hex;
+  if(!fromCustom) document.getElementById('ed-colorRival-custom').value = hex;
+  document.querySelectorAll('#ed-colorRival-grid .rcsw').forEach(s=>s.classList.toggle('on', s.dataset.rc.toLowerCase()===hex.toLowerCase()));
 };
 function textColorFor(hex){
   const h = (hex||'').replace('#','');
@@ -2026,6 +2043,15 @@ function renderEditor(){
         <option value="publicado" ${inf.estado==='publicado'?'selected':''}>Publicado (visible al staff)</option>
       </select></div>
     <div class="ed-field"><label>Sistema habitual</label><input id="ed-sistema" value="${esc(inf.sistema)}" placeholder="1-4-2-3-1"/></div>
+    <div class="ed-field" style="grid-column:span 2">
+      <label>Color equipación rival (campograma)</label>
+      <div class="rcsw-grid" id="ed-colorRival-grid">
+        ${RCSW_PRESETS.map(c=>`<div class="rcsw${c.toLowerCase()===(inf.colorRival||'').toLowerCase()?' on':''}" data-rc="${c}" style="background:${c}" onclick="setEdColorRival('${c}')" title="${c}"></div>`).join('')}
+        <input type="color" class="rcsw-custom" id="ed-colorRival-custom" value="${esc(inf.colorRival||'#d01020')}" oninput="setEdColorRival(this.value,true)"/>
+      </div>
+      <input type="hidden" id="ed-colorRival" value="${esc(inf.colorRival||'')}"/>
+      <div class="rcsw-preview"><span class="rcsw-preview-dot" id="ed-colorRival-preview" style="background:${esc(inf.colorRival||'#d01020')}"></span><span>Se usa para los puntos del rival en el campograma. Sin elegir, se usa un rojo genérico.</span></div>
+    </div>
     <div class="ed-field" style="grid-column:span 2"><label>Carpeta Dropbox del rival</label><input id="ed-dbx" value="${esc(inf.dropboxFolder)}" placeholder="https://www.dropbox.com/scl/fo/..."/></div>
     <div class="ed-field" style="grid-column:span 2">
       <label>Ruta interna de Dropbox (opcional — solo si el enlace de arriba da error al subir clips)</label>
@@ -2270,6 +2296,7 @@ window.saveInforme = async function(){
   const V = id => document.getElementById(id).value;
   inf.estado    = V('ed-estado');
   inf.sistema   = V('ed-sistema').trim();
+  inf.colorRival = V('ed-colorRival').trim();
   inf.dropboxFolder = V('ed-dbx').trim();
   inf.dropboxPath = dbxLimpiarRuta(V('ed-dbxpath')).limpia;
   inf.visionado = linesToArr(V('ta-visionado'));
@@ -2478,7 +2505,7 @@ window.openInforme = async function(iid){
     <div class="inf-sb-footer"><strong>Racing Club Portuense</strong>Temporada 2026/2027</div>`;
 
   const pitches = inf.convocatorias.filter(c=>c.titulares.length===11 && c.sistema).slice(0,2)
-    .map(c=>{ const svg = pitchSvg(c, club && club.color); return svg ? `<div class="pitch-card icard"><div class="pitch-label">${esc(c.jornada)} · ${esc(c.cond)} · ${esc(c.marcador)} · ${esc(nombreEquipo(c.rival))} ${c.res==='V'?'✅':c.res==='E'?'➖':c.res==='D'?'❌':''}</div>${svg}</div>` : ''; })
+    .map(c=>{ const svg = pitchSvg(c, inf.colorRival || (club && club.color)); return svg ? `<div class="pitch-card icard"><div class="pitch-label">${esc(c.jornada)} · ${esc(c.cond)} · ${esc(c.marcador)} · ${esc(nombreEquipo(c.rival))} ${c.res==='V'?'✅':c.res==='E'?'➖':c.res==='D'?'❌':''}</div>${svg}</div>` : ''; })
     .filter(Boolean).join('');
 
   const fuenteChip = `<div class="pipe-note" style="margin-top:14px;">${d.fuente==='actas'
