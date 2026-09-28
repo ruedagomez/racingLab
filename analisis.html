@@ -590,6 +590,20 @@ body.modo-compartido .inf-sidebar{padding-top:8px;}
   </div>
 </div>
 
+<!-- ══ MODAL CONTRASEÑA PROPIETARIO (informes cerrados) ══ -->
+<div class="modal-bg" id="propModal">
+  <div class="modal">
+    <h3>Informe cerrado</h3>
+    <p>Ya se ha jugado este partido, así que el informe ha quedado cerrado. Solo el propietario puede editarlo, subir clips, borrarlo o generar/revocar enlaces a partir de ahora. Introduce la contraseña de propietario para continuar.</p>
+    <input type="password" id="propInput" placeholder="Contraseña de propietario" onkeydown="if(event.key==='Enter')checkPassPropietario()"/>
+    <div class="m-err" id="propErr">Contraseña incorrecta.</div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closePropModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="checkPassPropietario()">Entrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ MODAL CONFIRMAR BORRADO ══ -->
 <div class="modal-bg" id="delModal">
   <div class="modal">
@@ -661,6 +675,16 @@ const TEMPORADA = '2026-27';
    crypto.subtle.digest('SHA-256', new TextEncoder().encode('TuNuevaClave')).then(b=>console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''))) */
 const PASS_HASH = '401fde9cce4cbc36ab385715ead5a7cd8be898ab07368c4303d7cc5ff8543b1e';
 const ANALISTA = 'Carlos Rueda';
+/* SHA-256 de la contraseña de PROPIETARIO. Por defecto: RCP2026-DUENO — CAMBIAR
+   (mismo procedimiento que arriba). Un informe cuya fecha de partido ya ha
+   pasado queda "cerrado": entrar en modo analista sigue permitiendo LEER el
+   calendario y el informe publicado con normalidad, pero editarlo, subir o
+   borrar clips, eliminarlo o generar/revocar enlaces exige además esta
+   segunda contraseña. Es la misma idea que PASS_HASH (comprobación en el
+   cliente, no un login por persona) pero con un candado propio, para poder
+   dársela solo a Carlos aunque el resto del cuerpo técnico conozca la de
+   analista. Ver requierePropietarioSiCerrado() más abajo. */
+const PASS_HASH_PROPIETARIO = 'cbb8d539ea709a51ec3aeb86f85cd48f1087a6d45fda7bb8d256c4de7dff4d04';
 
 /* Rivales Grupo X (mismos ids que tercera.html / colección rivals) */
 /* color: color principal de la camiseta de local, para el campograma del rival.
@@ -689,32 +713,18 @@ const CLUBS = [
 ];
 const clubById = id => CLUBS.find(c=>c.id===id) || null;
 
-/* Nombre presentable de un equipo a partir de su id interno.
-   El motor de estadísticas guarda los equipos por ID ('xerez-dfc',
-   'bollullos'), que es lo correcto para cruzar datos pero NO para
-   enseñar: hasta ahora la clasificación mostraba literalmente esos ids
-   en minúsculas y con guiones. Esta función es el único punto de
-   traducción id → nombre; si un id no está en CLUBS (caso del propio
-   Racing, que no es rival de sí mismo) se resuelve aquí, y si aun así
-   no se reconoce, se devuelve algo legible en vez del id crudo. */
+/* Nombre presentable de un equipo a partir de su id interno. */
 const NOMBRES_EXTRA = { racing: 'Racing Club Portuense' };
 function nombreEquipo(id){
   if(!id) return '—';
   const c = clubById(id);
   if(c) return c.name;
   if(NOMBRES_EXTRA[id]) return NOMBRES_EXTRA[id];
-  // Último recurso: 'san-roque' → 'San Roque'. Mejor que mostrar el id.
   return String(id).split('-')
     .map(p => p ? p[0].toUpperCase() + p.slice(1) : p)
     .join(' ');
 }
 
-/* Fechas fijas: domingos desde 06/09/2026, sin 27/12 ni 03/01 */
-/* Corregido: faltaban el 08-12-2026 (J15, entre semana) y el 03-01-2027
-   (J18), lo que desplazaba las 17 jornadas siguientes una posición cada
-   vez — la J17 de esta lista terminaba siendo en realidad la fecha de la
-   J19, y así hasta el final. Verificado contra el calendario oficial de
-   la RFAF (temporada 2026-27, Grupo 10) recibido el 21/09/2026. */
 const JORNADA_DATES = [
   '2026-09-06','2026-09-13','2026-09-20','2026-09-27','2026-10-04','2026-10-11','2026-10-18','2026-10-25',
   '2026-11-01','2026-11-08','2026-11-15','2026-11-22','2026-11-29','2026-12-06','2026-12-08','2026-12-13',
@@ -739,44 +749,12 @@ const ABP = [
   { key:'abpDefensiva', title:'ABP Defensiva', hint:'Cómo defienden córners, faltas y saques de banda — a explotar' },
 ];
 
-/* ══════════ PERSONAS AUTORIZADAS (enlaces compartidos) ══════════
-   Quién puede identificarse al abrir un enlace compartido. NO es una
-   lista aparte que haya que mantener a mano: se lee en vivo de las
-   mismas colecciones que ya alimentan el resto del Lab.
-
-     · 'players' → la que escribe plantilla.html
-     · 'staff'   → la que escribe cuerpo-tecnico.html
-
-   Así, un fichaje o una baja se reflejan aquí solos: quien esté de alta
-   en plantilla puede entrar, quien esté dado de baja deja de poder.
-   No hay que tocar este archivo cuando cambie el vestuario.
-
-   Se descartan los que tienen active:false. Los del staff que siguen
-   marcados como 'tbd' (puesto sin cubrir) aparecen por su cargo, igual
-   que se muestran en cuerpo-tecnico.html, para que un fisio que aún no
-   tiene ficha completa no se quede fuera del informe.
-
-   Los ids llevan prefijo ('pl:' / 'st:') para que un jugador y un
-   miembro del staff nunca puedan chocar en el mismo identificador. */
 let PERSONAS = [];
 let personasCargadas = false;
 const personaById = id => PERSONAS.find(p => p.id === id) || null;
 const GRUPOS_ORDEN = ['Cuerpo técnico','Porteros','Defensas','Centrocampistas','Delanteros'];
 const POS_GRUPO = {POR:'Porteros', DEF:'Defensas', MED:'Centrocampistas', DEL:'Delanteros'};
 
-/* ── Quién NO puede abrir informes de rival ─────────────────────────
-   Gente ACTIVA en el club (siguen en cuerpo-tecnico.html con normalidad,
-   no se les da de baja de nada) pero a la que no se le da acceso al
-   análisis del rival. Es una decisión de este módulo, no un dato del
-   club: por eso vive aquí y no en la colección `staff`, que describe
-   quién trabaja en el club y la comparten todos los módulos.
-
-   Se compara contra el NOMBRE tal y como aparece en la ficha (`name`),
-   normalizado sin tildes ni mayúsculas para que una tilde de más o de
-   menos no deje entrar a alguien por error. Si alguien cambia de nombre
-   en su ficha, hay que actualizarlo aquí — es el precio de no meter un
-   campo nuevo en `staff`, y a cambio queda a la vista de un vistazo
-   quién está excluido y por qué. */
 const SIN_ACCESO_ANALISIS = [
   'Pablo',
   'Antonio',
@@ -785,23 +763,9 @@ const SIN_ACCESO_ANALISIS = [
   'Abraham Melgar',
   'Ramón Herrera',
 ];
-/* Normalización propia y local (sin tildes, minúsculas, espacios
-   colapsados). No se reutiliza normNombre() del motor de estadísticas
-   porque esa se declara más abajo en el archivo y aquí hace falta
-   antes: son idénticas en comportamiento, pero mezclarlas crearía una
-   dependencia de orden frágil entre dos partes sin relación. */
 const normAcceso = s => String(s||'').trim().toLowerCase()
-  .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
+  .normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ');
 const SIN_ACCESO_NORM = SIN_ACCESO_ANALISIS.map(normAcceso);
-/* Coincidencia por INICIO del nombre, no exacta: en las fichas el nombre
-   suele estar completo ("Abraham Melgar Álvarez") mientras que aquí se
-   escribe como se le conoce ("Abraham Melgar"). Exigir igualdad exacta
-   dejaba entrar a gente que sí debía estar excluida. Se compara sobre el
-   nombre normalizado y con el espacio final incluido en la prueba de
-   prefijo, para que "Pablo" no excluya por error a un "Pablo Ramírez"
-   distinto que sí deba tener acceso — pero sí a "Pablo Ruiz Gómez" si
-   fuera esa la persona: cuando haya dos nombres que empiecen igual, hay
-   que escribir aquí el nombre lo bastante completo para distinguirlos. */
 function sinAccesoAnalisis(...campos){
   return campos.some(c => {
     const n = normAcceso(c);
@@ -818,9 +782,6 @@ async function cargarPersonas(){
   ]);
   const staff = snapStaff.docs.map(d=>({id:d.id, ...d.data()}))
     .filter(s => s.active !== false)
-    /* Se comprueban los dos campos (name y role): un puesto sin cubrir
-       se muestra por su cargo, así que podría estar excluido por
-       cualquiera de los dos. */
     .filter(s => !sinAccesoAnalisis(s.name, s.role))
     .sort((a,b) => (a.order ?? 999) - (b.order ?? 999))
     .map(s => ({
@@ -831,8 +792,6 @@ async function cargarPersonas(){
     }));
   const players = snapPlayers.docs.map(d=>({id:d.id, ...d.data()}))
     .filter(p => p.active !== false)
-    /* Mismo filtro para jugadores: se comprueban apodo y nombre completo,
-       porque la exclusión se escribe como se conoce a la persona. */
     .filter(p => !sinAccesoAnalisis(p.nick, p.n))
     .sort((a,b) => (a.d ?? 999) - (b.d ?? 999))
     .map(p => ({
@@ -847,10 +806,6 @@ async function cargarPersonas(){
   return PERSONAS;
 }
 
-
-/* ══════════ TEMA CLARO / OSCURO ══════════
-   Clave compartida con el resto del Lab: la preferencia viaja entre
-   módulos. Claro por defecto. */
 window.toggleTheme = function(){
   const actual = document.documentElement.getAttribute('data-theme');
   const nuevo = actual === 'dark' ? 'light' : 'dark';
@@ -859,14 +814,14 @@ window.toggleTheme = function(){
 };
 
 /* ══════════ ESTADO ══════════ */
-let SHIELDS = {};          // lpId → shieldUrl
-let calendario = null;     // { jornadas:[{n,clubId,condicion}], provisional }
-let informesIdx = {};      // informeId → {estado}
+let SHIELDS = {};
+let calendario = null;
+let informesIdx = {};
 let currentInformeId = null;
-let currentInforme = null; // doc en edición
+let currentInforme = null;
 let calEditMode = false;
 let unsubInformes = null;
-let rivalPlayers = [];   // plantilla del rival cargada de rivals/{clubId}/players
+let rivalPlayers = [];
 
 /* ══════════ AUTH ANALISTA ══════════ */
 async function sha256(str){
@@ -914,6 +869,42 @@ function requireAnalista(){
   return false;
 }
 
+/* ══════════ CIERRE DE INFORMES TRAS LA FECHA DEL PARTIDO ══════════
+   Una vez pasada la fecha del partido, el informe queda "cerrado":
+   sigue siendo perfectamente visible (calendario, informe publicado),
+   pero editarlo, subir o borrar clips, eliminarlo o generar/revocar
+   enlaces exige la contraseña de propietario, además de la de analista.
+   No hay ningún campo nuevo que mantener a mano: se calcula solo
+   comparando inf.fecha (la fecha del partido) con hoy. */
+function informeCerrado(inf){
+  return !!(inf && inf.fecha && inf.fecha < todayIso());
+}
+const isPropietario = () => sessionStorage.getItem('rl_propietario') === '1';
+/* true si se puede seguir; si el informe está cerrado y el propietario
+   no se ha identificado todavía, abre el modal y devuelve false — el
+   mismo patrón que requireAnalista(), para que encaje sin sorpresas
+   con el resto de botones del editor (el usuario reintenta la acción
+   tras introducir la contraseña, igual que ya pasa con "Modo analista"). */
+function requierePropietarioSiCerrado(inf){
+  if(!informeCerrado(inf)) return true;
+  if(isPropietario()) return true;
+  document.getElementById('propErr').style.display='none';
+  document.getElementById('propInput').value='';
+  document.getElementById('propModal').classList.add('open');
+  setTimeout(()=>document.getElementById('propInput').focus(), 60);
+  return false;
+}
+window.checkPassPropietario = async function(){
+  const v = document.getElementById('propInput').value;
+  if(await sha256(v) === PASS_HASH_PROPIETARIO){
+    sessionStorage.setItem('rl_propietario','1');
+    closePropModal(); toast('Acceso de propietario activado — repite la acción');
+  } else {
+    document.getElementById('propErr').style.display='block';
+  }
+};
+window.closePropModal = () => document.getElementById('propModal').classList.remove('open');
+
 /* ══════════ TOAST ══════════ */
 function toast(msg){
   const t = document.getElementById('toast');
@@ -922,8 +913,6 @@ function toast(msg){
 }
 
 /* ══════════ DROPBOX URL ══════════ */
-/* Normaliza enlaces compartidos de Dropbox a reproducibles: dl=0 → raw=1.
-   Lección 25/26: mantener dominio www.dropbox.com; dl.dropboxusercontent rompe backgrounds. */
 function dbxRaw(url){
   if(!url) return '';
   url = url.trim();
@@ -934,29 +923,7 @@ function dbxRaw(url){
   return url;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   DROPBOX · conexión y subida directa de clips
-   ══════════════════════════════════════════════════════════════════════
-   Dropbox no tiene un "preset de subida sin firmar" como Cloudinary: toda
-   subida real requiere un token de tu cuenta. El flujo de abajo (PKCE) es
-   el diseñado para apps sin servidor: te conectas UNA vez desde el
-   navegador, autorizas, y desde ahí cada subida es un fetch directo entre
-   tu navegador y Dropbox — el token vive solo en tu localStorage, nunca
-   pasa por ningún servidor intermedio.
-
-   Ajustar aquí si la app resulta ser "App folder" en vez de "Full
-   Dropbox": las rutas absolutas (/Racing Lab/...) dejarían de valer y
-   habría que subir a rutas relativas a la carpeta de la app. Todo el
-   cálculo de ruta pasa por dbxResolverCarpeta(), así que el cambio queda
-   contenido ahí si hiciera falta.
-   ══════════════════════════════════════════════════════════════════════ */
 const DBX_APP_KEY = 'myo4q3uz371fn0a';
-
-/* Cada bloque del informe sube a su propia subcarpeta dentro de la
-   carpeta del rival. Transiciones y ABP comparten carpeta entre su
-   variante ofensiva y defensiva, tal como se pidió. Si la carpeta ya
-   existe (creada a mano de antemano) se usa tal cual; si no, Dropbox la
-   crea sola al subir el primer archivo — no hace falta un paso aparte. */
 const DBX_CARPETA_POR_BLOQUE = {
   salidaBalon:        '01_SalidaBalon',
   presionRival:        '02_PresionRival',
@@ -967,10 +934,9 @@ const DBX_CARPETA_POR_BLOQUE = {
   abpOfensiva:          '06_ABP',
   abpDefensiva:          '06_ABP',
 };
-const DBX_REDIRECT = location.origin + location.pathname;   // debe coincidir EXACTO con lo registrado en Dropbox
+const DBX_REDIRECT = location.origin + location.pathname;
 const DBX_LS_KEY = 'rl_dbx_tokens';
 
-/* ── PKCE: generación de verifier/challenge, sin librerías externas ── */
 function dbxRandomVerifier(){
   const arr = new Uint8Array(64);
   crypto.getRandomValues(arr);
@@ -988,7 +954,6 @@ function dbxSetTokens(t){ localStorage.setItem(DBX_LS_KEY, JSON.stringify(t)); }
 function dbxClearTokens(){ localStorage.removeItem(DBX_LS_KEY); }
 window.dbxConectado = () => !!dbxGetTokens()?.refresh_token;
 
-/* Paso 1: redirige a Dropbox para autorizar */
 window.dbxConectar = async function(){
   const verifier = dbxRandomVerifier();
   const challenge = await dbxChallengeDe(verifier);
@@ -998,7 +963,7 @@ window.dbxConectar = async function(){
     response_type: 'code',
     code_challenge: challenge,
     code_challenge_method: 'S256',
-    token_access_type: 'offline',      // pide refresh_token de larga duración
+    token_access_type: 'offline',
     redirect_uri: DBX_REDIRECT,
   });
   location.href = `https://www.dropbox.com/oauth2/authorize?${params}`;
@@ -1010,7 +975,6 @@ window.dbxDesconectar = function(){
   actualizarBotonDropbox();
 };
 
-/* Paso 2: al volver de Dropbox con ?code=..., lo cambia por tokens */
 async function dbxProcesarRetorno(){
   const url = new URL(location.href);
   const code = url.searchParams.get('code');
@@ -1018,7 +982,7 @@ async function dbxProcesarRetorno(){
   const verifier = sessionStorage.getItem('rl_dbx_verifier');
   url.searchParams.delete('code');
   url.searchParams.delete('state');
-  history.replaceState({}, '', url.pathname + (url.search || ''));   // limpia el ?code= de la barra de direcciones
+  history.replaceState({}, '', url.pathname + (url.search || ''));
   if(!verifier){ toast('La conexión con Dropbox caducó, inténtalo de nuevo'); return; }
   try{
     const res = await fetch('https://api.dropboxapi.com/oauth2/token', {
@@ -1046,7 +1010,6 @@ async function dbxProcesarRetorno(){
   }
 }
 
-/* Token siempre fresco: refresca solo si va a caducar en <5 min */
 async function dbxToken(){
   const t = dbxGetTokens();
   if(!t) throw new Error('Dropbox no está conectado');
@@ -1068,24 +1031,6 @@ async function dbxToken(){
   return nuevo.access_token;
 }
 
-/* ── Resolver la carpeta del rival a una ruta real de Dropbox ──
-   inf.dropboxFolder es el enlace COMPARTIDO (para que un humano lo abra
-   en el navegador), no una ruta de subida. Se resuelve una vez por
-   informe y se cachea en memoria durante la sesión, para no repetir la
-   llamada en cada clip que se suba. */
-/* Caché de resolución carpeta compartida → ruta real de Dropbox.
-   PERSISTENTE (localStorage), no solo en memoria: get_shared_link_metadata
-   ha mostrado un comportamiento intermitente real con enlaces de carpeta
-   tipo scl/fo/... (reportado también por otros desarrolladores contra la
-   API de Dropbox, no es exclusivo de este proyecto) — funciona, y sin que
-   nadie cambie nada, deja de funcionar durante un rato. Antes, la caché
-   solo vivía en memoria y se perdía en cada recarga de página; si esa
-   recarga coincidía con una de las rachas en que el endpoint falla, la
-   subida se rompía aunque la carpeta llevara resuelta con éxito toda la
-   sesión anterior. Ahora que se resuelve una vez, se guarda en el
-   navegador y nunca más se depende de ese endpoint para esa carpeta —
-   ni en esta sesión ni en las siguientes. Solo se re-resuelve si el
-   propio Carlos borra la caché o si falla el propio subido (ver más abajo). */
 const DBX_LS_PATHCACHE = 'rl_dbx_pathcache';
 function dbxPathCacheGet(sharedUrl){
   try{ return JSON.parse(localStorage.getItem(DBX_LS_PATHCACHE)||'{}')[sharedUrl] || null; }
@@ -1113,19 +1058,6 @@ async function dbxResolverCarpeta(sharedUrl){
   if(!sharedUrl) throw new Error('Este informe no tiene una carpeta de Dropbox indicada arriba');
   const cacheado = dbxPathCacheGet(sharedUrl);
   if(cacheado) return cacheado;
-  /* SharedLinkError de Dropbox (spec oficial) solo tiene tres valores:
-     shared_link_not_found, shared_link_access_denied, unsupported_link_type.
-     Antes se trataba como "posible App folder" cualquier error que
-     contuviera "not_found" en el JSON — pero shared_link_not_found NO
-     tiene nada que ver con el scope de la app: es que Dropbox no resuelve
-     el enlace EN ESE MOMENTO, algo que le pasa de forma intermitente
-     incluso a apps que llevan tiempo funcionando bien (reportado por
-     otros desarrolladores con este mismo endpoint y enlaces scl/, encaja
-     con "funcionaba y de pronto dejó de funcionar" sin cambiar nada).
-     Por eso, solo para ESE tag concreto se reintenta dos veces más con
-     espera creciente antes de rendirse. El único tag que de verdad indica
-     scope insuficiente (tipo App folder) es shared_link_access_denied —
-     ese no se reintenta, porque reintentar no lo va a arreglar. */
   let r = await dbxResolverCarpetaIntento(sharedUrl);
   for(const espera of [900, 2000]){
     if(r.ok || r.tag !== 'shared_link_not_found') break;
@@ -1145,25 +1077,13 @@ async function dbxResolverCarpeta(sharedUrl){
   return r.path;
 }
 
-/* Nombre de archivo seguro: evita caracteres que Dropbox rechaza y
-   conserva la extensión original. */
-/* Limpia lo que se pega en "Ruta interna de Dropbox": suele venir mal
-   por el camino de copia/pega (%20 en vez de espacio, si se copió de la
-   barra de direcciones en vez de "Copiar ruta de Dropbox"; o una tilde
-   perdida y convertida en el carácter de reemplazo si algo por medio
-   maltrató la codificación). El %20 se puede arreglar solo, con
-   seguridad: una ruta real de Dropbox nunca lleva un % seguido de dos
-   dígitos de forma literal, así que si aparece SIEMPRE es codificación
-   de URL colada por error. El carácter de reemplazo (tilde perdida) NO
-   se puede recuperar — el dato original ya no está — así que solo se
-   avisa para que se corrija a mano. */
 function dbxLimpiarRuta(s){
   let limpia = String(s||'').trim().replace(/\/+$/,'').replace(/\/{2,}/g,'/');
   if(/%[0-9A-Fa-f]{2}/.test(limpia)){
     try{ limpia = decodeURIComponent(limpia); }catch(e){}
   }
   const avisos = [];
-  if(limpia.includes('\uFFFD')) avisos.push('Hay un carácter que no se ha copiado bien (probablemente una tilde o la ñ) — revísalo a mano.');
+  if(limpia.includes('�')) avisos.push('Hay un carácter que no se ha copiado bien (probablemente una tilde o la ñ) — revísalo a mano.');
   return {limpia, avisos};
 }
 window.limpiarRutaDbx = function(input){
@@ -1178,23 +1098,14 @@ window.limpiarRutaDbx = function(input){
 function dbxNombreArchivo(nombreOriginal, etiqueta){
   const ext = (nombreOriginal.match(/\.[a-zA-Z0-9]+$/)||[''])[0];
   const base = (etiqueta||nombreOriginal.replace(ext,''))
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
     .replace(/[^a-zA-Z0-9 _-]/g,'').trim().replace(/\s+/g,'_');
   const marca = new Date().toISOString().slice(0,10).replace(/-/g,'');
   return `${marca}_${base||'clip'}${ext}`;
 }
 
-/* Crea (o recupera, si ya existe) el enlace compartido de un archivo
-   recién subido, y lo devuelve ya en formato reproducible (dbxRaw). */
 async function dbxEnlaceCompartido(path){
   const token = await dbxToken();
-  /* Se pide explícitamente visibilidad "public": es lo que hace que
-     cualquiera del staff pueda ver el clip sin conectar Dropbox ni tener
-     que iniciar sesión — igual que los enlaces que ya pegas a mano hoy.
-     Si la cuenta es de tipo equipo con política restringida, Dropbox
-     rechaza justo ese ajuste; en ese caso se reintenta sin forzar nada,
-     usando el comportamiento por defecto de la cuenta (el mismo que ya
-     tenías antes de esta función). */
   const crear = async (settings) => fetch('https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings', {
     method: 'POST',
     headers: {'Authorization': 'Bearer '+token, 'Content-Type': 'application/json'},
@@ -1211,7 +1122,6 @@ async function dbxEnlaceCompartido(path){
       const url = data.error.shared_link_already_exists?.metadata?.url;
       if(url) return dbxRaw(url);
     }
-    // Fallback: buscarlo entre los enlaces existentes de ese archivo
     const res2 = await fetch('https://api.dropboxapi.com/2/sharing/list_shared_links', {
       method: 'POST',
       headers: {'Authorization': 'Bearer '+token, 'Content-Type': 'application/json'},
@@ -1224,9 +1134,7 @@ async function dbxEnlaceCompartido(path){
   return dbxRaw(data.url);
 }
 
-/* Subida simple (<140MB) vs por sesión/trozos (vídeos grandes).
-   onProgress(0..1) para pintar la barra. */
-const DBX_CHUNK = 8 * 1024 * 1024; // 8MB por trozo
+const DBX_CHUNK = 8 * 1024 * 1024;
 async function dbxSubirArchivo(file, folderPath, nombreDestino, onProgress){
   const token = await dbxToken();
   const path = folderPath.replace(/\/$/,'') + '/' + nombreDestino;
@@ -1247,7 +1155,6 @@ async function dbxSubirArchivo(file, folderPath, nombreDestino, onProgress){
     return data.path_lower;
   }
 
-  // Archivo grande: sesión por trozos
   let offset = 0;
   const first = file.slice(0, DBX_CHUNK);
   let res = await fetch('https://content.dropboxapi.com/2/files/upload_session/start', {
@@ -1297,12 +1204,6 @@ async function dbxSubirArchivo(file, folderPath, nombreDestino, onProgress){
   return data.path_lower;
 }
 
-/* Confirma que una ruta escrita a mano existe de verdad y es una carpeta,
-   ANTES de subir nada ahí — para no fallar a medio subir por una errata,
-   ni subir en silencio a un sitio que no es. Usa files/get_metadata, del
-   namespace files (files.content.read), un permiso DISTINTO del que usa
-   sharing/get_shared_link_metadata — por eso sirve como vía alternativa
-   cuando ese otro endpoint falla: no comparten el mismo punto de fallo. */
 async function dbxVerificarRuta(path){
   const token = await dbxToken();
   const res = await fetch('https://api.dropboxapi.com/2/files/get_metadata', {
@@ -1316,20 +1217,6 @@ async function dbxVerificarRuta(path){
   return path;
 }
 
-/* Flujo completo para un archivo suelto: resuelve carpeta del rival →
-   entra en la subcarpeta del bloque (Salida de balón, Ataque…) → sube →
-   genera enlace. La subcarpeta se crea sola si no existía todavía: no
-   hace falta un paso aparte para crearla, ni de aquí ni a mano — aunque
-   si ya la tienes creada de antes con el mismo nombre, se usa esa.
-
-   Resolución de la carpeta del rival, en dos vías:
-   — Si el informe tiene una RUTA escrita a mano (dropboxPath), se usa
-     directamente vía files/get_metadata, sin tocar en ningún momento
-     sharing/get_shared_link_metadata. Es la vía de emergencia cuando ese
-     endpoint da problemas (ha mostrado fallos persistentes reales, ajenos
-     a la configuración de la app, con enlaces de carpeta tipo scl/fo/...).
-   — Si no hay ruta escrita, se resuelve el ENLACE compartido como hasta
-     ahora (más cómodo de configurar, solo pegar el enlace). */
 async function dbxSubirYEnlazar(file, sharedFolderUrl, etiqueta, onProgress, bkey, rutaManual){
   const folderPath = rutaManual
     ? await dbxVerificarRuta(rutaManual)
@@ -1349,21 +1236,116 @@ function actualizarBotonDropbox(){
     : `<button class="btn btn-ghost btn-sm" onclick="dbxConectar()">🔗 Conectar Dropbox</button>`;
 }
 
-/* ══════════ CALENDARIO ══════════
-   ANTES: defaultCalendario() emparejaba por CLUBS[n-1] — el rival de cada
-   jornada dependía del ORDEN en que están declarados los clubes en el
-   array de arriba, sin ninguna relación con el calendario real de la
-   RFAF. Bastaba con reordenar CLUBS (por ejemplo al añadir un dato) para
-   que las 34 jornadas quedaran mal, sin ningún aviso. Es la causa más
-   probable de que Análisis y Día de Partido mostraran rivales distintos
-   para la misma jornada.
+/* ══════════════════════════════════════════════════════════════════════
+   MINIATURA AUTOMÁTICA DE CLIPS (a partir de Tomares en adelante)
+   ══════════════════════════════════════════════════════════════════════
+   Los clips se suben SIEMPRE desde este mismo formulario, directamente
+   como archivo local (nunca se pega una URL de Dropbox ya existente sin
+   pasar por aquí) — así que en el momento de la subida siempre hay un
+   File real en el navegador, del que se puede extraer un fotograma con
+   <video>+<canvas> sin depender de CORS ni de nada ya subido a Dropbox.
+   Por eso la miniatura se genera aquí, al subir, y no a partir del vídeo
+   ya colgado: los clips subidos ANTES de esto no se tocan (no hay forma
+   de generársela después sin reprocesar el archivo, y no se ha pedido).
 
-   AHORA: el emparejamiento real de la 1ª vuelta, calcado del oficial de
-   la RFAF (temporada 2026-27, Grupo 10) y CONFIRMADO IDÉNTICO al que ya
-   usaba diapartido.html — así los dos módulos leen, por fin, el mismo
-   calendario. La 2ª vuelta es el espejo exacto de la 1ª (mismo rival,
-   condición contraria), verificado partido a partido contra el PDF
-   oficial: no hay ninguna excepción. */
+   Se prueban varios instantes del vídeo (no el fotograma 0, que en un
+   clip de fútbol recién cortado suele ser un negro de transición) y se
+   mide su luminancia media sobre una rejilla de muestreo; el primero que
+   supera el umbral se usa como miniatura. Si ninguno lo supera (vídeo
+   oscuro de verdad, cámara tapada, etc.), se usa el candidato más claro
+   de los probados en vez de fallar — mejor una miniatura discreta que
+   ninguna. Si el vídeo no carga o algo falla, se resuelve null y el
+   llamador se limita a dejar el campo de miniatura vacío, como hasta
+   ahora: nunca bloquea la subida del vídeo en sí. */
+const FRAME_UMBRAL_LUM = 28;                 // 0=negro, 255=blanco puro
+const FRAME_CANDIDATOS = [0.6, 1.5, 3, 5, 8, 12];   // segundos a probar
+
+function extraerFotogramaNoNegro(file){
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    video.muted = true; video.playsInline = true; video.preload = 'auto';
+    let url;
+    try{ url = URL.createObjectURL(file); }catch(e){ resolve(null); return; }
+    let terminado = false, idx = 0, mejorTiempo = null, mejorScore = -1, modoFallback = false;
+    const sample = document.createElement('canvas'); sample.width = 16; sample.height = 9;
+    const sctx = sample.getContext('2d');
+    const full = document.createElement('canvas');
+
+    function limpiar(){ try{ URL.revokeObjectURL(url); }catch(e){} }
+    function finalizar(blob){
+      if(terminado) return;
+      terminado = true;
+      clearTimeout(watchdog);
+      limpiar();
+      resolve(blob);
+    }
+    const watchdog = setTimeout(() => finalizar(null), 20000);
+
+    async function exportarActual(){
+      full.width = video.videoWidth || 320;
+      full.height = video.videoHeight || 180;
+      full.getContext('2d').drawImage(video, 0, 0, full.width, full.height);
+      return new Promise(res => full.toBlob(b => res(b), 'image/jpeg', 0.85));
+    }
+    function siguienteCandidato(){
+      if(idx >= FRAME_CANDIDATOS.length){
+        if(mejorTiempo == null){ finalizar(null); return; }
+        modoFallback = true;
+        video.currentTime = mejorTiempo;
+        return;
+      }
+      const dur = video.duration && isFinite(video.duration) ? video.duration : (FRAME_CANDIDATOS[idx] + 1);
+      const t = Math.min(FRAME_CANDIDATOS[idx], Math.max(0.1, dur - 0.2));
+      idx++;
+      video.currentTime = t;
+    }
+    video.addEventListener('loadedmetadata', siguienteCandidato);
+    video.addEventListener('seeked', async () => {
+      if(terminado) return;
+      if(modoFallback){
+        const blob = await exportarActual();
+        finalizar(blob);
+        return;
+      }
+      try{
+        sctx.drawImage(video, 0, 0, 16, 9);
+        const data = sctx.getImageData(0,0,16,9).data;
+        let total = 0;
+        for(let i=0;i<data.length;i+=4) total += 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
+        const score = total / (data.length/4);
+        if(score > mejorScore){ mejorScore = score; mejorTiempo = video.currentTime; }
+        if(score >= FRAME_UMBRAL_LUM){
+          const blob = await exportarActual();
+          finalizar(blob);
+          return;
+        }
+      }catch(e){ console.error('[extraerFotogramaNoNegro]', e); }
+      siguienteCandidato();
+    });
+    video.addEventListener('error', () => finalizar(null));
+    video.src = url;
+  });
+}
+
+/* Genera la miniatura a partir del File local y la sube a la MISMA
+   carpeta que el vídeo (dbxSubirYEnlazar ya sabe meterla en la
+   subcarpeta del bloque correcto). Nunca lanza: si algo falla, devuelve
+   '' y quien llame se limita a dejar el campo vacío, como si nadie
+   hubiera subido miniatura — el vídeo ya se subió bien y eso no se toca. */
+async function generarYSubirMiniatura(file, folderUrl, bkey, rutaManual, etiqueta){
+  try{
+    const blob = await extraerFotogramaNoNegro(file);
+    if(!blob) return '';
+    const base = file.name.replace(/\.[a-zA-Z0-9]+$/, '') || 'clip';
+    const thumbFile = new File([blob], base + '_thumb.jpg', {type:'image/jpeg'});
+    return await dbxSubirYEnlazar(thumbFile, folderUrl, etiqueta, null, bkey, rutaManual);
+  }catch(e){
+    console.error('[generarYSubirMiniatura]', e);
+    return '';
+  }
+}
+
+/* ══════════ CALENDARIO ══════════ */
 const CAL_OFICIAL_IDA = [
   ['xerez-dfc','fuera'],   ['san-roque','casa'],   ['egabrense','fuera'],  ['chiclana','casa'],
   ['tomares','fuera'],     ['dos-hermanas','casa'],['conil','fuera'],      ['pozoblanco','casa'],
@@ -1382,14 +1364,6 @@ async function loadCalendario(){
     const snap = await getDoc(doc(db,'analisisCalendario',TEMPORADA));
     if(snap.exists()){
       calendario = snap.data();
-      /* Autocorrección SOLO si nadie ha confirmado el calendario todavía
-         (provisional === true): significa que aquí puede seguir el
-         reparto viejo por orden de CLUBS, mal desde el origen, y nadie
-         lo ha revisado ni tocado a mano. Se sobrescribe con el oficial
-         correcto sin pedir nada — no hay ninguna edición de Carlos que
-         proteger en ese estado. En cuanto se confirma como oficial
-         (calConfirmOficial), esta función ya NO vuelve a tocarlo nunca,
-         igual que el resto de campos editados a mano en este archivo. */
       if(calendario.provisional !== false){
         calendario = defaultCalendario();
         await setDoc(doc(db,'analisisCalendario',TEMPORADA), calendario);
@@ -1441,6 +1415,7 @@ function renderCalendario(){
     const fecha = JORNADA_DATES[j.n-1];
     const iid = informeId(j.n);
     const est = informesIdx[iid]?.estado || null;
+    const cerrado = fecha < hoy;
     const shield = club && SHIELDS[club.lpId]
       ? `<img class="jc-shield" src="${SHIELDS[club.lpId]}" alt=""/>`
       : `<div class="jc-shield-ph">${club?club.short:'—'}</div>`;
@@ -1450,7 +1425,7 @@ function renderCalendario(){
     let actions = '';
     if(est){
       actions += `<button class="btn btn-ghost btn-sm" onclick="openInforme('${iid}')">Ver</button>`;
-      if(admin) actions += `<button class="btn btn-ghost btn-sm" onclick="openEditor('${iid}')">Editar</button>`;
+      if(admin) actions += `<button class="btn btn-ghost btn-sm" onclick="openEditor('${iid}')" title="${cerrado?'Informe cerrado: hace falta la contraseña de propietario para editarlo':''}">${cerrado?'🔒 Editar':'Editar'}</button>`;
     } else if(admin){
       actions += `<button class="btn btn-primary btn-sm" onclick="generarInforme(${j.n})">⚡ Generar informe</button>`;
     }
@@ -1482,36 +1457,27 @@ function renderCalendario(){
       : '');
 }
 
-/* ══════════ INFORMES · plantilla y CRUD ══════════
-   DISEÑO CLAVE: la estructura de `datos`, `convocatorias` y `arbitro` es el
-   ESPEJO EXACTO de lo que el pipeline de actas (módulo 07 / rival_stats.json)
-   escribirá. Hoy se rellena a mano; mañana el pipeline escribe los mismos
-   campos y cambia datos.fuente de 'manual' a 'actas'. El informe no cambia. */
+/* ══════════ INFORMES · plantilla y CRUD ══════════ */
 function emptyBloque(){ return { items:[], clips:[] }; }
 const zeros6 = () => [0,0,0,0,0,0];
 function emptyDatos(){
   return {
     fuente: 'manual',
-    clasificacion: [],      // [{pos, equipo, pj, pts}]
-    racha: [],              // [{jornada, cond, res, marcador, rival}]
+    clasificacion: [],
+    racha: [],
     golesTramos: { total:{gf:zeros6(),gc:zeros6()}, cond:{gf:zeros6(),gc:zeros6()} },
-    goleadores: [],         // [{nombre, goles}]
-    tarjetasJugadores: [],  // [{nombre, amarillas, rojas}]  · R1: doble amarilla = 1 AM + 1 RO
-    tarjetasStaff: [],      // [{nombre, cargo, amarillas, rojas}]  · R2: staff separado
-    rankings: [],           // [{metrica, rival, racing}]
-    patrones: [],           // [string]
-    plantillaMinutos: [],   // [{nombre,dorsalHabitual,convocatorias,titularidades,minutos,goles,amarillas,rojas}]
+    goleadores: [],
+    tarjetasJugadores: [],
+    tarjetasStaff: [],
+    rankings: [],
+    patrones: [],
+    plantillaMinutos: [],
   };
 }
 function emptyArbitro(){
   return { nombre:'', delegacion:'', asistente1:'', asistente2:'',
            stats:{ partidos:'', amarillas:'', dobles:'', rojas:'', goles:'' }, notas:[] };
 }
-/* ══════════ CARGA AUTOMÁTICA DESDE ACTAS ══════════
-   El navegador NO calcula nada. Lee `rivalStats/{clubId}`, que escribe
-   stats_engine.py (Marcelo) tras cada ingesta de actas, y lo congela dentro
-   del informe. Carlos puede sobrescribir cualquier campo: lo que edite queda
-   registrado en datosMeta.camposEditados y "Recargar de actas" lo respeta. */
 async function fetchRivalStats(clubId){
   try{
     const snap = await getDoc(doc(db,'rivalStats',clubId));
@@ -1525,15 +1491,11 @@ async function fetchArbitroStats(nombre){
     return snap.exists() ? snap.data() : null;
   }catch(e){ console.error('[arbitroStats]', e); return null; }
 }
-/* Misma normalización que norm() en stats_engine.py: sin tildes, minúsculas */
-const normNombre = s => (s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+const normNombre = s => (s||'').normalize('NFKD').replace(/[̀-ͯ]/g,'')
   .toLowerCase().split(/\s+/).filter(Boolean).join(' ');
 
-/* Mapea rivalStats → la forma que consume el informe. Un único punto de
-   traducción: si el motor cambia un nombre de campo, solo se toca aquí. */
 function snapshotStats(st, condicionPartido){
   if(!st) return { datos: emptyDatos(), convocatorias: [], meta:{fuente:'vacio'} };
-  /* El rival juega en la condición contraria a la nuestra */
   const condRival = condicionPartido === 'casa' ? 'fuera' : 'casa';
   const tabla = st.clasificacion?.tabla || [];
   const pos = tabla.findIndex(r => r.equipo === st.clubId);
@@ -1548,11 +1510,6 @@ function snapshotStats(st, condicionPartido){
         cond:  st.golesTramos?.[condRival] || {gf:zeros6(),gc:zeros6()},
       },
       goleadores: (st.goleadores||[]).slice(0,10).map(g=>({nombre:g.nombre, goles:String(g.goles)})),
-      /* Un expulsado (roja o doble amarilla) NUNCA se recorta: antes el
-         corte a 12 filas solo miraba amarillas acumuladas en la temporada,
-         así que un jugador con pocas amarillas pero recién expulsado en
-         este partido podía quedar fuera de la lista y "desaparecer" en
-         Análisis. Los expulsados van siempre primero y fuera del cupo. */
       tarjetasJugadores: (()=>{
         const todos = st.disciplina?.jugadores || [];
         const esExpulsion = t => (t.rojas||0)>0 || (t.dobles||0)>0;
@@ -1573,7 +1530,7 @@ function snapshotStats(st, condicionPartido){
     },
     convocatorias: (st.convocatorias||[]).map(c=>({
       jornada:c.jornada, cond:c.cond, res:c.res, marcador:c.marcador, rival:c.rival,
-      sistema: c.sistema || '',   /* el acta NO trae el sistema: lo pone Carlos */
+      sistema: c.sistema || '',
       titulares:(c.titulares||[]).map(p=>({dorsal:p.dorsal, nombre:p.nombre, cambio:p.salioMin?'>':'', min:p.salioMin||''})),
       suplentes:(c.suplentes||[]).map(p=>({dorsal:p.dorsal, nombre:p.nombre, cambio:p.entroMin?'<':'', min:p.entroMin||''})),
     })),
@@ -1605,41 +1562,22 @@ function plantillaInforme(j){
     sistema: '', dropboxFolder: '', dropboxPath: '',
     visionado: [], videosVistos: [], contexto: [],
     bloques,
-    convocatorias: [],      // [{jornada,cond,res,marcador,rival,sistema,titulares:[{dorsal,nombre,cambio,min}],suplentes:[...]}]
+    convocatorias: [],
     datos: emptyDatos(),
     arbitro: emptyArbitro(),
     fortalezas: [], debilidades: [],
-    /* Portero rival · sección 07. Se guarda aparte de los bloques
-       automáticos porque es análisis puramente cualitativo: lo escribe
-       el analista viendo vídeo, no sale de las actas. Por eso "Cargar de
-       actas" no lo toca nunca, igual que momentos, ABP o el plan. */
-    /* Portero rival. La sección refleja EXACTAMENTE el informe que pasa
-       el entrenador de porteros: se importa de su PDF y se puede matizar
-       aquí, pero no hay campos paralelos que rellenar a mano — así no
-       conviven dos versiones del mismo dato, que es de donde salen las
-       contradicciones. */
     portero: {
       nombre:'', dorsal:'', altura:'', pieDominante:'', edad:'', club:'', mano:'',
-      areas:[],            // [{area, fortaleza, debilidad}] — tabla del EDP
-      comoAtacarle:[],     // columna "¿Cómo podemos atacarle?"
-      puntosFuertes:[],    // "Fortalezas clave"
-      puntosDebiles:[],    // "Debilidades / oportunidades"
-      notas:[],            // "Observaciones del rival"
-      fuenteEDP:null,      // {analista, importadoEl}
+      areas:[], comoAtacarle:[], puntosFuertes:[], puntosDebiles:[], notas:[], fuenteEDP:null,
     },
-    planPartido: [],   // síntesis libre del plan de partido: una observación por línea, como el resto del informe
+    planPartido: [],
     createdAt: new Date().toISOString(),
   };
 }
-/* Rellena campos ausentes en informes antiguos sin tocar lo que ya existe */
 function hydrate(inf){
   const base = plantillaInforme({ n:inf.jornada, clubId:inf.clubId, condicion:inf.condicion });
   const out = { ...base, ...inf };
   out.bloques = { ...base.bloques, ...(inf.bloques||{}) };
-  /* Fusión profunda del portero: con el spread de arriba, un informe
-     guardado ANTES de existir esta sección traería el objeto entero de
-     la plantilla (bien), pero uno guardado a medias podría traerlo sin
-     algún campo nuevo y dar undefined al pintar. Así siempre están todos. */
   out.portero = { ...base.portero, ...(inf.portero||{}) };
   ['puntosFuertes','puntosDebiles','notas','areas','comoAtacarle'].forEach(k=>{
     if(!Array.isArray(out.portero[k])) out.portero[k] = [];
@@ -1649,7 +1587,7 @@ function hydrate(inf){
     total:{ gf:inf.datos?.golesTramos?.total?.gf||zeros6(), gc:inf.datos?.golesTramos?.total?.gc||zeros6() },
     cond: { gf:inf.datos?.golesTramos?.cond?.gf ||zeros6(), gc:inf.datos?.golesTramos?.cond?.gc ||zeros6() },
   };
-  if(Array.isArray(inf.datos)) out.datos.patrones = inf.datos;   // migración v1: datos era array de líneas
+  if(Array.isArray(inf.datos)) out.datos.patrones = inf.datos;
   out.arbitro = { ...emptyArbitro(), ...(inf.arbitro||{}) };
   out.arbitro.stats = { ...emptyArbitro().stats, ...(inf.arbitro?.stats||{}) };
   out.convocatorias = inf.convocatorias || [];
@@ -1662,7 +1600,7 @@ window.generarInforme = async function(n){
   const iid = informeId(n);
   try{
     const snap = await getDoc(doc(db,'analisisInformes',iid));
-    if(snap.exists()){ openEditor(iid); return; }   // idempotente: nunca machaca
+    if(snap.exists()){ openEditor(iid); return; }
     toast('Generando informe · cargando datos de actas…');
     const data = plantillaInforme(j);
     const st = await fetchRivalStats(j.clubId);
@@ -1679,12 +1617,14 @@ window.generarInforme = async function(n){
 };
 window.askDeleteInforme = function(){
   if(!requireAnalista() || !currentInforme) return;
+  if(!requierePropietarioSiCerrado(currentInforme)) return;
   document.getElementById('delTxt').textContent =
     `Se eliminará por completo el informe J${currentInforme.jornada} · ${currentInforme.rivalName}. Los vídeos en Dropbox no se tocan. Podrás volver a generarlo vacío. Esta acción no se puede deshacer.`;
   document.getElementById('delModal').classList.add('open');
 };
 window.confirmDeleteInforme = async function(){
   if(!requireAnalista() || !currentInformeId) return;
+  if(!requierePropietarioSiCerrado(currentInforme)) return;
   try{
     await deleteDoc(doc(db,'analisisInformes',currentInformeId));
     closeModal('delModal'); toast('Informe eliminado'); showCalendario();
@@ -1700,16 +1640,9 @@ function parseTable(txt, cols){
   return linesToArr(txt).map(l=>{ const p=splitPipe(l); const o={}; cols.forEach((c,i)=>o[c]=p[i]??''); return o; });
 }
 const tableToLines = (arr, cols) => (arr||[]).map(o=>cols.map(c=>o[c]??'').join(' | ')).join('\n');
-/* Columnas EDITABLES de las tablas de tarjetas. Tienen que ser las mismas en
-   el editor (serializar), al guardar (parsear) y al detectar si Carlos ha
-   editado a mano: antes el editor seguía en 2 columnas (amarillas | rojas)
-   y cada "Guardar" tiraba las dobles amarillas y marcaba el bloque como
-   editado, con lo que el siguiente "Recargar" ya no lo tocaba. */
 const COLS_TARJ_JUG   = ['nombre','amarillas','dobles','rojas'];
 const COLS_TARJ_STAFF = ['nombre','cargo','amarillas','dobles','rojas'];
 const COLS_EDITABLES  = { tarjetasJugadores: COLS_TARJ_JUG, tarjetasStaff: COLS_TARJ_STAFF };
-/* Los avisos que calcula el motor (sancionado, sinCruzar) no se editan en la
-   caja de texto: se conservan por nombre al guardar, en vez de perderse. */
 function conservarAvisos(nuevas, previas){
   const porNombre = {};
   (previas||[]).forEach(p=>{ porNombre[normNombre(p.nombre)] = p; });
@@ -1728,16 +1661,6 @@ function parseTramos(txt){
   return {gf,gc};
 }
 const tramosToLines = t => (t?.gf||zeros6()).map((v,i)=>`${v} | ${(t?.gc||zeros6())[i]}`).join('\n');
-/* Convocatorias: bloques separados por línea en blanco.
-   Cabecera: J28 | C | V | 3-1 | Montilla | 4-2-3-1   (sistema opcional)
-   Jugadores: "13 Ortiz Muñoz"  ·  ">76" sale al 76  ·  "<62" entra al 62
-   Posición opcional al final, tras "|": "13 Ortiz Muñoz | POR" — ver
-   POSICIONES más abajo para los códigos. Si ningún titular lleva posición,
-   se colocan por orden (portero primero, luego líneas de atrás hacia
-   delante) como hasta ahora. En cuanto uno la lleva, el campograma pasa a
-   colocar a TODOS por su etiqueta — así se pueden dibujar formas no
-   uniformes (rombos, etc.) que el reparto automático por líneas no soporta.
-   "--" separa titulares de suplentes. */
 function parseConvocatorias(txt){
   return txt.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean).map(b=>{
     const lines = b.split('\n').map(s=>s.trim()).filter(Boolean);
@@ -1766,10 +1689,6 @@ function convocatoriasToText(arr){
 
 /* ══════════ CAMPOGRAMA SVG ══════════ */
 const PITCH_BG = `<rect width="300" height="420" rx="6" fill="#1a6b34"/><rect x="10" y="10" width="280" height="400" rx="2" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><line x1="10" y1="210" x2="290" y2="210" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><circle cx="150" cy="210" r="40" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><circle cx="150" cy="210" r="2.5" fill="rgba(255,255,255,.75)"/><rect x="70" y="10" width="160" height="60" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><rect x="110" y="10" width="80" height="22" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1"/><path d="M 103 70 A 40 40 0 0 0 197 70" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><rect x="70" y="350" width="160" height="60" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><rect x="110" y="388" width="80" height="22" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1"/><path d="M 103 350 A 40 40 0 0 1 197 350" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/>`;
-/* Coordenadas fijas por posición sobre el viewBox 300×420 (ataque hacia
-   arriba, y menor = más adelantado). Cada código es una demarcación real,
-   no una casilla de una rejilla — por eso soporta formas no uniformes
-   (rombos, etc.) que el reparto automático por líneas no puede dibujar. */
 const POSICIONES = {
   POR:{x:150,y:390,label:'Portero'},
   LI :{x:45, y:330,label:'Lateral izquierdo'},        CI :{x:115,y:330,label:'Central izquierdo'},
@@ -1795,25 +1714,21 @@ function textColorFor(hex){
 function pitchSvg(conv, rivalColor){
   const tit = conv.titulares || [];
   if(tit.length !== 11 || !conv.sistema) return '';
-  const fieldColor = rivalColor || '#d01020'; // sin color verificado del club → rojo por defecto
+  const fieldColor = rivalColor || '#d01020';
   const fieldText = textColorFor(fieldColor);
   const dot = (x,y,d,gk) => `<circle cx="${x}" cy="${y}" r="16" fill="${gk?'#0fd68a':fieldColor}" stroke="rgba(255,255,255,.6)" stroke-width="1.5"/><text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Bricolage Grotesque,sans-serif" font-size="14" font-weight="800" fill="${gk?'#fff':fieldText}">${esc(d)}</text>`;
   let dots = '';
   const tieneEtiquetas = tit.some(p => p.pos && POSICIONES[p.pos]);
   if(tieneEtiquetas){
-    /* Modo posiciones explícitas: cada jugador va a su demarcación real,
-       sin depender del orden ni de que el sistema reparta en líneas iguales. */
     const gk = tit.find(p=>p.pos==='POR') || tit[0];
     dots += dot(POSICIONES.POR.x, POSICIONES.POR.y, gk.dorsal, true);
     tit.forEach(p=>{
       if(p===gk) return;
       const slot = POSICIONES[p.pos];
       dots += slot ? dot(slot.x, slot.y, p.dorsal, false)
-                   : dot(150, 405, p.dorsal, false); // etiqueta no reconocida: aviso visual pegado a portería, para que se note y se corrija
+                   : dot(150, 405, p.dorsal, false);
     });
   } else {
-    /* Modo automático (compatibilidad con informes sin etiquetar): igual
-       que antes — por orden y por reparto uniforme según el sistema. */
     const lines = conv.sistema.replace(/^1-/,'').split('-').map(Number).filter(n=>n>0);
     if(lines.reduce((a,b)=>a+b,0) !== 10) return '';
     dots += dot(150, 390, tit[0].dorsal, true);
@@ -1842,11 +1757,13 @@ window.openEditor = async function(iid){
   try{
     const snap = await getDoc(doc(db,'analisisInformes',iid));
     if(!snap.exists()){ toast('El informe no existe'); return; }
-    currentInforme = hydrate(snap.data()); currentInformeId = iid;
+    const inf = hydrate(snap.data());
+    if(!requierePropietarioSiCerrado(inf)) return;
+    currentInforme = inf; currentInformeId = iid;
     document.getElementById('view-calendario').style.display='none';
     document.getElementById('view-editor').style.display='block';
     document.getElementById('edTitle').textContent = `J${currentInforme.jornada} · ${currentInforme.rivalName}`;
-    document.getElementById('edSub').textContent = `${fmtDate(currentInforme.fecha)} · ${currentInforme.condicion.toUpperCase()} · ${currentInforme.estado==='publicado'?'Publicado':'Borrador'}`;
+    document.getElementById('edSub').textContent = `${fmtDate(currentInforme.fecha)} · ${currentInforme.condicion.toUpperCase()} · ${currentInforme.estado==='publicado'?'Publicado':'Borrador'}${informeCerrado(currentInforme)?' · 🔒 Cerrado (solo propietario)':''}`;
     renderEditor();
     window.scrollTo(0,0);
   }catch(e){ console.error('[Editor]', e); toast('Error abriendo el editor'); }
@@ -1855,11 +1772,7 @@ function getBloqueRef(key){
   if(!currentInforme.bloques[key]) currentInforme.bloques[key] = emptyBloque();
   return currentInforme.bloques[key];
 }
-/* Edición de un clip ya añadido — solo existe dentro del editor (edBody),
-   que ya está detrás de la contraseña de Modo analista: el informe
-   publicado usa clipsHtml(), una función de solo lectura completamente
-   distinta, así que esta edición nunca llega a quien no sea analista. */
-let clipEditando = null;   // {bkey, idx} o null
+let clipEditando = null;
 function clipListHtml(bkey){
   const clips = getBloqueRef(bkey).clips || [];
   return clips.map((c,idx)=>{
@@ -1914,9 +1827,6 @@ window.guardarClip = function(bkey, idx){
   document.getElementById(`clips-${bkey}`).innerHTML = clipListHtml(bkey);
   toast('Enlace del clip actualizado');
 };
-/* ══ Vídeos vistos (Visionado) — lista simple de enlaces, sin miniatura ni
-   modal: son URLs directas (Veo, YouTube, Hudl, Dropbox…) que se abren en
-   pestaña nueva, no ficheros mp4 en crudo como los clips de los bloques. ══ */
 function videoLinksListHtml(){
   const links = currentInforme.videosVistos || [];
   return links.map((v,idx)=>`
@@ -1970,7 +1880,7 @@ function bloqueEditorHtml(b, hint){
         <div class="cl-bulk-progress" id="cl-bulk-prog-${b.key}" style="display:none"></div>
       </div>
       <div class="cl-upload-row">
-        <input id="cl-thu-${b.key}" placeholder="Enlace Dropbox de la miniatura (.png) — opcional"/>
+        <input id="cl-thu-${b.key}" placeholder="Enlace Dropbox de la miniatura (.png) — opcional, se genera sola al subir el vídeo"/>
         <label class="cl-upload-btn" title="Subir miniatura directamente a Dropbox">
           📤<input type="file" accept="image/*" style="display:none" onchange="dbxSubirClip('${b.key}','thumb',this.files[0])"/>
         </label>
@@ -1982,11 +1892,14 @@ function bloqueEditorHtml(b, hint){
 }
 
 /* Sube un archivo (vídeo o miniatura) directamente a la carpeta de
-   Dropbox del rival, y rellena el campo de enlace correspondiente con el
-   resultado — el resto del flujo (addClip) sigue exactamente igual que
-   pegando el enlace a mano. */
+   Dropbox del rival. Si es un vídeo y no se ha rellenado a mano el
+   campo de miniatura, genera una automáticamente a partir del propio
+   archivo local (ver extraerFotogramaNoNegro más arriba) y la sube
+   también — así el clip nunca se queda con la pantalla en negro salvo
+   que Carlos borre a propósito el campo después de que se rellene solo. */
 window.dbxSubirClip = async function(bkey, tipo, file){
   if(!file) return;
+  if(!requierePropietarioSiCerrado(currentInforme)) return;
   if(!window.dbxConectado()){
     toast('Conecta Dropbox primero (arriba a la derecha)');
     return;
@@ -2008,27 +1921,43 @@ window.dbxSubirClip = async function(bkey, tipo, file){
     }, bkey, rutaManual);
     const carpeta = DBX_CARPETA_POR_BLOQUE[bkey] || '';
     document.getElementById(`cl-${tipo==='video'?'vid':'thu'}-${bkey}`).value = url;
-    prog.innerHTML = `<span class="cl-prog-ok">✓ ${tipo==='video'?'Vídeo':'Miniatura'} subido a ${carpeta}</span>`;
-    setTimeout(()=>{ prog.style.display='none'; }, 2500);
+
+    let miniOk = null;
+    if(tipo==='video'){
+      const thuInput = document.getElementById(`cl-thu-${bkey}`);
+      if(thuInput && !thuInput.value.trim()){
+        prog.innerHTML = `<span>✓ Vídeo subido a ${carpeta} · generando miniatura…</span>`;
+        const thumbUrl = await generarYSubirMiniatura(file, folderUrl, bkey, rutaManual, etiqueta);
+        if(thumbUrl){ thuInput.value = thumbUrl; miniOk = true; } else miniOk = false;
+      }
+    }
+    if(tipo==='video'){
+      prog.innerHTML = miniOk===true
+        ? `<span class="cl-prog-ok">✓ Vídeo y miniatura subidos a ${carpeta}</span>`
+        : miniOk===false
+          ? `<span class="cl-prog-ok">✓ Vídeo subido a ${carpeta}</span> · <span class="cl-prog-err">no se pudo generar la miniatura, súbela a mano</span>`
+          : `<span class="cl-prog-ok">✓ Vídeo subido a ${carpeta}</span>`;
+    } else {
+      prog.innerHTML = `<span class="cl-prog-ok">✓ Miniatura subida a ${carpeta}</span>`;
+    }
+    setTimeout(()=>{ prog.style.display='none'; }, 3200);
   }catch(e){
     console.error('[dbxSubirClip]', e);
     prog.innerHTML = `<span class="cl-prog-err">✕ ${e.message}</span>`;
   }
 };
-/* Sube VARIOS vídeos de golpe a la carpeta del bloque (p. ej. cinco
-   ejemplos de "Salida de balón" de distintos partidos), uno detrás de
-   otro — no en paralelo, para no saturar la conexión ni la API de
-   Dropbox con varios vídeos grandes a la vez. Cada uno entra en la
-   lista de clips en cuanto termina su propia subida, con el nombre del
-   archivo como etiqueta de partida: la idea es subirlos todos ya y
-   ponerles el nombre bueno después, uno a uno, con el lápiz ✎ que ya
-   existe en cada clip — no hace falta ninguna pantalla nueva para eso.
-
-   Un fallo en un archivo NO para los demás: sigue con el resto y avisa
-   al final de cuáles no entraron, para poder reintentar solo esos. */
+/* Sube VARIOS vídeos de golpe, uno detrás de otro, y genera la
+   miniatura de cada uno a partir de su propio archivo local antes de
+   pasar al siguiente — el mismo mecanismo que dbxSubirClip, aplicado
+   en bucle. Un fallo en la miniatura de un archivo no impide subir el
+   vídeo ni sigue bloqueando el resto de la cola: ese clip entra con
+   thumb:'' (el placeholder negro de siempre) y se puede rellenar a
+   mano después con el lápiz ✎, igual que si nunca hubiera existido
+   esta función. */
 window.dbxSubirClipsBulk = async function(bkey, fileList){
   const files = Array.from(fileList || []);
   if(!files.length) return;
+  if(!requierePropietarioSiCerrado(currentInforme)) return;
   if(!window.dbxConectado()){
     toast('Conecta Dropbox primero (arriba a la derecha)');
     return;
@@ -2051,13 +1980,12 @@ window.dbxSubirClipsBulk = async function(bkey, fileList){
       <span>${i+1} de ${files.length} · ${esc(file.name)}</span>`;
     const fill = () => prog.querySelector('.cl-prog-fill');
     try{
-      // Etiqueta vacía a propósito: así el archivo se guarda en Dropbox
-      // con su nombre original, en vez de forzar un nombre genérico que
-      // luego habría que descifrar para saber qué clip es cuál.
       const url = await dbxSubirYEnlazar(file, folderUrl, '', (p)=>{
         const f = fill(); if(f) f.style.width = Math.round(p*100)+'%';
       }, bkey, rutaManual);
-      getBloqueRef(bkey).clips.push({ label: nombreSinExt, video: url, thumb: '' });
+      prog.innerHTML = `<span>${i+1} de ${files.length} · ${esc(file.name)} · generando miniatura…</span>`;
+      const thumbUrl = await generarYSubirMiniatura(file, folderUrl, bkey, rutaManual, '');
+      getBloqueRef(bkey).clips.push({ label: nombreSinExt, video: url, thumb: thumbUrl || '' });
       document.getElementById(`clips-${bkey}`).innerHTML = clipListHtml(bkey);
     }catch(e){
       console.error('[dbxSubirClipsBulk]', file.name, e);
@@ -2071,7 +1999,7 @@ window.dbxSubirClipsBulk = async function(bkey, fileList){
       fallidos.map(f=>esc(f.nombre)).join(', ')}</span>`;
     toast(`${ok} clips subidos, ${fallidos.length} fallaron — revisa cuáles arriba`);
   } else {
-    prog.innerHTML = `<span class="cl-prog-ok">✓ ${ok} clip(s) subidos — ponles ya el nombre con el ✎ de cada uno</span>`;
+    prog.innerHTML = `<span class="cl-prog-ok">✓ ${ok} clip(s) subidos con miniatura automática</span>`;
     toast(`${ok} clips subidos. Recuerda guardar el informe.`);
     setTimeout(()=>{ prog.style.display = 'none'; }, 4000);
   }
@@ -2080,22 +2008,18 @@ window.dbxSubirClipsBulk = async function(bkey, fileList){
 function renderEditor(){
   const inf = currentInforme;
   const d = inf.datos;
-  /* Referencia para detectar ediciones manuales al guardar.
-     OJO con el ?? null: si el campo no existe en el informe (porque se
-     añadió al sistema DESPUÉS de crearlo), aquí se guardaba null pero al
-     comparar seguía siendo undefined, y JSON.stringify(undefined) no es
-     "null" — así que el campo se marcaba como "editado a mano" solo, sin
-     que nadie lo tocara, y quedaba bloqueado para siempre frente a
-     "Cargar de actas". Guardando undefined tal cual, la comparación de
-     abajo lo ignora, que es lo correcto: un campo que no existe no se ha
-     editado. */
   inf._snapAuto = {};
   Object.keys(CAMPOS_AUTO).forEach(k=>{
     const v = k==='convocatorias' ? inf.convocatorias : d[k];
     inf._snapAuto[k] = v === undefined ? undefined : JSON.parse(JSON.stringify(v));
   });
   const condLabel = inf.condicion==='casa' ? 'fuera de casa (visitan El Puerto)' : 'en casa (les visitamos)';
-  let html = `<div class="ed-meta">
+  const cerrado = informeCerrado(inf);
+  let html = '';
+  if(cerrado){
+    html += `<div class="banner" style="display:flex">🔒 Este informe quedó cerrado el día del partido (${fmtDate(inf.fecha)}). Ya lo has desbloqueado con la contraseña de propietario para esta sesión, así que puedes seguir editando con normalidad.</div>`;
+  }
+  html += `<div class="ed-meta">
     <div class="ed-field"><label>Estado</label>
       <select id="ed-estado">
         <option value="borrador" ${inf.estado==='borrador'?'selected':''}>Borrador (solo analista)</option>
@@ -2177,12 +2101,6 @@ function renderEditor(){
   </div>`;
   html += taBlock('ta-arbnotas','Árbitro · Notas','Tendencias, gestión, criterio. Una por línea.',arrToLines(inf.arbitro.notas));
 
-  /* ── 07 · PORTERO RIVAL ──────────────────────────────────────────
-     Sección nueva. Va aquí, después del árbitro y antes del plan,
-     porque es lo último que se estudia antes de decidir cómo atacar:
-     el plan de partido se escribe ya sabiendo a qué portero te
-     enfrentas. Todo es cualitativo (se saca de ver vídeo), así que
-     ningún dato de aquí se sobrescribe al recargar de actas. */
   const p = inf.portero;
   html += `<div class="ed-sec">07 · Portero rival</div>
   <div class="ed-block edp-import">
@@ -2213,13 +2131,6 @@ function renderEditor(){
     </div>
   </div>`;
 
-  /* Los bloques "Comportamiento bajo palos" y "Con balón" se han retirado:
-     duplicaban lo que ya trae la tabla por áreas del EDP (aéreo, blocaje,
-     rechaces, 1x1, juego de pies) y obligaban a mantener el mismo dato en
-     dos sitios, que es de donde salen las contradicciones. */
-
-  /* Tabla por áreas del EDP. Solo aparece si se ha importado un informe:
-     quien trabaje a mano no ve un bloque vacío que no entiende. */
   if(p.areas.length){
     html += `<div class="ed-block">
       <div class="ed-block-title">Análisis por áreas · del informe del EDP</div>
@@ -2264,8 +2175,6 @@ function renderEditor(){
   document.getElementById('edBody').innerHTML = html;
   renderShares();
 }
-/* Recarga desde rivalStats. Los bloques que Carlos haya tocado a mano se
-   respetan salvo que los desmarque: nunca se pisa trabajo manual en silencio. */
 const CAMPOS_AUTO = {
   clasificacion:'Clasificación', racha:'Racha', goleadores:'Goleadores',
   tarjetasJugadores:'Tarjetas jugadores', tarjetasStaff:'Tarjetas staff',
@@ -2274,14 +2183,11 @@ const CAMPOS_AUTO = {
 };
 window.recargarActas = async function(){
   if(!requireAnalista() || !currentInforme) return;
+  if(!requierePropietarioSiCerrado(currentInforme)) return;
   const st = await fetchRivalStats(currentInforme.clubId);
   if(!st){ toast('Todavía no hay datos de actas para este rival'); return; }
   const editados = currentInforme.datosMeta?.camposEditados || [];
   const nombres = editados.map(k=>CAMPOS_AUTO[k]||k);
-  /* Si TODOS los bloques están marcados, recargar no cambiaría nada: hay
-     que decirlo antes, no después. Antes el aviso se mezclaba con el
-     resto del texto y el mensaje final decía "datos recargados" igual,
-     así que parecía que el informe se había actualizado cuando no. */
   const todos = Object.keys(CAMPOS_AUTO).length;
   document.getElementById('recTxt').innerHTML = editados.length
     ? `${editados.length === todos
@@ -2312,8 +2218,6 @@ window.confirmRecargar = async function(){
   const forzar = !!document.getElementById('recForzar')?.checked;
   const editados = forzar ? [] : (currentInforme.datosMeta?.camposEditados || []);
 
-  /* Se cuenta lo que de verdad cambia, para poder informar con exactitud
-     en vez de decir siempre "datos recargados". */
   const actualizados = [], conservados = [];
   Object.keys(CAMPOS_AUTO).forEach(k=>{
     if(editados.includes(k)){ conservados.push(CAMPOS_AUTO[k]||k); return; }
@@ -2324,8 +2228,6 @@ window.confirmRecargar = async function(){
 
   currentInforme.datos.fuente = 'actas';
   currentInforme.datos.plantillaMinutos = snap2.datos.plantillaMinutos;
-  /* Al forzar se limpian las marcas: los bloques vuelven a ser
-     automáticos, que es lo que se acaba de pedir explícitamente. */
   currentInforme.datosMeta = { ...snap2.meta, camposEditados: editados };
   closeModal('recModal');
   renderEditor();
@@ -2339,8 +2241,6 @@ window.confirmRecargar = async function(){
   }
 };
 
-/* LUCHO · escribes el nombre del árbitro y sus estadísticas llegan solas
-   desde arbitroStats, cruzando por nombre normalizado igual que el motor. */
 window.cargarArbitro = async function(){
   if(!requireAnalista() || !currentInforme) return;
   const nombre = document.getElementById('ed-arb-nombre').value.trim();
@@ -2365,6 +2265,7 @@ window.cargarArbitro = async function(){
 
 window.saveInforme = async function(){
   if(!requireAnalista() || !currentInforme) return;
+  if(!requierePropietarioSiCerrado(currentInforme)) return;
   const inf = currentInforme;
   const V = id => document.getElementById(id).value;
   inf.estado    = V('ed-estado');
@@ -2412,16 +2313,11 @@ window.saveInforme = async function(){
   [...MOMENTOS, ...ABP].forEach(b => {
     getBloqueRef(b.key).items = linesToArr(V(`ta-${b.key}`));
   });
-  /* Marca como editados a mano los bloques que difieren del último snapshot
-     de actas, para que "Recargar" no los pise. */
   const prevSnap = inf._snapAuto || {};
   const editados = new Set(inf.datosMeta?.camposEditados || []);
   Object.keys(CAMPOS_AUTO).forEach(k=>{
     const actual = k==='convocatorias' ? inf.convocatorias : inf.datos[k];
     if(prevSnap[k]===undefined) return;
-    /* En las tablas de tarjetas solo cuenta lo que se puede editar en la
-       caja de texto: los avisos del motor (sancionado, sinCruzar) no son
-       una edición de Carlos y no deben marcar el bloque como editado. */
     const cols = COLS_EDITABLES[k];
     const distinto = cols
       ? tableToLines(actual, cols) !== tableToLines(prevSnap[k], cols)
@@ -2434,7 +2330,7 @@ window.saveInforme = async function(){
   try{
     await setDoc(doc(db,'analisisInformes',currentInformeId), inf);
     toast('Informe guardado');
-    document.getElementById('edSub').textContent = `${fmtDate(inf.fecha)} · ${inf.condicion.toUpperCase()} · ${inf.estado==='publicado'?'Publicado':'Borrador'}`;
+    document.getElementById('edSub').textContent = `${fmtDate(inf.fecha)} · ${inf.condicion.toUpperCase()} · ${inf.estado==='publicado'?'Publicado':'Borrador'}${informeCerrado(inf)?' · 🔒 Cerrado (solo propietario)':''}`;
   }catch(e){ console.error('[Save]', e); toast('Error guardando'); }
 };
 
@@ -2502,11 +2398,6 @@ function clasifTableHtml(rows, rivalId){
   if(!rows.length) return bulletsHtml([]);
   return `<table class="tbl"><thead><tr><th>Pos</th><th>Equipo</th><th class="num">PJ</th><th class="num">Pts</th></tr></thead><tbody>` +
     rows.map(r=>{
-      /* r.equipo es el ID interno ('xerez-dfc'), no el nombre. Se resalta
-         comparando IDs (exacto y fiable) y se muestra el nombre real.
-         Antes se comparaba el id contra el nombre del rival recortado a 6
-         letras, que fallaba en casos como 'dos-hermanas' vs 'Dos Hermanas
-         Club de Fútbol 1971'. */
       const isRacing = r.equipo === 'racing';
       const isRival = !isRacing && rivalId && r.equipo === rivalId;
       return `<tr class="${isRacing?'hl-racing':isRival?'hl-rival':''}">
@@ -2586,7 +2477,6 @@ window.openInforme = async function(iid){
     </nav>
     <div class="inf-sb-footer"><strong>Racing Club Portuense</strong>Temporada 2026/2027</div>`;
 
-  /* campogramas: las 2 convocatorias más recientes con 11 titulares y sistema */
   const pitches = inf.convocatorias.filter(c=>c.titulares.length===11 && c.sistema).slice(0,2)
     .map(c=>{ const svg = pitchSvg(c, club && club.color); return svg ? `<div class="pitch-card icard"><div class="pitch-label">${esc(c.jornada)} · ${esc(c.cond)} · ${esc(c.marcador)} · ${esc(nombreEquipo(c.rival))} ${c.res==='V'?'✅':c.res==='E'?'➖':c.res==='D'?'❌':''}</div>${svg}</div>` : ''; })
     .filter(Boolean).join('');
@@ -2830,36 +2720,7 @@ window.closeInforme = function(){
 
 /* ══════════════════════════════════════════════════════════════════════
    ENLACES COMPARTIDOS (24h)
-   ══════════════════════════════════════════════════════════════════════
-   Un enlace no reparte el informe, reparte una LLAVE: la vista externa
-   siempre lee el informe en vivo de Firestore, comprobando en el momento
-   si esa llave sigue siendo válida. Por eso se puede revocar cuando se
-   quiera — a diferencia de un archivo exportado, que una vez enviado ya
-   no hay forma de retirarlo.
-
-   Aviso honesto sobre el nivel de protección real: igual que la
-   contraseña de Modo analista, esta comprobación vive en el cliente
-   contra Firestore, no detrás de un servidor con autenticación propia.
-   Frena a cualquiera que no tenga el enlace exacto y hace que puedas
-   cerrarlo cuando quieras — que es justo lo que se pidió — pero no es
-   una barrera criptográfica infranqueable frente a alguien que inspeccione
-   las peticiones de red a bajo nivel. Para compartir análisis con
-   entrenadores, directiva o jugadores es un nivel apropiado; para
-   contenido que exija seguridad de nivel bancario, no lo sería.
-
-   Colección 'analisisShares', id de documento = el propio token:
-     informeId, rivalName, jornada, createdAt (epoch ms), expiresAt
-     (epoch ms), duracion (texto legible), revoked (bool),
-     identidades      { personaId: {deviceId, nombre, dispositivo,
-                        ciudad, pais, primeraApertura, ultimaApertura,
-                        aperturas} }  ← quién ha reclamado cada nombre
-     devicesBloqueados{ deviceId: {ts, personaIntentada, dispositivo,
-                        ciudad, pais} }
-     accesos          [ {ts, resultado, persona, motivo, dispositivo,
-                        ciudad, pais} ]  ← registro de cada intento */
-/* Plazos elegibles al generar el enlace. 24 h se queda corto cuando el
-   enlace es para la plantilla entera y se manda el viernes para el
-   domingo; el orden importa, el primero es el que sale marcado. */
+   ══════════════════════════════════════════════════════════════════════ */
 const H = 60 * 60 * 1000;
 const SHARE_DURACIONES = [
   { label:'24 horas', ms: 24 * H },
@@ -2867,13 +2728,6 @@ const SHARE_DURACIONES = [
   { label:'7 días',   ms: 168 * H },
 ];
 
-/* ── Identidad del navegador, base del candado por persona ──────────
-   No hay login en la vista compartida (es justo el punto: un enlace
-   sin fricción), así que "dispositivo" es una marca aleatoria guardada
-   en el navegador de quien abre el enlace, persistente mientras no
-   borre datos de navegación ni use modo incógnito. No identifica a la
-   persona — identifica "este navegador concreto", que es lo máximo que
-   se puede hacer sin pedir que inicien sesión. */
 function dispositivoIdLocal(){
   let id = localStorage.getItem('rl_device_id');
   if(!id){
@@ -2885,10 +2739,6 @@ function dispositivoIdLocal(){
   return id;
 }
 
-/* Lectura orientativa del tipo de dispositivo/navegador a partir del
-   user agent — no es exacta al 100% (los UA se pueden falsear), pero
-   basta para ver de un vistazo "esto es un móvil distinto" o "esto es
-   un ordenador que no había abierto el enlace antes". */
 function dispositivoLegible(){
   const ua = navigator.userAgent || '';
   let so = 'Dispositivo';
@@ -2907,14 +2757,6 @@ function dispositivoLegible(){
   return `${so} · ${nav}`;
 }
 
-/* Geolocalización por IP, en silencio, sin pedir ningún permiso al
-   visitante (a diferencia de la geolocalización GPS del navegador, que
-   exigiría un permiso explícito y sería una fricción rarísima para
-   alguien que solo quiere ver un informe). Es una aproximación por
-   ciudad/país según su proveedor de internet, no su ubicación exacta —
-   y cualquiera con una VPN la puede falsear. Si el servicio falla por
-   lo que sea (red, límite de uso), no bloquea nada: simplemente se
-   registra el acceso sin ubicación. */
 async function geoAproximada(){
   try{
     const res = await fetch('https://ipapi.co/json/');
@@ -2949,6 +2791,7 @@ function fmtHora(ms){
 
 window.generarEnlaceCompartir = async function(){
   if(!currentInformeId || !currentInforme) return;
+  if(!requierePropietarioSiCerrado(currentInforme)) return;
   if(currentInforme.estado !== 'publicado'){
     toast('Publica el informe antes de compartirlo'); return;
   }
@@ -2968,9 +2811,6 @@ window.generarEnlaceCompartir = async function(){
     });
     await renderShares();
     const url = shareUrlDe(token);
-    /* Se muestra ya seleccionado en un campo, listo para Cmd+C — más
-       fiable entre navegadores que depender de la API del portapapeles,
-       que en algunos contextos (http, permisos) puede fallar en silencio. */
     const campo = document.getElementById('ed-share-nuevo');
     if(campo){ campo.value = url; campo.style.display=''; campo.select(); }
     toast('Enlace generado · caduca en ' + dur.label);
@@ -2978,6 +2818,7 @@ window.generarEnlaceCompartir = async function(){
 };
 
 window.revocarShare = async function(token){
+  if(!requierePropietarioSiCerrado(currentInforme)) return;
   if(!confirm('¿Revocar este enlace? Quien lo abra a partir de ahora verá que ya no está disponible.')) return;
   try{
     await setDoc(doc(db,'analisisShares',token), {revoked:true}, {merge:true});
@@ -2986,12 +2827,8 @@ window.revocarShare = async function(token){
   }catch(e){ console.error('[revocarShare]', e); toast('No se pudo revocar'); }
 };
 
-/* Libera un nombre concreto: el jugador vuelve a poder identificarse
-   desde cero (con el mismo móvil o con otro). Es el escape necesario
-   para el caso real más frecuente: alguien cambia de teléfono, borra
-   los datos del navegador o entró en incógnito, y su nombre se quedó
-   atado a un dispositivo que ya no existe. */
 window.desvincularPersonaShare = async function(token, personaId){
+  if(!requierePropietarioSiCerrado(currentInforme)) return;
   const p = personaById(personaId);
   if(!confirm(`¿Liberar el nombre de ${p ? p.nombre : personaId}? Podrá volver a identificarse desde cualquier dispositivo.`)) return;
   try{
@@ -3001,11 +2838,8 @@ window.desvincularPersonaShare = async function(token, personaId){
   }catch(e){ console.error('[desvincularPersonaShare]', e); toast('No se pudo liberar'); }
 };
 
-/* Levanta los bloqueos de dispositivo de este enlace. Úsalo solo si
-   sabes que el bloqueo fue un error (alguien se equivocó de nombre al
-   pulsar), no como rutina: cada bloqueo levantado es una segunda
-   oportunidad para probar nombres. */
 window.liberarBloqueosShare = async function(token){
+  if(!requierePropietarioSiCerrado(currentInforme)) return;
   if(!confirm('¿Levantar los bloqueos de este enlace? Los dispositivos bloqueados podrán volver a intentar identificarse.')) return;
   try{
     await setDoc(doc(db,'analisisShares',token),
@@ -3015,8 +2849,6 @@ window.liberarBloqueosShare = async function(token){
   }catch(e){ console.error('[liberarBloqueosShare]', e); toast('No se pudieron levantar'); }
 };
 
-/* Quién ha entrado: una fila por persona identificada, con el
-   dispositivo y la ubicación desde la que reclamó su nombre. */
 function identidadesHtml(token, identidades){
   const ids = Object.keys(identidades || {});
   const cabecera = `<div class="share-ident-head">
@@ -3043,9 +2875,6 @@ function identidadesHtml(token, identidades){
   return cabecera + `<div class="share-ident-list">${filas}</div>`;
 }
 
-/* Registro crudo de intentos, permitidos y bloqueados. Lo que de verdad
-   interesa mirar son los bloqueados: dicen qué nombre se intentó usar,
-   desde dónde y cuándo. */
 function accesosHtml(accesos){
   if(!accesos || !accesos.length) return '<div class="share-acc-none">Sin aperturas todavía.</div>';
   const bloqueados = accesos.filter(a=>a.resultado==='bloqueado');
@@ -3075,8 +2904,6 @@ async function renderShares(){
   if(!cont || !currentInformeId) return;
   cont.innerHTML = '<div style="font-size:12px;color:var(--i-muted)">Cargando enlaces…</div>';
   try{
-    /* La lista del club hace falta para poner nombre a cada identidad y
-       para el contador "X de N"; si falla, el panel sigue pintándose. */
     try{ await cargarPersonas(); }catch(e){ console.error('[renderShares] personas', e); }
     const snap = await getDocs(query(collection(db,'analisisShares'), where('informeId','==',currentInformeId)));
     const shares = snap.docs.map(d=>({token:d.id, ...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);
@@ -3100,10 +2927,6 @@ async function renderShares(){
   }catch(e){ console.error('[renderShares]', e); cont.innerHTML = '<div style="font-size:12px;color:var(--i-red)">Error cargando los enlaces.</div>'; }
 }
 
-/* ── Entrada por enlace compartido: sustituye por completo la carga
-   normal de la app (calendario, editor…) cuando la URL trae ?compartido=.
-   Solo puede leer y mostrar el ÚNICO informe al que apunta el token —
-   nunca da acceso a navegar a otros rivales ni al editor. ── */
 function pantallaEnlaceNoDisponible(motivo){
   document.body.innerHTML = `<div class="share-gone">
     <div class="share-gone-card">
@@ -3112,27 +2935,6 @@ function pantallaEnlaceNoDisponible(motivo){
     </div>
   </div>`;
 }
-
-/* ══════════ IDENTIFICACIÓN NOMINAL DEL ENLACE COMPARTIDO ══════════
-   El enlace es uno solo para toda la plantilla (25+ personas), así que
-   el candado antiguo de "solo el primer dispositivo" ya no vale: lo
-   reclamaría el primero que lo abriera y dejaría fuera a los otros 24.
-   El candado ahora es por PERSONA:
-
-     1. La primera vez que alguien abre el enlace en un dispositivo,
-        tiene que decir quién es eligiendo de una lista cerrada.
-     2. Ese nombre queda vinculado a ESE dispositivo mientras el enlace
-        viva. Vuelve a abrirlo cuantas veces quiera, sin fricción.
-     3. Si alguien intenta identificarse con un nombre ya reclamado
-        desde otro dispositivo, no entra: se bloquea, se registra con
-        su ubicación aproximada y ese dispositivo queda vetado para
-        este enlace (para que no vaya probando nombres uno a uno).
-
-   Lo que esto sí resuelve: el reenvío casual. Quien reciba el enlace de
-   segunda mano no tiene un nombre libre que usar sin que salte el aviso.
-   Lo que no resuelve, y conviene tener claro: nadie verifica que quien
-   pulsa "Lupu" sea Lupu, y una captura de pantalla sigue siendo
-   incontrolable. Es una barrera de trazabilidad, no de criptografía. */
 
 const identLocalKey  = token => 'rl_share_ident_' + token;
 const blockLocalKey  = token => 'rl_share_block_' + token;
@@ -3148,9 +2950,6 @@ function olvidarIdentidadLocal(token){
   try{ localStorage.removeItem(identLocalKey(token)); }catch(e){}
 }
 
-/* La geolocalización se pide una sola vez por carga: reclamar identidad
-   y registrar el acceso ocurren seguidos y no tiene sentido llamar dos
-   veces al servicio (que además tiene límite de uso por IP). */
 let _geoCache;
 async function geoCacheada(){
   if(_geoCache !== undefined) return _geoCache;
@@ -3158,22 +2957,13 @@ async function geoCacheada(){
   return _geoCache;
 }
 
-/* Registra CADA intento de apertura, permitido o bloqueado, con el
-   nombre que se usó. No bloquea nada si falla: el registro es
-   complementario y nunca debe impedir que alguien legítimo vea el
-   informe por un fallo de red al escribir el log.
-
-   Se añade con arrayUnion, que es una operación atómica del servidor.
-   La versión anterior leía el array entero y lo reescribía: con un
-   enlace para todo el grupo, quince personas abriéndolo en el mismo
-   minuto se pisaban unas a otras y el registro perdía entradas. */
 async function registrarAcceso(token, resultado, opts = {}){
   const geo = await geoCacheada();
   const entrada = {
     ts: Date.now(),
-    resultado,                          // 'permitido' | 'bloqueado'
-    persona: opts.persona || '',        // nombre elegido en la lista
-    motivo: opts.motivo || '',          // por qué se bloqueó, si se bloqueó
+    resultado,
+    persona: opts.persona || '',
+    motivo: opts.motivo || '',
     dispositivo: dispositivoLegible(),
     ciudad: geo?.ciudad || '',
     pais: geo?.pais || '',
@@ -3183,12 +2973,6 @@ async function registrarAcceso(token, resultado, opts = {}){
   }catch(e){ console.error('[registrarAcceso]', e); }
 }
 
-/* Intenta vincular una persona a este dispositivo.
-   → {ok:true}                        nombre libre, o ya era suyo
-   → {ok:false, motivo:'ocupado'}     ese nombre es de otro dispositivo
-   → {ok:false, motivo:'permisos'}    las reglas de Firestore rechazan la
-                                      escritura: hay que abrir la colección
-   → {ok:false, motivo:'error'}       fallo de red u otro */
 async function reclamarIdentidad(token, persona, deviceId){
   const ref = doc(db,'analisisShares',token);
   let s = null;
@@ -3212,9 +2996,6 @@ async function reclamarIdentidad(token, persona, deviceId){
         ciudad: geo?.ciudad || '', pais: geo?.pais || '',
         primeraApertura: ahora, ultimaApertura: ahora, aperturas: 1 };
   try{
-    /* merge:true fusiona mapas anidados campo a campo, así que escribir
-       solo esta persona no pisa las identidades de los demás aunque dos
-       jugadores entren a la vez. */
     await setDoc(ref, {identidades:{[persona.id]: registro}}, {merge:true});
   }catch(e){
     console.error('[reclamarIdentidad] escritura', e);
@@ -3223,14 +3004,7 @@ async function reclamarIdentidad(token, persona, deviceId){
   return {ok:true};
 }
 
-/* Veta este dispositivo para este enlace tras un intento con nombre
-   ajeno. Se guarda en los dos sitios a propósito: en el navegador para
-   que el corte sea inmediato, y en Firestore para que siga en pie
-   aunque cierre y vuelva a abrir. */
 async function bloquearDispositivo(token, deviceId, persona){
-  /* Se guarda la HORA del bloqueo, no un simple "1": así, si más tarde
-     el analista levanta los bloqueos, este navegador sabe que su veto
-     es anterior al levantamiento y se libera solo. */
   try{ localStorage.setItem(blockLocalKey(token), String(Date.now())); }catch(e){}
   const geo = await geoCacheada();
   try{
@@ -3246,16 +3020,10 @@ async function bloquearDispositivo(token, deviceId, persona){
 function personasPorGrupo(){
   const g = {};
   PERSONAS.forEach(p => { (g[p.grupo] = g[p.grupo] || []).push(p); });
-  /* Los grupos conocidos van en su orden; si alguna ficha trae una
-     posición que no esperábamos, se muestra igualmente al final en vez
-     de desaparecer de la lista y dejar a esa persona sin poder entrar. */
   const extra = Object.keys(g).filter(k => !GRUPOS_ORDEN.includes(k)).sort();
   return [...GRUPOS_ORDEN, ...extra].filter(k => g[k]).map(k => ({grupo:k, personas:g[k]}));
 }
 
-/* La lista NO marca qué nombres están ya cogidos, y es deliberado: si
-   se viera cuáles quedan libres, cualquiera que recibiese el enlace de
-   rebote sabría exactamente cuál elegir para pasar desapercibido. */
 function identOpcionesHtml(filtro){
   const f = (filtro || '').trim().toLowerCase();
   let html = '';
@@ -3274,8 +3042,6 @@ function identOpcionesHtml(filtro){
   return html || '<div class="ident-empty">Ningún nombre coincide con la búsqueda.</div>';
 }
 
-/* Devuelve la persona identificada, o null si el intento acabó
-   bloqueado (en ese caso ya ha pintado la pantalla de corte). */
 function pantallaIdentificacion(token, share, deviceId){
   return new Promise(resolve => {
     const ov = document.createElement('div');
@@ -3304,10 +3070,6 @@ function pantallaIdentificacion(token, share, deviceId){
     const err    = ov.querySelector('#identErr');
     let sel = null;
 
-    /* Sin buscador a propósito: la ÚNICA forma de identificarse es pulsar
-       un nombre de la lista, que se genera desde las fichas reales del
-       club. No existe ningún campo donde escribir texto, así que nadie
-       puede introducir un nombre a mano ni por error ni a propósito. */
     lista.addEventListener('click', e => {
       const btn = e.target.closest('.ident-opt');
       if(!btn) return;
@@ -3367,8 +3129,6 @@ async function iniciarVistaCompartida(token){
 
   const miDeviceId = dispositivoIdLocal();
 
-  /* 0 · Lista del club. Sin ella no hay identificación posible, así que
-     si falla se corta en vez de dejar pasar a nadie sin nombre. */
   try{
     await cargarPersonas();
   }catch(e){
@@ -3381,9 +3141,6 @@ async function iniciarVistaCompartida(token){
     return;
   }
 
-  /* 1 · Dispositivo ya vetado en un intento anterior. El veto vive en
-     Firestore y también en el navegador; si el analista lo levantó
-     después de que se pusiera, la marca local se descarta sola. */
   let vetoLocalTs = 0;
   try{ vetoLocalTs = parseInt(localStorage.getItem(blockLocalKey(token)) || '0', 10) || 0; }catch(e){}
   if(vetoLocalTs && vetoLocalTs < (s.bloqueosLevantadosAt || 0)){
@@ -3396,10 +3153,6 @@ async function iniciarVistaCompartida(token){
     return;
   }
 
-  /* 2 · ¿Ya se identificó antes desde este navegador? Se comprueba
-     igualmente contra Firestore: si su nombre fue liberado y lo ha
-     reclamado otro dispositivo entretanto, vuelve a la pantalla de
-     identificación en vez de colarse por la puerta de atrás. */
   let persona = null;
   const guardada = identidadLocal(token);
   if(guardada) persona = personaById(guardada.id);
@@ -3417,13 +3170,9 @@ async function iniciarVistaCompartida(token){
         olvidarIdentidadLocal(token);
         persona = null;
       }
-      /* Si fue un error de red, se le deja pasar: ya se identificó en
-         su día desde este mismo dispositivo y no tiene sentido cerrarle
-         el informe por un fallo puntual al escribir el contador. */
     }
   }
 
-  /* 3 · Primera vez en este dispositivo: que diga quién es. */
   if(!persona){
     persona = await pantallaIdentificacion(token, s, miDeviceId);
     if(!persona) return;
@@ -3435,50 +3184,22 @@ async function iniciarVistaCompartida(token){
   if(closeBtn) closeBtn.style.display = 'none';
   const aviso = document.createElement('div');
   aviso.className = 'share-banner';
-  /* Mostrarle su propio nombre no es decorativo: le recuerda que la
-     apertura queda registrada a su nombre, que es la mitad del efecto
-     disuasorio de todo esto. */
   aviso.innerHTML = `Abierto por <b>${esc(persona.nombre)}</b> · enlace temporal, caduca el ${fmtHora(s.expiresAt)}`;
   document.getElementById('infSidebar').prepend(aviso);
 }
 
 
 /* ══════════════════════════════════════════════════════════════════════
-   IMPORTAR EL INFORME DE PORTERO DEL EDP
-   ══════════════════════════════════════════════════════════════════════ */
-/* ══════════════════════════════════════════════════════════════════════
    LECTOR DEL INFORME DE PORTERO DEL EDP (FB-Goalkeeper)
-   ══════════════════════════════════════════════════════════════════════
-   Lee el PDF que pasa cada semana el entrenador de porteros y rellena la
-   sección 07 del informe.
-
-   Cómo separa las columnas: el PDF es una tabla de tres columnas (Área /
-   Fortalezas / Debilidades) y al extraer texto plano se mezclan cuando
-   una celda ocupa dos líneas. Por eso NO se usa el texto seguido: se
-   agrupan los fragmentos por su coordenada vertical (cada fila) y se
-   reparten por la horizontal (cada columna). Comprobado contra el
-   informe real: las tres columnas caen siempre en x≈36, x≈160 y x≈365.
-
-   Lo que extrae se muestra SIEMPRE para revisar antes de guardar. Un
-   lector automático que se equivoca en silencio es peor que no tenerlo:
-   así, si algún día el EDP cambia la plantilla del documento, se ve al
-   momento en vez de colarse un dato falso en el informe.
    ══════════════════════════════════════════════════════════════════════ */
-
 const EDP_AREAS = ['Juego de pies','Inicio de juego','Blocaje','Rechaces',
                           'Juego aéreo','1x1','Trayectoria y experiencia'];
-
-/* Umbrales entre columnas, a media distancia de los centros reales: así
-   aguantan pequeños desplazamientos de maquetación entre versiones. */
-const COL_1 = 98;    // entre Área (36) y Fortalezas (160)
-const COL_2 = 262;   // entre Fortalezas (160) y Debilidades (365)
-/* En CONCLUSIONES las tres columnas están más a la derecha */
+const COL_1 = 98;
+const COL_2 = 262;
 const CONC_1 = 190;
 const CONC_2 = 390;
 
 function agruparFilas(items){
-  /* Agrupa por coordenada vertical con tolerancia de 4pt: los
-     fragmentos de una misma fila comparten Y salvo redondeos. */
   const filas = new Map();
   for(const it of items){
     const t = (it.str||'').trim();
@@ -3488,7 +3209,6 @@ function agruparFilas(items){
     if(!filas.has(clave)) filas.set(clave, []);
     filas.get(clave).push({x, y, t});
   }
-  /* De arriba abajo (en PDF la Y crece hacia arriba) */
   return [...filas.entries()]
     .sort((a,b) => b[0] - a[0])
     .map(([,v]) => v.sort((a,b) => a.x - b.x));
@@ -3507,24 +3227,15 @@ function parsearInformeEDP(items){
     observaciones:'', analista:'', avisos:[],
   };
 
-  /* ── Cabecera ─────────────────────────────────────────────────────
-     Se localiza por POSICIÓN, no por orden de líneas: el dorsal va en su
-     recuadro a la izquierda (x≈53) y el nombre con el club a la derecha
-     de la foto (x≈221), más abajo que el título. Buscarlos como "líneas
-     seguidas" fallaba porque entre medias hay foto y escudo, que no
-     producen texto pero sí rompen la secuencia. */
   const arriba = items
     .map(it => ({x: it.transform[4], y: it.transform[5],
                  alto: it.height || 0, t: (it.str||'').trim()}))
     .filter(w => w.t && w.y > 660);
 
-  /* Nombre y club: los dos textos más altos del bloque derecho. El
-     nombre siempre va en cuerpo mayor que el club. */
   const derecha = arriba.filter(w => w.x > 200 && w.y < 760).sort((a,b) => b.y - a.y);
   if(derecha.length >= 1) out.nombre = derecha[0].t;
   if(derecha.length >= 2 && derecha[1].alto < derecha[0].alto) out.club = derecha[1].t;
 
-  /* Dorsal: el número suelto del recuadro izquierdo. */
   const dor = arriba.find(w => w.x < 200 && /^\d{1,2}$/.test(w.t));
   if(dor) out.dorsal = dor.t;
   const todo = plano.join('\n');
@@ -3535,17 +3246,11 @@ function parsearInformeEDP(items){
   if((m = todo.match(/Mano\s+(\w+)/i)))           out.mano   = m[1].toLowerCase();
   if((m = todo.match(/Analista:\s*(.+?)\s+FB-Goalkeeper/i))) out.analista = m[1].trim();
 
-  /* ── Tabla RESUMEN ────────────────────────────────────────────────
-     Una celda puede ocupar varias líneas: mientras no aparezca un área
-     nueva en la columna izquierda, lo que llegue se acumula en la fila
-     que esté abierta. */
   let enTabla = false, actual = null;
   const cerrar = () => {
     if(actual && actual.area){
       actual.fortaleza = limpiar(actual.fortaleza);
       actual.debilidad = limpiar(actual.debilidad);
-      /* No se repite un área ya cerrada: el pie de tabla puede
-         reproducir la última fila y duplicarla. */
       if(!out.areas.some(a => a.area === actual.area)) out.areas.push(actual);
     }
     actual = null;
@@ -3561,9 +3266,7 @@ function parsearInformeEDP(items){
     const cen = unir(fila.filter(w => w.x >= COL_1 && w.x < COL_2));
     const der = unir(fila.filter(w => w.x >= COL_2));
 
-    /* ¿Empieza un área nueva? Se compara sin acentos ni mayúsculas para
-       que una tilde de más no rompa el reconocimiento. */
-    const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
     const area = EDP_AREAS.find(a => izq && norm(izq).startsWith(norm(a).slice(0,7)));
     if(area){
       cerrar();
@@ -3576,10 +3279,6 @@ function parsearInformeEDP(items){
   }
   cerrar();
 
-  /* ── CONCLUSIONES ─────────────────────────────────────────────────
-     Tres columnas de viñetas. Una viñeta puede seguir en la línea de
-     abajo ("ATACAR SEGUNDA JUGADA" / "DESPUES DE RECHACE"): se detecta
-     porque la fila siguiente NO trae nada en las otras columnas. */
   let enConc = false;
   const conc = {f:[], d:[], a:[]};
   for(const fila of filas){
@@ -3596,8 +3295,6 @@ function parsearInformeEDP(items){
     const llenas = c.filter(Boolean).length;
     ['f','d','a'].forEach((k,i)=>{
       if(!c[i]) return;
-      /* Si es la única columna con texto y ya hay algo empezado ahí,
-         es la continuación de la viñeta anterior, no una nueva. */
       if(llenas === 1 && conc[k].length) conc[k][conc[k].length-1] += ' ' + c[i];
       else conc[k].push(c[i]);
     });
@@ -3606,7 +3303,6 @@ function parsearInformeEDP(items){
   out.debilidadesClave = conc.d.map(limpiar).filter(Boolean);
   out.comoAtacarle     = conc.a.map(limpiar).filter(Boolean);
 
-  /* ── OBSERVACIONES ────────────────────────────────────────────────*/
   const iObs = plano.findIndex(l => /^OBSERVACIONES DEL RIVAL/i.test(l));
   if(iObs >= 0){
     const fin = plano.findIndex((l,i) => i > iObs && /^Analista:/i.test(l));
@@ -3614,9 +3310,6 @@ function parsearInformeEDP(items){
       .join(' ').replace(/\s+/g,' ').trim();
   }
 
-  /* ── Avisos: lo que no se ha podido leer ──────────────────────────
-     Se informa en vez de callar: si el EDP cambia la plantilla del
-     documento, se ve al momento. */
   if(!out.nombre) out.avisos.push('No se ha encontrado el nombre del portero');
   if(!out.areas.length) out.avisos.push('No se ha encontrado la tabla de análisis por áreas');
   else if(out.areas.length < 5) out.avisos.push(`Solo se han leído ${out.areas.length} áreas de las 7 habituales`);
@@ -3625,9 +3318,6 @@ function parsearInformeEDP(items){
   return out;
 }
 
-
-/* pdf.js se carga bajo demanda: solo hace falta al importar un PDF, y
-   son ~350 KB que no tienen por qué pesar en cada apertura del editor. */
 let _pdfjs = null;
 async function cargarPdfJs(){
   if(_pdfjs) return _pdfjs;
@@ -3638,7 +3328,7 @@ async function cargarPdfJs(){
   return mod;
 }
 
-let _edpLeido = null;   // lo último leído, a la espera de que Carlos confirme
+let _edpLeido = null;
 
 window.importarInformeEDP = async function(input){
   const file = input.files && input.files[0];
@@ -3659,12 +3349,9 @@ window.importarInformeEDP = async function(input){
     est.className = 'edp-estado error';
     est.textContent = 'No se ha podido leer el PDF: ' + e.message;
   }
-  input.value = '';   // permite volver a subir el mismo archivo
+  input.value = '';
 };
 
-/* Nada se aplica sin revisar. Un lector automático que se equivoca en
-   silencio es peor que no tenerlo: si el EDP cambia la plantilla del
-   documento, aquí se ve antes de que entre nada al informe. */
 function mostrarRevisionEDP(d, nombreArchivo){
   const est = document.getElementById('edp-estado');
   est.style.display = 'none';
@@ -3701,14 +3388,12 @@ window.aplicarInformeEDP = function(){
   const d = _edpLeido;
   const p = currentInforme.portero;
 
-  /* Identificación */
   if(d.nombre) p.nombre = d.nombre;
   if(d.dorsal) p.dorsal = d.dorsal;
   if(d.altura) p.altura = d.altura;
   if(d.pie)    p.pieDominante = d.pie.charAt(0).toUpperCase()+d.pie.slice(1);
   p.edad = d.edad; p.club = d.club; p.mano = d.mano;
 
-  /* Estructura completa del EDP */
   p.areas = d.areas;
   p.comoAtacarle = d.comoAtacarle;
   p.fuenteEDP = { analista: d.analista, importadoEl: new Date().toISOString() };
@@ -3772,9 +3457,6 @@ function watchInformes(){
 (async function init(){
   const shareToken = new URLSearchParams(location.search).get('compartido');
   if(shareToken){
-    /* Camino completamente aparte: nunca toca el calendario completo, el
-       editor, ni watchInformes() (que expondría el resto de rivales) —
-       solo lee el ÚNICO informe al que apunta el token, si sigue vigente. */
     await iniciarVistaCompartida(shareToken);
     return;
   }
@@ -3782,7 +3464,7 @@ function watchInformes(){
   refreshMode();
   renderCalendario();
   watchInformes();
-  await dbxProcesarRetorno();   // procesa el ?code= si volvemos de autorizar Dropbox
+  await dbxProcesarRetorno();
   actualizarBotonDropbox();
 })();
 </script>
