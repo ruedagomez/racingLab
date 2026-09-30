@@ -683,16 +683,22 @@ const TEMPORADA = '2026-27';
    crypto.subtle.digest('SHA-256', new TextEncoder().encode('TuNuevaClave')).then(b=>console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''))) */
 const PASS_HASH = '401fde9cce4cbc36ab385715ead5a7cd8be898ab07368c4303d7cc5ff8543b1e';
 const ANALISTA = 'Carlos Rueda';
-/* SHA-256 de la contraseña de PROPIETARIO. Por defecto: RCP2026-DUENO — CAMBIAR
-   (mismo procedimiento que arriba). Un informe cuya fecha de partido ya ha
-   pasado queda "cerrado": entrar en modo analista sigue permitiendo LEER el
-   calendario y el informe publicado con normalidad, pero editarlo, subir o
-   borrar clips, eliminarlo o generar/revocar enlaces exige además esta
-   segunda contraseña. Es la misma idea que PASS_HASH (comprobación en el
-   cliente, no un login por persona) pero con un candado propio, para poder
-   dársela solo a Carlos aunque el resto del cuerpo técnico conozca la de
-   analista. Ver requierePropietarioSiCerrado() más abajo. */
-const PASS_HASH_PROPIETARIO = 'cbb8d539ea709a51ec3aeb86f85cd48f1087a6d45fda7bb8d256c4de7dff4d04';
+/* SHA-256 de la contraseña de PROPIETARIO. Un informe cuya fecha de partido
+   ya ha pasado queda "cerrado": entrar en modo analista sigue permitiendo
+   LEER el calendario y el informe publicado con normalidad, pero editarlo,
+   subir o borrar clips, eliminarlo o generar/revocar enlaces exige además
+   esta segunda contraseña. Es la misma idea que PASS_HASH (comprobación en
+   el cliente, no un login por persona), pensada para un candado propio,
+   solo de Carlos, distinto del de analista.
+   AVISO: a petición de Carlos (30/09/2026) este hash es actualmente el
+   MISMO que PASS_HASH (RCP2026) — mismo valor para no tener que recordar
+   dos contraseñas. Esto significa que cualquiera con la contraseña de
+   analista puede también desbloquear informes cerrados: la protección de
+   "cerrado tras la fecha del partido" ya no distingue a Carlos del resto
+   del cuerpo técnico. Si en algún momento se quiere volver a separar los
+   dos accesos, hay que poner aquí un hash distinto. Ver
+   requierePropietarioSiCerrado() más abajo. */
+const PASS_HASH_PROPIETARIO = '401fde9cce4cbc36ab385715ead5a7cd8be898ab07368c4303d7cc5ff8543b1e';
 
 /* Rivales Grupo X (mismos ids que tercera.html / colección rivals) */
 /* color: color principal de la camiseta de local, para el campograma del rival.
