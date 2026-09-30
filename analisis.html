@@ -1486,6 +1486,10 @@ function emptyArbitro(){
   return { nombre:'', delegacion:'', asistente1:'', asistente2:'',
            stats:{ partidos:'', amarillas:'', dobles:'', rojas:'', goles:'' }, notas:[] };
 }
+function emptyPostPartido(){
+  return { resultado:'', objetivoCumplido:'', objetivoComentario:'',
+           rivalBienAnalizado:'', rivalComentario:'', comportamiento:[] };
+}
 async function fetchRivalStats(clubId){
   try{
     const snap = await getDoc(doc(db,'rivalStats',clubId));
@@ -1580,6 +1584,7 @@ function plantillaInforme(j){
       areas:[], comoAtacarle:[], puntosFuertes:[], puntosDebiles:[], notas:[], fuenteEDP:null,
     },
     planPartido: [],
+    postPartido: emptyPostPartido(),
     createdAt: new Date().toISOString(),
   };
 }
@@ -1601,6 +1606,8 @@ function hydrate(inf){
   out.arbitro.stats = { ...emptyArbitro().stats, ...(inf.arbitro?.stats||{}) };
   out.convocatorias = inf.convocatorias || [];
   out.datosMeta = inf.datosMeta || { fuente:'manual', camposEditados:[] };
+  out.postPartido = { ...emptyPostPartido(), ...(inf.postPartido||{}) };
+  if(!Array.isArray(out.postPartido.comportamiento)) out.postPartido.comportamiento = [];
   return out;
 }
 window.generarInforme = async function(n){
@@ -2097,6 +2104,7 @@ function renderEditor(){
 
   html += `<div class="ed-sec">02 · Formación</div>`;
   html += taBlock('ta-convocatorias','Últimas 5 convocatorias','⚙ Las últimas 5 se rellenan solas desde las actas, con los 18 convocados y los minutos de cambio. <b>El sistema NO viene en el acta</b>: añádelo tú al final de la cabecera para que se dibuje el campograma.<br/>Cabecera: <b>J28 | C | V | 3-1 | Montilla | 4-2-3-1</b> (sistema opcional → dibuja el campograma).<br/>Jugadores: <b>13 Ortiz Muñoz</b> · sale al 76: <b>8 Caballero &gt;76</b> · entra al 62: <b>22 Ariza &lt;62</b> · <b>--</b> separa titulares de suplentes.<br/>Sin posición: el orden coloca el campograma (portero primero, luego líneas de atrás hacia delante, reparto uniforme). <b>Para formaciones no uniformes (rombos, etc.) añade la posición real tras "|"</b> — en cuanto un titular la lleva, TODOS se colocan por su etiqueta y el orden deja de importar: <b>13 Ortiz Muñoz | POR</b> · <b>8 Caballero &gt;76 | PIV</b>.<br/>Códigos: POR · LI CI CD LD (línea de 4) · CDI LIB CDD (línea de 3) · CAI CAD (carrileros) · PIV / PIVI PIVD (pivote único o doble) · MI MC MD (mediocentros) · BI BD (bandas) · MP (mediapunta/enganche) · EI ED (extremos) · DC / DCI DCD (delantero único o dos).<br/>Ejemplo rombo 1-4-4-2: POR, LI CI CD LD, PIV, BI BD, MP, DCI DCD.',convocatoriasToText(inf.convocatorias),true);
+  html += insightsConvocatoriasHtml(inf.convocatorias, true);
 
   html += `<div class="ed-sec">03 · Momentos del juego</div>`;
   MOMENTOS.forEach(b => html += bloqueEditorHtml(b));
@@ -2183,7 +2191,36 @@ function renderEditor(){
   html += taBlock('ta-debilidades','Debilidades / A explotar','',arrToLines(inf.debilidades));
   html += taBlock('ta-planPartido','Plan de partido','Tu síntesis del análisis, ya lista para dar al equipo: una idea por línea — se convierten en viñetas del informe.',arrToLines(inf.planPartido));
 
-  html += `<div class="ed-sec">09 · Compartir</div>
+  html += `<div class="ed-sec">09 · Post-partido</div>`;
+  {
+    const pp = inf.postPartido || emptyPostPartido();
+    html += `<div class="ed-block">
+      <div class="ed-block-title">Balance del partido</div>
+      <div class="ed-hint">Rellénalo después de jugar: un balance breve y honesto de cómo respondió el equipo, y si el trabajo de análisis previo sirvió de algo.</div>
+      <div class="ed-grid">
+        <div class="ed-field"><label>Marcador final</label><input id="ed-pp-resultado" value="${esc(pp.resultado)}" placeholder="2-1"/></div>
+        <div class="ed-field"><label>¿Se cumplió el objetivo del partido?</label>
+          <select id="ed-pp-objetivo">
+            <option value="" ${!pp.objetivoCumplido?'selected':''}>— Sin valorar —</option>
+            <option value="si" ${pp.objetivoCumplido==='si'?'selected':''}>Sí</option>
+            <option value="parcial" ${pp.objetivoCumplido==='parcial'?'selected':''}>Parcialmente</option>
+            <option value="no" ${pp.objetivoCumplido==='no'?'selected':''}>No</option>
+          </select></div>
+        <div class="ed-field"><label>¿Estaba bien analizado el rival?</label>
+          <select id="ed-pp-rival">
+            <option value="" ${!pp.rivalBienAnalizado?'selected':''}>— Sin valorar —</option>
+            <option value="si" ${pp.rivalBienAnalizado==='si'?'selected':''}>Sí</option>
+            <option value="parcial" ${pp.rivalBienAnalizado==='parcial'?'selected':''}>En parte</option>
+            <option value="no" ${pp.rivalBienAnalizado==='no'?'selected':''}>No — hubo sorpresas</option>
+          </select></div>
+      </div>
+    </div>`;
+    html += taBlock('ta-pp-comportamiento','Comportamiento del equipo','Cómo respondió el equipo sobre el terreno de juego: qué se vio bien, qué no. Una idea por línea.', arrToLines(pp.comportamiento));
+    html += taBlock('ta-pp-objetivo-com','Sobre el objetivo del partido','Por qué se cumplió, se cumplió a medias o no se cumplió.', pp.objetivoComentario||'');
+    html += taBlock('ta-pp-rival-com','Sobre el análisis del rival','Qué acertó el análisis previo y qué se escapó — para afinarlo la próxima vez.', pp.rivalComentario||'');
+  }
+
+  html += `<div class="ed-sec">10 · Compartir</div>
   <div class="ed-block">
     <div class="ed-block-title">Enlace temporal para enviar fuera de la plataforma</div>
     <div class="ed-hint">Un solo enlace para todo el grupo: quien lo abra tendrá que identificarse con su nombre de la lista del club, y ese nombre queda atado a su dispositivo. Caduca solo al plazo que elijas — o revócalo tú antes.
@@ -2337,6 +2374,14 @@ window.saveInforme = async function(){
     notas: linesToArr(V('ta-gk-notas')),
   };
   inf.planPartido = linesToArr(V('ta-planPartido'));
+  inf.postPartido = {
+    resultado: V('ed-pp-resultado').trim(),
+    objetivoCumplido: V('ed-pp-objetivo'),
+    objetivoComentario: V('ta-pp-objetivo-com').trim(),
+    rivalBienAnalizado: V('ed-pp-rival'),
+    rivalComentario: V('ta-pp-rival-com').trim(),
+    comportamiento: linesToArr(V('ta-pp-comportamiento')),
+  };
   [...MOMENTOS, ...ABP].forEach(b => {
     getBloqueRef(b.key).items = linesToArr(V(`ta-${b.key}`));
   });
@@ -2407,6 +2452,129 @@ function tramosColHtml(t, head){
         </div>
       </div>`).join('')}
     <div class="tramo-totals"><span class="gf-l">${sumF} GF</span><span class="gc-l">${sumC} GC</span></div>
+  </div>`;
+}
+/* ══════════════════════════════════════════════════════════════════════
+   LECTURA AUTOMÁTICA DE LAS ÚLTIMAS CONVOCATORIAS
+   ══════════════════════════════════════════════════════════════════════
+   Reglas deterministas sobre inf.convocatorias (dorsal, titular/suplente,
+   minuto de cambio, sistema) para detectar patrones que, de otro modo,
+   habría que buscar a mano cruzando las 5 alineaciones. No es una
+   redacción libre: cada frase sale de una condición concreta y
+   verificable sobre los propios datos, mezclando el dato (minutos,
+   número de partidos) con una lectura (indiscutible, a vigilar…). */
+function parseJornadaNum(j){
+  const m = String(j||'').match(/(\d+)/);
+  return m ? parseInt(m[1],10) : null;
+}
+function analizarConvocatorias(convocatorias){
+  const base = (convocatorias||[]).filter(c => (c.titulares||[]).length === 11);
+  if(base.length < 2) return [];
+  // Orden cronológico ascendente: así "las últimas" quedan al final del
+  // array y se puede razonar sobre "deja de aparecer" de forma fiable,
+  // sin depender de en qué orden se hayan pegado en el textarea.
+  const conNum = base.map(c => ({ c, n: parseJornadaNum(c.jornada) }));
+  const todasNumeradas = conNum.every(x => x.n != null);
+  const convs = (todasNumeradas ? [...conNum].sort((a,b)=>a.n-b.n) : conNum).map(x=>x.c);
+  const total = convs.length;
+
+  const jugadores = new Map(); // dorsal -> {nombre, registros:[...]}
+  function reg(dorsal, nombre){
+    if(!dorsal) return null;
+    if(!jugadores.has(dorsal)) jugadores.set(dorsal, { nombre: nombre||'', registros: [] });
+    const j = jugadores.get(dorsal);
+    if(nombre) j.nombre = nombre;
+    return j;
+  }
+  convs.forEach(c=>{
+    (c.titulares||[]).forEach(p=>{
+      const j = reg(p.dorsal, p.nombre); if(!j) return;
+      j.registros.push({ jornada:c.jornada, titular:true, salioMin: p.cambio==='>' ? (parseInt(p.min)||null) : null });
+    });
+    (c.suplentes||[]).forEach(p=>{
+      const j = reg(p.dorsal, p.nombre); if(!j) return;
+      j.registros.push({ jornada:c.jornada, titular:false, entroMin: p.cambio==='<' ? (parseInt(p.min)||null) : null });
+    });
+  });
+  const nombreDe = j => j.nombre ? ` (${j.nombre})` : '';
+
+  const insights = [];
+
+  /* 1. Once inicial repetido sin cambios en las últimas jornadas */
+  const oncesRecientes = convs.map(c => (c.titulares||[]).map(p=>p.dorsal).sort((a,b)=>a-b).join(','));
+  let repetidas = 1;
+  for(let i=oncesRecientes.length-1;i>0;i--){
+    if(oncesRecientes[i]===oncesRecientes[i-1]) repetidas++; else break;
+  }
+  if(repetidas >= 2){
+    insights.push(`El once inicial se repite sin ningún cambio en las últimas ${repetidas} jornadas de la muestra (${convs.slice(-repetidas).map(c=>c.jornada).join(', ')}): el entrenador rival tiene un equipo tipo muy definido ahora mismo.`);
+  }
+
+  /* 2. Titulares indiscutibles: titular en TODAS las convocatorias vistas */
+  if(total >= 3){
+    const indiscutibles = [];
+    jugadores.forEach((j,dorsal)=>{
+      if(j.registros.filter(r=>r.titular).length === total) indiscutibles.push(`${dorsal}${nombreDe(j)}`);
+    });
+    if(indiscutibles.length){
+      insights.push(`Titulares en las ${total} convocatorias analizadas, sin ninguna excepción: ${indiscutibles.join(', ')}.`);
+    }
+  }
+
+  /* 3. Patrón de salida: mismo jugador, siempre sustituido a partir de X minuto */
+  jugadores.forEach((j,dorsal)=>{
+    const mins = j.registros.filter(r=>r.titular && r.salioMin!=null).map(r=>r.salioMin);
+    if(mins.length >= 2){
+      const min = Math.min(...mins), max = Math.max(...mins);
+      if(min >= 55){
+        insights.push(`El dorsal ${dorsal}${nombreDe(j)} sale siempre del minuto ${min} en adelante (${mins.length} cambios registrados${max>min?`, entre el ${min}′ y el ${max}′`:''}): posible referencia de carga física o de gestión de minutos.`);
+      }
+    }
+  });
+
+  /* 4. Patrón de entrada: mismo suplente, siempre entra en un tramo similar */
+  jugadores.forEach((j,dorsal)=>{
+    const mins = j.registros.filter(r=>!r.titular && r.entroMin!=null).map(r=>r.entroMin);
+    if(mins.length >= 2){
+      const min = Math.min(...mins), max = Math.max(...mins);
+      insights.push(`El dorsal ${dorsal}${nombreDe(j)} entra siempre desde el banquillo, entre el minuto ${min}′ y el ${max}′ en sus ${mins.length} apariciones: puede ser el recurso habitual para un tramo concreto del partido.`);
+    }
+  });
+
+  /* 5. Jugador que era fijo y deja de aparecer en convocatoria */
+  jugadores.forEach((j,dorsal)=>{
+    const titularidades = j.registros.filter(r=>r.titular).length;
+    const ultimaJornada = j.registros[j.registros.length-1].jornada;
+    const idxUltima = convs.findIndex(c=>c.jornada===ultimaJornada);
+    const ausenteDesde = total - 1 - idxUltima;
+    if(titularidades >= 3 && ausenteDesde >= 2){
+      insights.push(`El dorsal ${dorsal}${nombreDe(j)} fue titular en ${titularidades} de las ${total} jornadas analizadas y no vuelve a aparecer en la convocatoria en las últimas ${ausenteDesde}: conviene comprobar si es baja, sanción o pérdida de puesto antes del partido.`);
+    }
+  });
+
+  /* 6. Sistema: constante o variable en la muestra */
+  if(total >= 3){
+    const sistemas = convs.map(c=>c.sistema).filter(Boolean);
+    const distintos = [...new Set(sistemas)];
+    if(sistemas.length === total && distintos.length === 1){
+      insights.push(`Sistema constante en toda la muestra: ${distintos[0]}.`);
+    } else if(distintos.length > 1){
+      insights.push(`Ha variado de sistema entre partidos analizados: ${sistemas.join(' → ')}.`);
+    }
+  }
+
+  return insights;
+}
+function insightsConvocatoriasHtml(convocatorias, paraEditor){
+  const insights = analizarConvocatorias(convocatorias);
+  if(!insights.length) return '';
+  const hint = paraEditor
+    ? 'Generado a partir de las alineaciones de arriba — dorsales, minutos de cambio y sistema. Contrástalo, no lo pegues sin más en el plan de partido.'
+    : 'Lectura automática cruzando dorsales, minutos de cambio y sistema en las alineaciones analizadas.';
+  return `<div class="icard" style="margin-bottom:14px;">
+    <div class="subsection-title">🔍 Lectura automática de las convocatorias</div>
+    <div class="ed-hint" style="margin-bottom:8px;">${hint}</div>
+    ${bulletsHtml(insights)}
   </div>`;
 }
 function convCardHtml(c){
@@ -2489,6 +2657,7 @@ window.openInforme = async function(iid){
     {id:'datos',    num:'06', nom:'Datos'},
     {id:'arbitro',  num:'07', nom:'Árbitro'},
     {id:'plan',     num:'08', nom:'Plan de partido'},
+    {id:'post',     num:'09', nom:'Post-partido'},
   ];
   document.getElementById('infSidebar').innerHTML = `
     <div class="inf-sb-header">
@@ -2584,6 +2753,7 @@ window.openInforme = async function(iid){
     ${pitches?`<div class="pitch-wrap">${pitches}</div>`:''}
     <div class="subsection-title">Últimas 5 convocatorias</div>
     ${inf.convocatorias.length ? `<div class="lu-grid">${inf.convocatorias.map(convCardHtml).join('')}</div>` : `<div class="icard">${bulletsHtml([])}</div>`}
+    ${insightsConvocatoriasHtml(inf.convocatorias)}
   </section>
 
   <section class="inf-section" id="s-plantilla">
@@ -2717,6 +2887,36 @@ window.openInforme = async function(iid){
     ${inf.planPartido && inf.planPartido.length ? `
     <div class="subsection-title" style="margin-top:24px;">Plan de partido</div>
     ${bulletsHtml(inf.planPartido)}`:''}
+  </section>
+
+  <section class="inf-section" id="s-post" style="padding-bottom:90px;">
+    <div class="sec-label">10 · Post-partido</div>
+    <div class="sec-title">Balance tras el partido</div>
+    ${(() => {
+      const pp = inf.postPartido || emptyPostPartido();
+      const ppLabel = { si:'✅ Sí', parcial:'➖ Parcialmente', no:'❌ No' };
+      const hay = pp.resultado || pp.objetivoCumplido || pp.rivalBienAnalizado
+        || (pp.comportamiento && pp.comportamiento.length) || pp.objetivoComentario || pp.rivalComentario;
+      if(!hay) return `<div class="icard">${bulletsHtml([])}</div>`;
+      return `
+      <div class="ig2" style="margin-bottom:14px;">
+        <div class="icard">
+          <div class="subsection-title">Resultado</div>
+          <div style="font-family:var(--f-display);font-size:28px;font-weight:900;">${esc(pp.resultado)||'—'}</div>
+        </div>
+        <div class="icard">
+          <div class="subsection-title">Objetivo del partido</div>
+          <div style="font-weight:700;margin-bottom:6px;">${ppLabel[pp.objetivoCumplido]||'Sin valorar'}</div>
+          ${pp.objetivoComentario?`<div style="font-size:12.5px;color:var(--i-muted2);line-height:1.55;">${esc(pp.objetivoComentario)}</div>`:''}
+        </div>
+      </div>
+      <div class="icard" style="margin-bottom:14px;">
+        <div class="subsection-title">¿El rival estaba bien analizado?</div>
+        <div style="font-weight:700;margin-bottom:6px;">${ppLabel[pp.rivalBienAnalizado]||'Sin valorar'}</div>
+        ${pp.rivalComentario?`<div style="font-size:12.5px;color:var(--i-muted2);line-height:1.55;">${esc(pp.rivalComentario)}</div>`:''}
+      </div>
+      <div class="icard"><div class="subsection-title">Comportamiento del equipo</div>${bulletsHtml(pp.comportamiento)}</div>`;
+    })()}
   </section>`;
 
   const mainEl = document.getElementById('infMain');
