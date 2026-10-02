@@ -1483,6 +1483,7 @@ function emptyDatos(){
     goleadores: [],
     tarjetasJugadores: [],
     tarjetasStaff: [],
+    tarjetasOtros: [],
     rankings: [],
     patrones: [],
     plantillaMinutos: [],
@@ -1540,6 +1541,13 @@ function snapshotStats(st, condicionPartido){
       })(),
       tarjetasStaff: (st.disciplina?.staff||[])
         .map(t=>({nombre:t.nombre, cargo:t.cargo||'', amarillas:String(t.amarillas), dobles:String(t.dobles||0), rojas:String(t.rojas), sancionado: !!t.sancionado})),
+      // R11 · nombres cuya tarjeta no cruzó con ALINEACIONES ni CUERPO_TECNICO
+      // del acta. No son jugadores (no cuentan en rojas/dashboard/equipo) ni
+      // staff confirmado: quedan aquí hasta que el analista confirme a mano
+      // si son cuerpo técnico (y se den de alta en CUERPO_TECNICO) o un
+      // jugador con el nombre mal escrito en el acta.
+      tarjetasOtros: (st.disciplina?.otros||[])
+        .map(t=>({nombre:t.nombre, amarillas:String(t.amarillas), dobles:String(t.dobles||0), rojas:String(t.rojas)})),
       rankings: (st.rankings||[]).map(r=>({
         metrica: r.metrica + (r.rivalPos?` (${r.rivalPos}º/${r.racingPos}º)`:''),
         rival: String(r.rival), racing: String(r.racing) })),
@@ -1664,7 +1672,8 @@ function parseTable(txt, cols){
 const tableToLines = (arr, cols) => (arr||[]).map(o=>cols.map(c=>o[c]??'').join(' | ')).join('\n');
 const COLS_TARJ_JUG   = ['nombre','amarillas','dobles','rojas'];
 const COLS_TARJ_STAFF = ['nombre','cargo','amarillas','dobles','rojas'];
-const COLS_EDITABLES  = { tarjetasJugadores: COLS_TARJ_JUG, tarjetasStaff: COLS_TARJ_STAFF };
+const COLS_TARJ_OTROS = ['nombre','amarillas','dobles','rojas'];
+const COLS_EDITABLES  = { tarjetasJugadores: COLS_TARJ_JUG, tarjetasStaff: COLS_TARJ_STAFF, tarjetasOtros: COLS_TARJ_OTROS };
 function conservarAvisos(nuevas, previas){
   const porNombre = {};
   (previas||[]).forEach(p=>{ porNombre[normNombre(p.nombre)] = p; });
@@ -2107,6 +2116,7 @@ function renderEditor(){
   html += taBlock('ta-goleadores','Goleadores','⚙ Se rellena solo desde las actas (propias puertas excluidas, R3). Formato: <b>nombre | goles</b>',tableToLines(d.goleadores,['nombre','goles']),true);
   html += taBlock('ta-tarjJug','Tarjetas · Jugadores','⚙ Se rellena solo desde las actas. Formato: <b>nombre | amarillas | dobles amarillas | rojas directas</b>. Una doble amarilla cuenta solo en su columna, no como amarilla ni como roja. Con 4 amarillas se marca «al límite» automáticamente.',tableToLines(d.tarjetasJugadores,COLS_TARJ_JUG),true);
   html += taBlock('ta-tarjStaff','Tarjetas · Cuerpo técnico','⚙ Se rellena solo desde las actas. R2: el staff nunca se mezcla con jugadores. Formato: <b>nombre | cargo | amarillas | dobles amarillas | rojas directas</b>',tableToLines(d.tarjetasStaff,COLS_TARJ_STAFF),true);
+  html += taBlock('ta-tarjOtros','Tarjetas · Otros / pendiente de confirmar','⚙ Se rellena solo desde las actas. R11: nombres de tarjetas que NO cruzaron con Alineaciones ni con Cuerpo técnico del acta — probablemente cuerpo técnico mal detectado, o un jugador con el nombre mal escrito. No cuentan en rojas del equipo, dashboard ni plantilla hasta confirmarlo. Si confirmas que es cuerpo técnico, dalo de alta en CUERPO_TECNICO (control interno) y recarga los datos. Formato: <b>nombre | amarillas | dobles amarillas | rojas directas</b>',tableToLines(d.tarjetasOtros,COLS_TARJ_OTROS),true);
 
   html += `<div class="ed-sec">02 · Formación</div>`;
   html += taBlock('ta-convocatorias','Últimas 5 convocatorias','⚙ Las últimas 5 se rellenan solas desde las actas, con los 18 convocados y los minutos de cambio. <b>El sistema NO viene en el acta</b>: añádelo tú al final de la cabecera para que se dibuje el campograma.<br/>Cabecera: <b>J28 | C | V | 3-1 | Montilla | 4-2-3-1</b> (sistema opcional → dibuja el campograma).<br/>Jugadores: <b>13 Ortiz Muñoz</b> · sale al 76: <b>8 Caballero &gt;76</b> · entra al 62: <b>22 Ariza &lt;62</b> · <b>--</b> separa titulares de suplentes.<br/>Sin posición: el orden coloca el campograma (portero primero, luego líneas de atrás hacia delante, reparto uniforme). <b>Para formaciones no uniformes (rombos, etc.) añade la posición real tras "|"</b> — en cuanto un titular la lleva, TODOS se colocan por su etiqueta y el orden deja de importar: <b>13 Ortiz Muñoz | POR</b> · <b>8 Caballero &gt;76 | PIV</b>.<br/>Códigos: POR · LI CI CD LD (línea de 4) · CDI LIB CDD (línea de 3) · CAI CAD (carrileros) · PIV / PIVI PIVD (pivote único o doble) · MI MC MD (mediocentros) · BI BD (bandas) · MP (mediapunta/enganche) · EI ED (extremos) · DC / DCI DCD (delantero único o dos).<br/>Ejemplo rombo 1-4-4-2: POR, LI CI CD LD, PIV, BI BD, MP, DCI DCD.',convocatoriasToText(inf.convocatorias),true);
@@ -2246,7 +2256,7 @@ function renderEditor(){
 }
 const CAMPOS_AUTO = {
   clasificacion:'Clasificación', racha:'Racha', goleadores:'Goleadores',
-  tarjetasJugadores:'Tarjetas jugadores', tarjetasStaff:'Tarjetas staff',
+  tarjetasJugadores:'Tarjetas jugadores', tarjetasStaff:'Tarjetas staff', tarjetasOtros:'Tarjetas otros',
   golesTramos:'Goles por tramos', rankings:'Rankings', patrones:'Patrones',
   convocatorias:'Convocatorias',
 };
@@ -2350,6 +2360,7 @@ window.saveInforme = async function(){
   inf.datos.goleadores        = parseTable(V('ta-goleadores'),['nombre','goles']);
   inf.datos.tarjetasJugadores = conservarAvisos(parseTable(V('ta-tarjJug'),COLS_TARJ_JUG), inf.datos.tarjetasJugadores);
   inf.datos.tarjetasStaff     = conservarAvisos(parseTable(V('ta-tarjStaff'),COLS_TARJ_STAFF), inf.datos.tarjetasStaff);
+  inf.datos.tarjetasOtros     = conservarAvisos(parseTable(V('ta-tarjOtros'),COLS_TARJ_OTROS), inf.datos.tarjetasOtros);
   inf.datos.golesTramos.total = parseTramos(V('ta-tramosTotal'));
   inf.datos.golesTramos.cond  = parseTramos(V('ta-tramosCond'));
   inf.datos.rankings          = parseTable(V('ta-rankings'),['metrica','rival','racing']);
@@ -2750,6 +2761,14 @@ window.openInforme = async function(iid){
         else if(doblesS>0) avisosS.push('🟥 Doble amarilla · expulsión');
         else if(roS>0) avisosS.push('🟥 Roja directa');
         return `<tr${expulsadoS?' style="background:rgba(232,25,44,.14)"':''}><td style="font-weight:600;color:${expulsadoS?'var(--i-red)':'var(--i-text)'}">${esc(t.nombre)}</td><td>${esc(t.cargo)}</td><td class="num" style="color:var(--i-amber);font-weight:700">${amS||''}</td><td class="num" style="color:var(--i-red);font-weight:700">${doblesS||''}</td><td class="num" style="color:var(--i-red);font-weight:700">${roS||''}</td><td>${avisosS.join(' ')}</td></tr>`;
+      }).join('')}</tbody></table></div>` : ''}
+    ${d.tarjetasOtros?.length ? `<div class="icard" style="border:1px dashed var(--i-amber)"><div class="subsection-title">Tarjetas · Otros / pendiente de confirmar</div>
+      <p style="font-size:.85em;color:var(--i-amber);margin:0 0 8px">⚠ Estos nombres no cruzaron con Alineaciones ni con Cuerpo técnico del acta. No cuentan en las rojas del equipo, el dashboard ni la plantilla. Confirma si son cuerpo técnico (control interno) o jugadores con el nombre mal escrito en el acta.</p>
+      <table class="tbl"><thead><tr><th>Nombre</th><th class="num">🟨</th><th class="num">🟨🟨</th><th class="num">🟥</th></tr></thead><tbody>${d.tarjetasOtros.map(t=>{
+        const amO = parseInt(t.amarillas)||0;
+        const doblesO = parseInt(t.dobles)||0;
+        const roO = parseInt(t.rojas)||0;
+        return `<tr><td style="font-weight:600">${esc(t.nombre)}</td><td class="num" style="color:var(--i-amber);font-weight:700">${amO||''}</td><td class="num" style="color:var(--i-amber);font-weight:700">${doblesO||''}</td><td class="num" style="color:var(--i-amber);font-weight:700">${roO||''}</td></tr>`;
       }).join('')}</tbody></table></div>` : ''}
   </section>
 
