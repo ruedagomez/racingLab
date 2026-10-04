@@ -2753,14 +2753,21 @@ window.openInforme = async function(iid){
           const am = parseInt(t.amarillas)||0;
           const dobles = parseInt(t.dobles)||0;
           const ro = parseInt(t.rojas)||0;
-          const expulsado = dobles>0 || ro>0;
+          // Solo se destaca como expulsión "viva" si sigue siendo relevante
+          // para el próximo partido (sancionado = expulsión en la ÚLTIMA
+          // jornada disputada por el equipo, R10). Una doble amarilla o roja
+          // de jornadas anteriores ya cumplida NO se destaca ni se cuenta
+          // como expulsión aquí: sigue viéndose en las columnas (es la cuenta
+          // real de tarjetas de la temporada), pero sin la fila en rojo ni el
+          // aviso de expulsión, que insinuarían una sanción vigente que no
+          // existe. Caso real: Dago, doble amarilla en J3 (Dos Hermanas), no
+          // puede salir destacado como expulsión en el informe de J5.
+          const destacado = !!t.sancionado;
           const avisos = [];
           if(t.sancionado) avisos.push('<span class="risk-b" style="color:var(--i-red);border-color:rgba(232,25,44,.4)" title="Expulsado en la última jornada disputada: sanción de al menos un partido">⛔ Sancionado próx. partido</span>');
-          else if(dobles>0) avisos.push('🟥 Doble amarilla · expulsión');
-          else if(ro>0) avisos.push('🟥 Roja directa');
           else if(am>=4) avisos.push('<span class="risk-b">⚠ Al límite</span>');
           const sinCruzarTag = t.sinCruzar ? ' <span class="risk-b" title="No se pudo cruzar el nombre contra la alineación; revisar">⚠ revisar nombre</span>' : '';
-          return `<tr${expulsado?' style="background:rgba(232,25,44,.14)"':''}><td style="font-weight:600;color:${expulsado?'var(--i-red)':'var(--i-text)'}">${esc(t.nombre)}${sinCruzarTag}</td><td class="num" style="color:var(--i-amber);font-weight:700">${am||''}</td><td class="num" style="color:var(--i-red);font-weight:700">${dobles||''}</td><td class="num" style="color:var(--i-red);font-weight:700">${ro||''}</td><td>${avisos.join(' ')}</td></tr>`;
+          return `<tr${destacado?' style="background:rgba(232,25,44,.14)"':''}><td style="font-weight:600;color:${destacado?'var(--i-red)':'var(--i-text)'}">${esc(t.nombre)}${sinCruzarTag}</td><td class="num" style="color:var(--i-amber);font-weight:700">${am||''}</td><td class="num" style="color:var(--i-red);font-weight:700">${dobles||''}</td><td class="num" style="color:var(--i-red);font-weight:700">${ro||''}</td><td>${avisos.join(' ')}</td></tr>`;
         }).join('')}</tbody></table>` : bulletsHtml([])}
       </div>
     </div>
@@ -2769,12 +2776,14 @@ window.openInforme = async function(iid){
         const amS = parseInt(t.amarillas)||0;
         const doblesS = parseInt(t.dobles)||0;
         const roS = parseInt(t.rojas)||0;
-        const expulsadoS = doblesS>0 || roS>0;
+        // Mismo criterio que en Tarjetas · Jugadores: solo se destaca si
+        // sancionado (expulsión en la última jornada disputada, R10). Una
+        // doble amarilla o roja ya cumplida de jornadas anteriores se queda
+        // en las columnas (cuenta real), sin destaque ni aviso de expulsión.
+        const destacadoS = !!t.sancionado;
         const avisosS = [];
         if(t.sancionado) avisosS.push('<span class="risk-b" style="color:var(--i-red);border-color:rgba(232,25,44,.4)" title="Expulsado en la última jornada disputada: sanción de al menos un partido">⛔ Sancionado próx. partido</span>');
-        else if(doblesS>0) avisosS.push('🟥 Doble amarilla · expulsión');
-        else if(roS>0) avisosS.push('🟥 Roja directa');
-        return `<tr${expulsadoS?' style="background:rgba(232,25,44,.14)"':''}><td style="font-weight:600;color:${expulsadoS?'var(--i-red)':'var(--i-text)'}">${esc(t.nombre)}</td><td>${esc(t.cargo)}</td><td class="num" style="color:var(--i-amber);font-weight:700">${amS||''}</td><td class="num" style="color:var(--i-red);font-weight:700">${doblesS||''}</td><td class="num" style="color:var(--i-red);font-weight:700">${roS||''}</td><td>${avisosS.join(' ')}</td></tr>`;
+        return `<tr${destacadoS?' style="background:rgba(232,25,44,.14)"':''}><td style="font-weight:600;color:${destacadoS?'var(--i-red)':'var(--i-text)'}">${esc(t.nombre)}</td><td>${esc(t.cargo)}</td><td class="num" style="color:var(--i-amber);font-weight:700">${amS||''}</td><td class="num" style="color:var(--i-red);font-weight:700">${doblesS||''}</td><td class="num" style="color:var(--i-red);font-weight:700">${roS||''}</td><td>${avisosS.join(' ')}</td></tr>`;
       }).join('')}</tbody></table></div>` : ''}
     ${d.tarjetasOtros?.length ? `<div class="icard" style="border:1px dashed var(--i-amber)"><div class="subsection-title">Tarjetas · Otros / pendiente de confirmar</div>
       <p style="font-size:.85em;color:var(--i-amber);margin:0 0 8px">⚠ Estos nombres no cruzaron con Alineaciones ni con Cuerpo técnico del acta. No cuentan en las rojas del equipo, el dashboard ni la plantilla. Confirma si son cuerpo técnico (control interno) o jugadores con el nombre mal escrito en el acta.</p>
