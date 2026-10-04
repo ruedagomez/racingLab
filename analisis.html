@@ -2517,13 +2517,15 @@ function analizarConvocatorias(convocatorias){
 
   const insights = [];
 
-  /* 1. Once inicial repetido sin cambios en las últimas jornadas */
+  /* 1. Once inicial repetido sin cambios en las últimas jornadas.
+     Mínimo 3 partidos con la misma tendencia: con 2 no hay patrón, es
+     casualidad (pedido explícito: nada de insights sobre una muestra de 2). */
   const oncesRecientes = convs.map(c => (c.titulares||[]).map(p=>p.dorsal).sort((a,b)=>a-b).join(','));
   let repetidas = 1;
   for(let i=oncesRecientes.length-1;i>0;i--){
     if(oncesRecientes[i]===oncesRecientes[i-1]) repetidas++; else break;
   }
-  if(repetidas >= 2){
+  if(repetidas >= 3){
     insights.push(`El once inicial se repite sin ningún cambio en las últimas ${repetidas} jornadas de la muestra (${convs.slice(-repetidas).map(c=>c.jornada).join(', ')}): el entrenador rival tiene un equipo tipo muy definido ahora mismo.`);
   }
 
@@ -2538,23 +2540,35 @@ function analizarConvocatorias(convocatorias){
     }
   }
 
-  /* 3. Patrón de salida: mismo jugador, siempre sustituido a partir de X minuto */
+  /* 3. Patrón de salida: mismo jugador, siempre sustituido a partir de X minuto.
+     Exige (a) al menos 3 cambios registrados — 2 no es tendencia, es ruido —
+     y (b) que el intervalo entre el cambio más pronto y el más tardío sea
+     "preciso" (≤10 minutos): si un jugador sale un día al 60' y otro al 85',
+     eso no es un patrón de gestión de minutos, es variabilidad normal del
+     partido, y volcarlo como insight sería justo el ruido que no aporta nada. */
+  const INTERVALO_PRECISO = 10;
   jugadores.forEach((j,dorsal)=>{
     const mins = j.registros.filter(r=>r.titular && r.salioMin!=null).map(r=>r.salioMin);
-    if(mins.length >= 2){
+    if(mins.length >= 3){
       const min = Math.min(...mins), max = Math.max(...mins);
-      if(min >= 55){
-        insights.push(`El dorsal ${dorsal}${nombreDe(j)} sale siempre del minuto ${min} en adelante (${mins.length} cambios registrados${max>min?`, entre el ${min}′ y el ${max}′`:''}): posible referencia de carga física o de gestión de minutos.`);
+      if(min >= 55 && (max - min) <= INTERVALO_PRECISO){
+        insights.push(`El dorsal ${dorsal}${nombreDe(j)} sale siempre entre el minuto ${min}′ y el ${max}′ (${mins.length} cambios registrados): posible referencia de carga física o de gestión de minutos.`);
       }
     }
   });
 
-  /* 4. Patrón de entrada: mismo suplente, siempre entra en un tramo similar */
+  /* 4. Patrón de entrada: mismo suplente, siempre entra en un tramo similar.
+     Misma exigencia que en el punto 3: ≥3 apariciones y ventana ≤10 minutos.
+     Antes bastaban 2 apariciones y CUALQUIER rango (podía entrar un día al
+     10' y otro al 80' y se marcaba igual como "patrón"), que es precisamente
+     el tipo de dato sin sentido que no debe llegar al informe. */
   jugadores.forEach((j,dorsal)=>{
     const mins = j.registros.filter(r=>!r.titular && r.entroMin!=null).map(r=>r.entroMin);
-    if(mins.length >= 2){
+    if(mins.length >= 3){
       const min = Math.min(...mins), max = Math.max(...mins);
-      insights.push(`El dorsal ${dorsal}${nombreDe(j)} entra siempre desde el banquillo, entre el minuto ${min}′ y el ${max}′ en sus ${mins.length} apariciones: puede ser el recurso habitual para un tramo concreto del partido.`);
+      if((max - min) <= INTERVALO_PRECISO){
+        insights.push(`El dorsal ${dorsal}${nombreDe(j)} entra siempre desde el banquillo entre el minuto ${min}′ y el ${max}′ (${mins.length} apariciones): puede ser el recurso habitual para un tramo concreto del partido.`);
+      }
     }
   });
 
