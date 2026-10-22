@@ -3407,7 +3407,7 @@ window.openInforme = async function(iid){
     <div class="sec-label">02 · Formación</div>
     <div class="sec-title">Alineaciones y sistema</div>
     ${pitches?`<div class="pitch-wrap">${pitches}</div>`:''}
-    <div class="subsection-title">Últimas ${inf.convocatorias.length || ''} convocatorias</div>
+    <div class="subsection-title">Últimas convocatorias</div>
     ${inf.convocatorias.length ? `<div class="lu-grid six">${inf.convocatorias.map(convCardHtml).join('')}</div>` : `<div class="icard">${bulletsHtml([])}</div>`}
     ${insightsConvocatoriasHtml(inf.convocatorias)}
   </section>
