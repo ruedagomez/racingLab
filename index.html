@@ -533,6 +533,34 @@ a.widget-link:hover{color:var(--racing-text);}
 .s-dev{color:var(--draw);background:var(--draw-bg);border-color:transparent;}
 .s-soon{color:var(--ink-3);background:var(--surface-2);border-color:var(--line);}
 
+/* ── Módulo 13 · BATALLA DOBLE ÁREA ──────────────────────────────────
+   Tarjeta propia: rojo y negro en AMBOS temas (no usa las variables de
+   tema a propósito, es una identidad aparte) y enlace EXTERNO, de ahí la
+   flecha ↗. El rojo es el oficial del club; todo el texto va en blanco
+   sobre el negro, que es donde queda (la franja roja solo ocupa la
+   esquina inferior derecha, donde van el número 13 y nada legible). */
+.mc.mc-da{
+  background:
+    repeating-linear-gradient(115deg, rgba(255,255,255,.04) 0 2px, transparent 2px 15px),
+    linear-gradient(160deg, transparent 0 64%, #CC3334 64.3% 100%),
+    #0b0b0e;
+  border-color:#3a1214;color:#fff;
+}
+.mc.mc-da::before{color:#000;opacity:.34;}
+.mc.mc-da:hover::before{opacity:.5;}
+.mc.mc-da::after{background:#fff;}
+.mc.mc-da:hover{border-color:#CC3334;box-shadow:0 14px 34px rgba(204,51,52,.30);}
+.mc-da .cn{color:rgba(255,255,255,.62);}
+.mc-da .cname{color:#fff;text-transform:uppercase;letter-spacing:.02em;
+  font-weight:800;font-variation-settings:'wdth' 82;}
+.mc-da .cdesc{color:rgba(255,255,255,.78);}
+.mc-da .cs{color:#fff;background:rgba(255,255,255,.12);border-color:transparent;}
+.mc-da .cs-dot{background:#fff;}
+.mc-out{position:absolute;top:13px;right:15px;z-index:1;font-family:var(--f-mono);
+  font-size:15px;line-height:1;color:rgba(255,255,255,.72);
+  transition:transform var(--mid) var(--ease),color var(--mid);}
+.mc:hover .mc-out{transform:translate(2px,-2px);color:#fff;}
+
 /* Módulo no disponible: se ve que existe pero no invita a pulsarlo. */
 .mc.disabled{cursor:not-allowed;opacity:.62;}
 .mc.disabled:hover{transform:none;box-shadow:var(--shadow-s);border-color:var(--line);}
@@ -731,6 +759,7 @@ const MODULES = [
   { id:'10', name:'Día de Partido',        desc:'Convocatoria y ABP por jornada, con generación de plan imprimible', status:'active', url:'diapartido.html' },
   { id:'11', name:'Asistencia y Multas',   desc:'Control de asistencia y sanciones económicas',     status:'active', url:'asistencia.html'       },
   { id:'12', name:'Estadísticas',          desc:'Centro de datos: informes de Hudl, tendencias y cruce con el resto de módulos', status:'active', url:'estadisticas.html' },
+  { id:'13', name:'BATALLA DOBLE ÁREA',    desc:'Doble Área · panel del cuerpo técnico', status:'active', url:'https://ruedagomez.github.io/doblearea/dacuerpotecnico.html', clase:'mc-da', externo:true },
 ];
 const STATUS_CFG = {
   active: { label:'Activo',        cls:'s-active' },
@@ -744,7 +773,7 @@ function renderModules(){
   grid.innerHTML = MODULES.map((m, i) => {
     const s = STATUS_CFG[m.status];
     const disabled = m.status !== 'active';
-    return `<div class="mc${disabled?' disabled':''}" data-num="${m.id}"
+    return `<div class="mc${disabled?' disabled':''}${m.clase?' '+m.clase:''}" data-num="${m.id}"
               style="animation-delay:${i*0.03}s"
               onclick="handleModuleClick('${m.id}')">
       <div>
@@ -753,6 +782,7 @@ function renderModules(){
         <div class="cdesc">${m.desc}</div>
       </div>
       <span class="cs ${s.cls}"><div class="cs-dot"></div>${s.label}</span>
+      ${m.externo?'<span class="mc-out" aria-hidden="true">↗</span>':''}
     </div>`;
   }).join('');
 }
