@@ -2432,7 +2432,7 @@ function renderEditor(){
   html += taBlock('ta-tarjOtros','Tarjetas · Otros / pendiente de confirmar','⚙ Se rellena solo desde las actas. R11: nombres de tarjetas que NO cruzaron con Alineaciones ni con Cuerpo técnico del acta — probablemente cuerpo técnico mal detectado, o un jugador con el nombre mal escrito. No cuentan en rojas del equipo, dashboard ni plantilla hasta confirmarlo. Si confirmas que es cuerpo técnico, dalo de alta en CUERPO_TECNICO (control interno) y recarga los datos. Formato: <b>nombre | amarillas | dobles amarillas | rojas directas</b>',tableToLines(d.tarjetasOtros,COLS_TARJ_OTROS),true);
 
   html += `<div class="ed-sec">02 · Formación</div>`;
-  html += taBlock('ta-convocatorias','Últimas convocatorias','⚙ Las últimas 6 se rellenan solas desde las actas, con los 18 convocados y los minutos de cambio. <b>El sistema NO viene en el acta</b>: añádelo tú al final de la cabecera para que se dibuje el campograma.<br/>Cabecera: <b>J28 | C | V | 3-1 | Montilla | 4-2-3-1</b> (sistema opcional → dibuja el campograma).<br/>Jugadores: <b>13 Ortiz Muñoz</b> · sale al 76: <b>8 Caballero &gt;76</b> · entra al 62: <b>22 Ariza &lt;62</b> · <b>--</b> separa titulares de suplentes.<br/>Goles y tarjetas del jugador (se rellenan solos desde las actas), entre llaves y con el minuto pegado: <b>9 Ruiz Gil &gt;63 {G23 P55 A70}</b> → <b>G</b> gol · <b>P</b> penalti · <b>O</b> propia puerta · <b>A</b> amarilla · <b>D</b> doble amarilla · <b>R</b> roja directa.<br/>Sin posición: el orden coloca el campograma (portero primero, luego líneas de atrás hacia delante, reparto uniforme). <b>Para formaciones no uniformes (rombos, etc.) añade la posición real tras "|"</b> — en cuanto un titular la lleva, TODOS se colocan por su etiqueta y el orden deja de importar: <b>13 Ortiz Muñoz | POR</b> · <b>8 Caballero &gt;76 | PIV</b>.<br/>Códigos: POR · LI CI CD LD (línea de 4) · CDI LIB CDD (línea de 3) · CAI CAD (carrileros) · PIV / PIVI PIVD (pivote único o doble) · MI MC MD (mediocentros) · BI BD (bandas) · MP (mediapunta/enganche) · EI ED (extremos) · DC / DCI DCD (delantero único o dos).<br/>Ejemplo rombo 1-4-4-2: POR, LI CI CD LD, PIV, BI BD, MP, DCI DCD.',convocatoriasToText(inf.convocatorias),true);
+  html += taBlock('ta-convocatorias','Últimas convocatorias','⚙ Las últimas 6 se rellenan solas desde las actas, con todos los convocados (máximo 20) y los minutos de cambio. <b>El sistema NO viene en el acta</b>: añádelo tú al final de la cabecera para que se dibuje el campograma.<br/>Cabecera: <b>J28 | C | V | 3-1 | Montilla | 4-2-3-1</b> (sistema opcional → dibuja el campograma).<br/>Jugadores: <b>13 Ortiz Muñoz</b> · sale al 76: <b>8 Caballero &gt;76</b> · entra al 62: <b>22 Ariza &lt;62</b> · <b>--</b> separa titulares de suplentes.<br/>Goles y tarjetas del jugador (se rellenan solos desde las actas), entre llaves y con el minuto pegado: <b>9 Ruiz Gil &gt;63 {G23 P55 A70}</b> → <b>G</b> gol · <b>P</b> penalti · <b>O</b> propia puerta · <b>A</b> amarilla · <b>D</b> doble amarilla · <b>R</b> roja directa.<br/>Sin posición: el orden coloca el campograma (portero primero, luego líneas de atrás hacia delante, reparto uniforme). <b>Para formaciones no uniformes (rombos, etc.) añade la posición real tras "|"</b> — en cuanto un titular la lleva, TODOS se colocan por su etiqueta y el orden deja de importar: <b>13 Ortiz Muñoz | POR</b> · <b>8 Caballero &gt;76 | PIV</b>.<br/>Códigos: POR · LI CI CD LD (línea de 4) · CDI LIB CDD (línea de 3) · CAI CAD (carrileros) · PIV / PIVI PIVD (pivote único o doble) · MI MC MD (mediocentros) · BI BD (bandas) · MP (mediapunta/enganche) · EI ED (extremos) · DC / DCI DCD (delantero único o dos).<br/>Ejemplo rombo 1-4-4-2: POR, LI CI CD LD, PIV, BI BD, MP, DCI DCD.',convocatoriasToText(inf.convocatorias),true);
   html += insightsConvocatoriasHtml(inf.convocatorias, true);
 
   html += `<div class="ed-sec">03 · Momentos del juego</div>`;
@@ -2955,6 +2955,19 @@ function analizarConvocatorias(convocatorias){
   const alDescanso = convs.filter((c,i)=>[...jugadores.values()].some(j=>j.sale[i]!=null && j.sale[i]>=45 && j.sale[i]<=46));
   if(alDescanso.length >= MIN){
     push('🔁', `Mueve el banquillo al descanso en ${alDescanso.length} de ${total} partidos (${alDescanso.map(c=>c.jornada).join(', ')}).`);
+  }
+
+  /* 12 · Convocatoria incompleta: titulares + suplentes por debajo del
+     máximo permitido (20). Se avisa si ocurre en ≥3 de las jornadas vistas
+     (mismo mínimo que el resto de tendencias): una vez suelta puede ser casual. */
+  const MAX_CONVOCADOS = 20;
+  const conteos = convs.map(c => (c.titulares||[]).length + (c.suplentes||[]).length);
+  const incompletas = conteos.map((n,i)=>({ n, i })).filter(x => x.n < MAX_CONVOCADOS);
+  if(incompletas.length >= MIN){
+    const media = conteos.reduce((a,b)=>a+b,0) / conteos.length;
+    const detalle = incompletas.map(x => `${jor(x.i)}: ${x.n}`).join(', ');
+    const cuantas = incompletas.length === total ? `las ${total} jornadas analizadas` : `${incompletas.length} de ${total} jornadas`;
+    push('📋', `No completa la convocatoria en ${cuantas} (${detalle}): media de ${media.toFixed(1).replace('.',',')} convocados sobre un máximo de ${MAX_CONVOCADOS}.`);
   }
 
   /* 11 · Sistema: constante o variable (solo si lo has anotado). */
