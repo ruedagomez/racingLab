@@ -2817,9 +2817,30 @@ function parseJornadaNum(j){
   const m = String(j||'').match(/(\d+)/);
   return m ? parseInt(m[1],10) : null;
 }
+/* Jornadas sin completar la convocatoria: titulares + suplentes por debajo del
+   máximo permitido (20). NO lleva mínimo de partidos: una sola jornada
+   incompleta ya es un dato (lo pidió así el analista). Se calcula sobre todas
+   las convocatorias recibidas, también las que no tengan 11 titulares. */
+const MAX_CONVOCADOS = 20;
+function insightConvocatoriaIncompleta(convocatorias){
+  const lista = (convocatorias||[]).map(c => ({
+    j: c.jornada, n: parseJornadaNum(c.jornada),
+    total: (c.titulares||[]).length + (c.suplentes||[]).length }))
+    .filter(x => x.total > 0);
+  if(!lista.length) return null;
+  if(lista.every(x => x.n != null)) lista.sort((x,y) => x.n - y.n);
+  const inc = lista.filter(x => x.total < MAX_CONVOCADOS);
+  if(!inc.length) return null;
+  const det = inc.map(x => `${x.j} (${x.total})`).join(', ');
+  const alcance = inc.length === lista.length
+    ? (lista.length === 1 ? 'en la jornada analizada' : `en las ${lista.length} jornadas analizadas`)
+    : `en ${inc.length} de ${lista.length} jornadas`;
+  return { i:'📋', t:`No completa la convocatoria ${alcance}, máximo ${MAX_CONVOCADOS}: ${det}.` };
+}
 function analizarConvocatorias(convocatorias){
+  const incompleta = insightConvocatoriaIncompleta(convocatorias);
   const base = (convocatorias||[]).filter(c => (c.titulares||[]).length === 11);
-  if(base.length < 2) return [];
+  if(base.length < 2) return incompleta ? [incompleta] : [];
   // Orden cronológico ascendente: "las últimas" quedan al final del array.
   const conNum = base.map(c => ({ c, n: parseJornadaNum(c.jornada) }));
   const todasNumeradas = conNum.every(x => x.n != null);
@@ -2957,19 +2978,6 @@ function analizarConvocatorias(convocatorias){
     push('🔁', `Mueve el banquillo al descanso en ${alDescanso.length} de ${total} partidos (${alDescanso.map(c=>c.jornada).join(', ')}).`);
   }
 
-  /* 12 · Convocatoria incompleta: titulares + suplentes por debajo del
-     máximo permitido (20). Se avisa si ocurre en ≥3 de las jornadas vistas
-     (mismo mínimo que el resto de tendencias): una vez suelta puede ser casual. */
-  const MAX_CONVOCADOS = 20;
-  const conteos = convs.map(c => (c.titulares||[]).length + (c.suplentes||[]).length);
-  const incompletas = conteos.map((n,i)=>({ n, i })).filter(x => x.n < MAX_CONVOCADOS);
-  if(incompletas.length >= MIN){
-    const media = conteos.reduce((a,b)=>a+b,0) / conteos.length;
-    const detalle = incompletas.map(x => `${jor(x.i)}: ${x.n}`).join(', ');
-    const cuantas = incompletas.length === total ? `las ${total} jornadas analizadas` : `${incompletas.length} de ${total} jornadas`;
-    push('📋', `No completa la convocatoria en ${cuantas} (${detalle}): media de ${media.toFixed(1).replace('.',',')} convocados sobre un máximo de ${MAX_CONVOCADOS}.`);
-  }
-
   /* 11 · Sistema: constante o variable (solo si lo has anotado). */
   if(total >= MIN){
     const sistemas = convs.map(c=>c.sistema).filter(Boolean);
@@ -2978,14 +2986,15 @@ function analizarConvocatorias(convocatorias){
     else if(distintos.length > 1) push('📐', `Ha variado de sistema: ${sistemas.join(' → ')}.`);
   }
 
+  if(incompleta) insights.push(incompleta);
   return insights;
 }
 function insightsConvocatoriasHtml(convocatorias, paraEditor){
   const insights = analizarConvocatorias(convocatorias);
   if(!insights.length) return '';
   const hint = paraEditor
-    ? 'Generado a partir de las alineaciones de arriba. Cada línea exige un mínimo de 3 partidos con la misma tendencia. Contrástalo antes de llevarlo al plan de partido.'
-    : 'Patrones detectados cruzando titularidades, convocatorias y minutos de cambio. Mínimo 3 partidos por tendencia.';
+    ? 'Generado a partir de las alineaciones de arriba. Cada tendencia exige un mínimo de 3 partidos; la excepción es «No completa la convocatoria», que avisa desde una sola jornada. Contrástalo antes de llevarlo al plan de partido.'
+    : 'Patrones detectados cruzando titularidades, convocatorias y minutos de cambio. Mínimo 3 partidos por tendencia, salvo convocatorias incompletas (desde una jornada).';
   return `<div class="icard" style="margin-top:14px;">
     <div class="subsection-title">Lectura automática de las convocatorias</div>
     <div class="ed-hint" style="margin-bottom:10px;">${hint}</div>
