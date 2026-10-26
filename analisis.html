@@ -2831,11 +2831,8 @@ function insightConvocatoriaIncompleta(convocatorias){
   if(lista.every(x => x.n != null)) lista.sort((x,y) => x.n - y.n);
   const inc = lista.filter(x => x.total < MAX_CONVOCADOS);
   if(!inc.length) return null;
-  const det = inc.map(x => `${x.j} (${x.total})`).join(', ');
-  const alcance = inc.length === lista.length
-    ? (lista.length === 1 ? 'en la jornada analizada' : `en las ${lista.length} jornadas analizadas`)
-    : `en ${inc.length} de ${lista.length} jornadas`;
-  return { i:'📋', t:`No completa la convocatoria ${alcance}, máximo ${MAX_CONVOCADOS}: ${det}.` };
+  const det = inc.map(x => `${x.j} con ${x.total}`).join(', ');
+  return { i:'📋', t:`Convocatoria sin completar (máximo ${MAX_CONVOCADOS}): ${det}.` };
 }
 function analizarConvocatorias(convocatorias){
   const incompleta = insightConvocatoriaIncompleta(convocatorias);
