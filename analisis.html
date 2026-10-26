@@ -463,6 +463,13 @@ body.modo-compartido .inf-sidebar{padding-top:8px;}
 .lu-player.titl{color:var(--i-muted2);font-weight:500;}
 .lu-dorsal{font-family:var(--f-mono);font-size:9.5px;min-width:18px;text-align:right;color:var(--i-muted);}
 .lu-player-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ev-wrap{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;}
+.ev{display:inline-flex;align-items:center;gap:1px;cursor:default;}
+.ev svg,.ev-i svg{height:13px;width:auto;display:block;}
+.ev b{font-family:var(--f-mono);font-size:9px;font-weight:700;color:var(--i-muted2);}
+.ev-leyenda{display:flex;flex-wrap:wrap;gap:6px 16px;margin:-4px 0 12px;font-size:10.5px;color:var(--i-muted);}
+.ev-leyenda span{display:inline-flex;align-items:center;gap:5px;}
+.ev-i{display:inline-flex;}
 .lu-sep{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--i-muted);margin:7px 0 4px;padding-top:6px;border-top:1px dashed var(--i-border);}
 .sub-min{display:inline-flex;align-items:center;gap:3px;font-family:var(--f-mono);font-size:9px;}
 .sub-min svg{width:9px;height:9px;}
@@ -1806,8 +1813,8 @@ function snapshotStats(st, condicionPartido){
     convocatorias: (st.convocatorias||[]).map(c=>({
       jornada:c.jornada, cond:c.cond, res:c.res, marcador:c.marcador, rival:c.rival,
       sistema: c.sistema || '',
-      titulares:(c.titulares||[]).map(p=>({dorsal:p.dorsal, nombre:p.nombre, cambio:p.salioMin?'>':'', min:p.salioMin||''})),
-      suplentes:(c.suplentes||[]).map(p=>({dorsal:p.dorsal, nombre:p.nombre, cambio:p.entroMin?'<':'', min:p.entroMin||''})),
+      titulares:(c.titulares||[]).map(p=>({dorsal:p.dorsal, nombre:p.nombre, cambio:p.salioMin?'>':'', min:p.salioMin||'', ...(p.eventos&&p.eventos.length?{ev:p.eventos}:{})})),
+      suplentes:(c.suplentes||[]).map(p=>({dorsal:p.dorsal, nombre:p.nombre, cambio:p.entroMin?'<':'', min:p.entroMin||'', ...(p.eventos&&p.eventos.length?{ev:p.eventos}:{})})),
     })),
     meta: { fuente:'actas', hastaJornada: st.hastaJornada, snapshotEn: new Date().toISOString(),
             verificarClasificacion: !!st.clasificacion?.verificarOficial, camposEditados: [] },
@@ -1948,6 +1955,43 @@ function parseTramos(txt){
   return {gf,gc};
 }
 const tramosToLines = t => (t?.gf||zeros6()).map((v,i)=>`${v} | ${(t?.gc||zeros6())[i]}`).join('\n');
+/* ── Goles y tarjetas de cada jugador en su convocatoria ──────────────
+   Tipos: G gol · P gol de penalti · O gol en propia puerta · A amarilla ·
+   D doble amarilla (expulsado) · R roja directa. En el editor se escriben
+   entre llaves al final de la línea del jugador, con el minuto pegado y
+   opcional: «9 Ruiz >63 {G23 P55 A70}». */
+const EV_INFO = { G:'Gol', P:'Gol de penalti', O:'Gol en propia puerta', A:'Amarilla', D:'Doble amarilla (expulsado)', R:'Roja directa' };
+const EV_ORDEN = ['G','P','O','A','D','R'];
+function parseEv(s){
+  return String(s||'').split(/[\s,;]+/).filter(Boolean).map(tok=>{
+    const m = tok.toUpperCase().match(/^([GPOADR])(\d+(?:\+\d+)?)?$/);
+    return m ? { t:m[1], m:m[2]||'' } : null;
+  }).filter(Boolean);
+}
+const evToTxt = ev => (ev && ev.length) ? ` {${ev.map(e=>e.t+(e.m||'')).join(' ')}}` : '';
+const evBalon = (fill, linea, pent) => `<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.6" fill="${fill}" stroke="${linea}" stroke-width="1.2"/><path d="M8 4.6l2.4 1.75-.9 2.8H6.5l-.9-2.8z" fill="${pent}"/><path d="M8 4.6V1.8M10.4 6.35l2.7-.9M9.5 9.15l1.7 2.4M6.5 9.15l-1.7 2.4M5.6 6.35l-2.7-.9" stroke="${linea}" stroke-width=".9" fill="none" stroke-linecap="round"/></svg>`;
+const EV_SVG = {
+  G: evBalon('#ffffff', '#14110f', '#14110f'),
+  P: evBalon('#2563eb', '#1e3a8a', '#ffffff'),
+  O: evBalon('#d4252c', '#7f1218', '#ffffff'),
+  A: `<svg viewBox="0 0 12 16" aria-hidden="true"><rect x="1.5" y="1" width="9" height="14" rx="1.6" fill="#f2c200" stroke="rgba(0,0,0,.4)" stroke-width=".8"/></svg>`,
+  D: `<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y=".8" width="9" height="13" rx="1.6" fill="#f2c200" stroke="rgba(0,0,0,.45)" stroke-width=".8"/><rect x="1.5" y="2.4" width="9" height="13" rx="1.6" fill="#f2c200" stroke="rgba(0,0,0,.45)" stroke-width=".8"/></svg>`,
+  R: `<svg viewBox="0 0 12 16" aria-hidden="true"><rect x="1.5" y="1" width="9" height="14" rx="1.6" fill="#d4252c" stroke="rgba(0,0,0,.4)" stroke-width=".8"/></svg>`,
+};
+function evIconsHtml(evs){
+  if(!evs || !evs.length) return '';
+  const grupos = EV_ORDEN.map(t=>({ t, l: evs.filter(e=>e.t===t) })).filter(g=>g.l.length);
+  return `<span class="ev-wrap">${grupos.map(g=>{
+    const mins = g.l.map(e=>e.m).filter(Boolean).map(m=>m+'′').join(', ');
+    const tip = `${EV_INFO[g.t]}${g.l.length>1?' ×'+g.l.length:''}${mins?' · '+mins:''}`;
+    return `<span class="ev" data-tip="${esc(tip)}" role="img" aria-label="${esc(tip)}">${EV_SVG[g.t]}${g.l.length>1?`<b>×${g.l.length}</b>`:''}</span>`;
+  }).join('')}</span>`;
+}
+function evLeyendaHtml(convs){
+  const hay = (convs||[]).some(c=>[...(c.titulares||[]),...(c.suplentes||[])].some(p=>p.ev && p.ev.length));
+  if(!hay) return '';
+  return `<div class="ev-leyenda">${EV_ORDEN.map(t=>`<span><i class="ev-i">${EV_SVG[t]}</i>${EV_INFO[t].replace(' (expulsado)','')}</span>`).join('')}</div>`;
+}
 function parseConvocatorias(txt){
   return txt.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean).map(b=>{
     const lines = b.split('\n').map(s=>s.trim()).filter(Boolean);
@@ -1960,15 +2004,20 @@ function parseConvocatorias(txt){
       let pos='', core=l;
       const pipeIdx = l.lastIndexOf('|');
       if(pipeIdx>-1){ pos = l.slice(pipeIdx+1).trim().toUpperCase(); core = l.slice(0,pipeIdx).trim(); }
-      const m = core.match(/^(\d+)\s+(.+?)(?:\s*([<>])\s*(\d+)\s*)?$/);
-      if(m) c[mode].push({ dorsal:m[1], nombre:m[2], cambio:m[3]||'', min:m[4]||'', pos });
+      const m = core.match(/^(\d+)\s+(.+?)(?:\s*([<>])\s*(\d+)\s*)?(?:\s*\{([^}]*)\}\s*)?$/);
+      if(m){
+        const p = { dorsal:m[1], nombre:m[2], cambio:m[3]||'', min:m[4]||'', pos };
+        const ev = parseEv(m[5]);
+        if(ev.length) p.ev = ev;
+        c[mode].push(p);
+      }
     });
     return c;
   });
 }
 function convocatoriasToText(arr){
   return (arr||[]).map(c=>{
-    const pl = p => `${p.dorsal} ${p.nombre}${p.cambio?` ${p.cambio}${p.min}`:''}${p.pos?` | ${p.pos}`:''}`;
+    const pl = p => `${p.dorsal} ${p.nombre}${p.cambio?` ${p.cambio}${p.min}`:''}${evToTxt(p.ev)}${p.pos?` | ${p.pos}`:''}`;
     const head = [c.jornada,c.cond,c.res,c.marcador,c.rival,c.sistema].filter((x,i)=>i<5||x).join(' | ');
     return [head, ...c.titulares.map(pl), '--', ...c.suplentes.map(pl)].join('\n');
   }).join('\n\n');
@@ -2383,7 +2432,7 @@ function renderEditor(){
   html += taBlock('ta-tarjOtros','Tarjetas · Otros / pendiente de confirmar','⚙ Se rellena solo desde las actas. R11: nombres de tarjetas que NO cruzaron con Alineaciones ni con Cuerpo técnico del acta — probablemente cuerpo técnico mal detectado, o un jugador con el nombre mal escrito. No cuentan en rojas del equipo, dashboard ni plantilla hasta confirmarlo. Si confirmas que es cuerpo técnico, dalo de alta en CUERPO_TECNICO (control interno) y recarga los datos. Formato: <b>nombre | amarillas | dobles amarillas | rojas directas</b>',tableToLines(d.tarjetasOtros,COLS_TARJ_OTROS),true);
 
   html += `<div class="ed-sec">02 · Formación</div>`;
-  html += taBlock('ta-convocatorias','Últimas convocatorias','⚙ Las últimas 6 se rellenan solas desde las actas, con los 18 convocados y los minutos de cambio. <b>El sistema NO viene en el acta</b>: añádelo tú al final de la cabecera para que se dibuje el campograma.<br/>Cabecera: <b>J28 | C | V | 3-1 | Montilla | 4-2-3-1</b> (sistema opcional → dibuja el campograma).<br/>Jugadores: <b>13 Ortiz Muñoz</b> · sale al 76: <b>8 Caballero &gt;76</b> · entra al 62: <b>22 Ariza &lt;62</b> · <b>--</b> separa titulares de suplentes.<br/>Sin posición: el orden coloca el campograma (portero primero, luego líneas de atrás hacia delante, reparto uniforme). <b>Para formaciones no uniformes (rombos, etc.) añade la posición real tras "|"</b> — en cuanto un titular la lleva, TODOS se colocan por su etiqueta y el orden deja de importar: <b>13 Ortiz Muñoz | POR</b> · <b>8 Caballero &gt;76 | PIV</b>.<br/>Códigos: POR · LI CI CD LD (línea de 4) · CDI LIB CDD (línea de 3) · CAI CAD (carrileros) · PIV / PIVI PIVD (pivote único o doble) · MI MC MD (mediocentros) · BI BD (bandas) · MP (mediapunta/enganche) · EI ED (extremos) · DC / DCI DCD (delantero único o dos).<br/>Ejemplo rombo 1-4-4-2: POR, LI CI CD LD, PIV, BI BD, MP, DCI DCD.',convocatoriasToText(inf.convocatorias),true);
+  html += taBlock('ta-convocatorias','Últimas convocatorias','⚙ Las últimas 6 se rellenan solas desde las actas, con los 18 convocados y los minutos de cambio. <b>El sistema NO viene en el acta</b>: añádelo tú al final de la cabecera para que se dibuje el campograma.<br/>Cabecera: <b>J28 | C | V | 3-1 | Montilla | 4-2-3-1</b> (sistema opcional → dibuja el campograma).<br/>Jugadores: <b>13 Ortiz Muñoz</b> · sale al 76: <b>8 Caballero &gt;76</b> · entra al 62: <b>22 Ariza &lt;62</b> · <b>--</b> separa titulares de suplentes.<br/>Goles y tarjetas del jugador (se rellenan solos desde las actas), entre llaves y con el minuto pegado: <b>9 Ruiz Gil &gt;63 {G23 P55 A70}</b> → <b>G</b> gol · <b>P</b> penalti · <b>O</b> propia puerta · <b>A</b> amarilla · <b>D</b> doble amarilla · <b>R</b> roja directa.<br/>Sin posición: el orden coloca el campograma (portero primero, luego líneas de atrás hacia delante, reparto uniforme). <b>Para formaciones no uniformes (rombos, etc.) añade la posición real tras "|"</b> — en cuanto un titular la lleva, TODOS se colocan por su etiqueta y el orden deja de importar: <b>13 Ortiz Muñoz | POR</b> · <b>8 Caballero &gt;76 | PIV</b>.<br/>Códigos: POR · LI CI CD LD (línea de 4) · CDI LIB CDD (línea de 3) · CAI CAD (carrileros) · PIV / PIVI PIVD (pivote único o doble) · MI MC MD (mediocentros) · BI BD (bandas) · MP (mediapunta/enganche) · EI ED (extremos) · DC / DCI DCD (delantero único o dos).<br/>Ejemplo rombo 1-4-4-2: POR, LI CI CD LD, PIV, BI BD, MP, DCI DCD.',convocatoriasToText(inf.convocatorias),true);
   html += insightsConvocatoriasHtml(inf.convocatorias, true);
 
   html += `<div class="ed-sec">03 · Momentos del juego</div>`;
@@ -2933,6 +2982,7 @@ function insightsConvocatoriasHtml(convocatorias, paraEditor){
 function convCardHtml(c){
   const pl = (p, tit) => `<div class="lu-player${tit?' titl':''}">
     <span class="lu-dorsal">${esc(p.dorsal)}</span><span class="lu-player-name">${esc(fmtNombre(p.nombre))}</span>
+    ${evIconsHtml(p.ev)}
     ${p.min?`<span class="sub-min ${p.cambio==='>'?'out':'in'}"><svg viewBox="0 0 10 10"><path d="M1 5h8M6 2l3 3-3 3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(p.min)}′</span>`:''}
   </div>`;
   return `<div class="lu-card">
@@ -3437,6 +3487,7 @@ window.openInforme = async function(iid){
     <div class="sec-title">Alineaciones y sistema</div>
     ${pitches?`<div class="pitch-wrap">${pitches}</div>`:''}
     <div class="subsection-title">Últimas convocatorias</div>
+    ${evLeyendaHtml(inf.convocatorias)}
     ${inf.convocatorias.length ? `<div class="lu-grid six">${inf.convocatorias.map(convCardHtml).join('')}</div>` : `<div class="icard">${bulletsHtml([])}</div>`}
     ${insightsConvocatoriasHtml(inf.convocatorias)}
   </section>
