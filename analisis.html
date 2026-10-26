@@ -416,7 +416,16 @@ body.modo-compartido .inf-sidebar{padding-top:8px;}
 .form-badge{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:800;font-size:12px;color:#fff;flex-shrink:0;}
 .form-badge.V{background:var(--i-green);}.form-badge.E{background:var(--i-amber);}.form-badge.D{background:var(--i-red);}
 .form-score{font-family:var(--f-mono);font-weight:600;font-size:12px;min-width:36px;}
-.form-rival{flex:1;color:var(--i-muted2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.form-rival{flex:1;min-width:0;display:flex;align-items:center;gap:8px;color:var(--i-muted2);}
+.form-rival .eq-n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* Escudos en miniatura (clasificación, racha, últimas convocatorias) */
+.mini-sh{width:18px;height:18px;object-fit:contain;flex-shrink:0;display:inline-block;vertical-align:middle;}
+.mini-sh.ph{border-radius:50%;border:1px dashed var(--i-border2);opacity:.7;}
+.eq{display:inline-flex;align-items:center;gap:8px;min-width:0;}
+.lu-header .mini-sh{width:20px;height:20px;}
+/* Sobre fondo oscuro, los escudos de tonos oscuros se pierden: un halo fino los separa. */
+[data-theme="dark"] .mini-sh:not(.ph){filter:drop-shadow(0 0 1px rgba(255,255,255,.7));}
+.tbl tr.hl-racing .mini-sh.ph{border-color:rgba(255,255,255,.55);}
 .form-cond{font-size:9px;font-weight:700;text-transform:uppercase;color:var(--i-muted);letter-spacing:.5px;}
 /* ══ GOLES POR TRAMOS ══ */
 .tramo-wrap{display:flex;gap:28px;}
@@ -908,6 +917,25 @@ const CLUBS = [
   { id:'betis-c',      lpId:'517',   name:'Real Betis C',         short:'RBC', city:'Sevilla',                   stadium:'Luis del Sol',                color:'' }, // sin verificar
 ];
 const clubById = id => CLUBS.find(c=>c.id===id) || null;
+
+/* Escudo en miniatura de un equipo a partir de su id interno (el que usan las
+   actas y el motor: 'xerez-dfc', 'racing'…). clubShields se guarda con el
+   lpId como clave; el Racing no está en CLUBS (no es rival de nadie), así
+   que su lpId va aparte. El 161 es el mismo que usa actas.html. Si no hay
+   escudo para ese equipo se pinta un aro vacío del mismo tamaño, para que
+   las filas no se descuadren. */
+const LP_RACING = '161';
+function escudoUrlDe(id){
+  if(!id) return '';
+  if(id === 'racing') return SHIELDS[LP_RACING] || '';
+  const c = clubById(id);
+  return (c && SHIELDS[c.lpId]) || '';
+}
+function miniEscudo(id){
+  const u = escudoUrlDe(id);
+  return u ? `<img class="mini-sh" src="${esc(u)}" alt="" loading="lazy"/>`
+           : `<span class="mini-sh ph" aria-hidden="true"></span>`;
+}
 
 /* Nombre presentable de un equipo a partir de su id interno. */
 const NOMBRES_EXTRA = { racing: 'Racing Club Portuense' };
@@ -2909,6 +2937,7 @@ function convCardHtml(c){
   </div>`;
   return `<div class="lu-card">
     <div class="lu-header"><span class="lu-badge" style="background:${RES_COLOR[c.res]||'var(--i-muted)'}">${esc(c.res)||'·'}</span>
+      ${miniEscudo(c.rival)}
       <span class="lu-title">${esc(c.jornada)} · ${esc(c.cond)} · ${esc(c.marcador)} · ${esc(nombreEquipo(c.rival))}</span></div>
     ${c.titulares.map(p=>pl(p,true)).join('')}
     ${c.suplentes.length?`<div class="lu-sep">Suplentes</div>${c.suplentes.map(p=>pl(p,false)).join('')}`:''}
@@ -2921,7 +2950,7 @@ function clasifTableHtml(rows, rivalId){
       const isRacing = r.equipo === 'racing';
       const isRival = !isRacing && rivalId && r.equipo === rivalId;
       return `<tr class="${isRacing?'hl-racing':isRival?'hl-rival':''}">
-        <td><span class="pos-b">${esc(r.pos)}</span></td><td>${esc(nombreEquipo(r.equipo))}</td>
+        <td><span class="pos-b">${esc(r.pos)}</span></td><td><span class="eq">${miniEscudo(r.equipo)}${esc(nombreEquipo(r.equipo))}</span></td>
         <td class="num">${esc(r.pj)}</td><td class="num" style="font-weight:700">${esc(r.pts)}</td></tr>`;
     }).join('') + `</tbody></table>`;
 }
@@ -3392,7 +3421,7 @@ window.openInforme = async function(iid){
           <div class="form-row"><span class="form-j">${esc(r.jornada)}</span>
             <span class="form-badge ${esc(r.res)}">${esc(r.res)}</span>
             <span class="form-score">${esc(r.marcador)}</span>
-            <span class="form-rival">${esc(nombreEquipo(r.rival))}</span>
+            <span class="form-rival">${miniEscudo(r.rival)}<span class="eq-n">${esc(nombreEquipo(r.rival))}</span></span>
             <span class="form-cond">${esc(r.cond)}</span></div>`).join('') : bulletsHtml([])}
       </div>
     </div>
