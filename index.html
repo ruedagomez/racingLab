@@ -934,11 +934,18 @@ async function loadSancionesWidget(players){
     return;
   }
 
-  /* Los más sancionados primero: es lo accionable de un vistazo (quién está
-     cerca del ciclo). Solo se listan los que tienen alguna tarjeta. */
+  /* Orden: SOLO por número de amarillas (más amarillas, más arriba): es lo
+     que dice quién está cerca del ciclo. Una roja NO adelanta a nadie. Las
+     amarillas de una doble no suman aquí (el motor las cuenta aparte, en
+     'dobles'). Solo en caso de empate a amarillas desempata quien tenga más
+     expulsiones (roja directa + doble), y después el nombre. Se listan los
+     que tengan alguna tarjeta, incluida una doble amarilla sin más. */
+  const expulsiones = j => (j.rojas||0) + (j.dobles||0);
   const conTarjetas = jugadores
-    .filter(j => (j.amarillas||0) > 0 || (j.rojas||0) > 0)
-    .sort((a,b) => (b.rojas||0)-(a.rojas||0) || (b.amarillas||0)-(a.amarillas||0))
+    .filter(j => (j.amarillas||0) > 0 || expulsiones(j) > 0)
+    .sort((a,b) => (b.amarillas||0)-(a.amarillas||0)
+                || expulsiones(b)-expulsiones(a)
+                || String(a.nombre).localeCompare(String(b.nombre),'es'))
     .slice(0,5);
 
   if(!conTarjetas.length){
@@ -966,7 +973,7 @@ async function loadSancionesWidget(players){
       <div class="sanc-name">${nombre}</div>
       <div class="sanc-cards">
         <span class="sanc-card-badge"><span class="card-icon card-y"></span>${j.amarillas||0}</span>
-        <span class="sanc-card-badge"><span class="card-icon card-r"></span>${j.rojas||0}</span>
+        <span class="sanc-card-badge" title="Roja directa + doble amarilla"><span class="card-icon card-r"></span>${expulsiones(j)}</span>
       </div>
     </div>`;
   }).join('');
