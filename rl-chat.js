@@ -22,7 +22,7 @@
      activa abriendo la página con ?chat=1 (se desactiva con ?chat=0). Cuando esté desplegado
      y probado, basta cambiarlo a false para que lo vea todo el cuerpo técnico. */
   var SOLO_ACTIVADO_A_MANO = true;
-  var K_CODIGO = 'rl_chat_code', K_HIST = 'rl_chat_hist', K_AMPLIADO = 'rl_chat_wide';
+  var K_HIST = 'rl_chat_hist', K_AMPLIADO = 'rl_chat_wide';
 
   /* ── almacenamiento tolerante a fallos ── */
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -202,7 +202,6 @@
   /* ── estado ── */
   var mensajes = [];   // {role:'user'|'assistant', text, data?}
   var ocupado = false;
-  var codigo = lsGet(K_CODIGO) || '';
 
   try { var h = JSON.parse(ssGet(K_HIST) || '[]'); if (Array.isArray(h)) mensajes = h.slice(-30); } catch (e) {}
   function guardarHist() { ssSet(K_HIST, JSON.stringify(mensajes.slice(-30))); }
@@ -211,7 +210,7 @@
   function llamar(data) {
     return fetch(ENDPOINT, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: Object.assign({ codigo: codigo }, data) })
+      body: JSON.stringify({ data: data })
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
         if (r.ok && j.result) return j.result;
@@ -295,42 +294,10 @@
 
   function pintar() {
     body.textContent = '';
-    if (!codigo) { pintarPuerta(); return; }
     if (!mensajes.length) pintarHola();
     mensajes.forEach(pintarMensaje);
     if (ocupado) { var t = el('div', 'rlc-typing'); t.setAttribute('aria-label', 'Consultando los datos'); t.innerHTML = '<i></i><i></i><i></i>'; body.appendChild(t); }
     bajar();
-  }
-
-  /* ── puerta de acceso ── */
-  function pintarPuerta() {
-    form.style.display = 'none'; foot.style.display = 'none';
-    var g = el('div', 'rlc-gate');
-    g.appendChild(el('b', null, 'Acceso del cuerpo técnico'));
-    g.appendChild(el('span', null, 'Introduce el código de acceso. Solo hace falta la primera vez en este dispositivo.'));
-    var inp = el('input'); inp.type = 'password'; inp.autocomplete = 'off'; inp.placeholder = 'Código';
-    inp.setAttribute('aria-label', 'Código de acceso');
-    var err = el('div', 'err'); err.setAttribute('role', 'alert');
-    var bt = el('button', null, 'Entrar'); bt.type = 'button';
-    function ir() {
-      var v = inp.value.trim(); if (!v) return;
-      bt.disabled = true; err.textContent = '';
-      var prev = codigo; codigo = v;
-      llamar({ accion: 'verificar' }).then(function () {
-        lsSet(K_CODIGO, v); form.style.display = ''; foot.style.display = ''; pintar(); ta.focus();
-      }).catch(function (e) {
-        codigo = prev;
-        err.textContent = e.status === 'PERMISSION_DENIED' ? 'Código incorrecto.'
-          : e.status === 'NOT_FOUND' ? 'El asistente todavía no está activado en el servidor.'
-          : 'No he podido conectar. Inténtalo de nuevo.';
-        bt.disabled = false;
-      });
-    }
-    bt.addEventListener('click', ir);
-    inp.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); ir(); } });
-    g.appendChild(inp); g.appendChild(err); g.appendChild(bt);
-    body.appendChild(g);
-    setTimeout(function () { inp.focus(); }, 50);
   }
 
   /* ── bandeja del analista (/bandeja) ── */
@@ -379,14 +346,14 @@
     llamar({ accion: 'preguntar', pregunta: texto, historial: hist }).then(function (r) {
       mensajes.push({ role: 'assistant', text: r.respuesta || '', pregunta: texto, data: r });
     }).catch(function (e) {
-      if (e.status === 'PERMISSION_DENIED') { lsDel(K_CODIGO); codigo = ''; mensajes.pop(); return; }
-      var txt = e.status === 'RESOURCE_EXHAUSTED' ? 'Se ha alcanzado el límite diario de preguntas. Mañana volverá a funcionar; mientras, puedes enviar la pregunta al analista.'
+      var txt = e.status === 'PERMISSION_DENIED' ? 'El asistente solo funciona desde la web del Lab.'
+        : e.status === 'RESOURCE_EXHAUSTED' ? 'Se ha alcanzado el límite diario de preguntas. Mañana volverá a funcionar; mientras, puedes enviar la pregunta al analista.'
         : e.status === 'NOT_FOUND' ? 'El asistente todavía no está activado en el servidor.'
         : 'No he podido consultar los datos ahora mismo. Inténtalo de nuevo en un momento.';
       mensajes.push({ role: 'assistant', text: txt, pregunta: texto, data: { estado: 'sin_dato', pendienteSugerido: e.status !== 'NOT_FOUND' } });
     }).then(function () {
       ocupado = false; bSend.disabled = false; guardarHist(); pintar();
-      if (codigo) ta.focus();
+      ta.focus();
     });
   }
 
@@ -414,7 +381,7 @@
     panel.classList.toggle('open', abierto);
     fab.setAttribute('aria-expanded', abierto ? 'true' : 'false');
     fab.setAttribute('aria-label', abierto ? 'Cerrar el asistente del Lab' : 'Abrir el asistente del Lab');
-    if (abierto) { form.style.display = codigo ? '' : 'none'; foot.style.display = codigo ? '' : 'none'; pintar(); if (codigo) setTimeout(function () { ta.focus(); }, 60); }
+    if (abierto) { pintar(); setTimeout(function () { ta.focus(); }, 60); }
   }
   function ampliar(v) {
     var a = v === undefined ? !panel.classList.contains('wide') : v;

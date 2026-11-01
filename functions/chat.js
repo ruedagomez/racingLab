@@ -18,11 +18,9 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
-const crypto = require("crypto");
 const lab = require("./lab-tools");
 
 const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
-const CHAT_CODE = defineSecret("CHAT_CODE");
 
 const MODELO = process.env.CHAT_MODEL || "claude-sonnet-5-5";
 const LIMITE_DIARIO = Number(process.env.CHAT_LIMITE_DIARIO) || 300;
@@ -231,11 +229,16 @@ async function procesarPregunta({ db, llamar, pregunta, historial, hoy }) {
   return { ...FALLBACK, pendienteSugerido: true, herramientas: usadas.map(u => u.nombre) };
 }
 
-/* ── Control de acceso y coste ── */
-function codigoValido(dado, esperado) {
-  if (!dado || !esperado) return false;
-  const h = s => crypto.createHash("sha256").update(String(s)).digest();
-  return crypto.timingSafeEqual(h(dado), h(esperado));
+/* ── Control de acceso y coste ──
+   No hay código: el hub ya tiene su acceso. Pero el login del hub es solo de
+   navegador, así que el servidor no puede saber quién pregunta. Dos frenos:
+   solo se acepta la petición si viene de la web del Lab (cabecera Origin,
+   que un navegador no puede falsear, aunque un script externo sí) y hay un
+   tope diario de preguntas que limita el gasto. */
+const ORIGENES = (process.env.CHAT_ORIGENES || "https://ruedagomez.github.io").split(",").map(x => x.trim());
+function origenPermitido(req) {
+  const o = req && req.rawRequest && req.rawRequest.headers && req.rawRequest.headers.origin;
+  return !!o && ORIGENES.includes(o);
 }
 const hoyMadrid = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date());
 
@@ -249,16 +252,14 @@ async function contarUso(db) {
 }
 
 exports.preguntarLab = onCall(
-  { region: "europe-west1", timeoutSeconds: 90, memory: "512MiB", cors: true, secrets: [ANTHROPIC_API_KEY, CHAT_CODE] },
+  { region: "europe-west1", timeoutSeconds: 90, memory: "512MiB", cors: true, secrets: [ANTHROPIC_API_KEY] },
   async (req) => {
     const d = req.data || {};
-    if (!codigoValido(d.codigo, CHAT_CODE.value())) {
-      throw new HttpsError("permission-denied", "Código incorrecto");
+    if (!origenPermitido(req)) {
+      throw new HttpsError("permission-denied", "Origen no permitido");
     }
     const db = admin.firestore();
     const accion = d.accion || "preguntar";
-
-    if (accion === "verificar") return { ok: true };
 
     if (accion === "pendiente") {
       const pregunta = String(d.pregunta || "").trim().slice(0, 600);
@@ -320,4 +321,4 @@ exports.preguntarLab = onCall(
   }
 );
 
-exports._test = { procesarPregunta, cifrasNoVerificadas, normalizarHistorial, codigoValido };
+exports._test = { procesarPregunta, cifrasNoVerificadas, normalizarHistorial, origenPermitido };
