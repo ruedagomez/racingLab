@@ -808,7 +808,7 @@ async function uploadToCloudinary(file) {
    `amount:null` = importe a definir caso por caso (conducta antideportiva):
    el concepto existe en el catálogo, pero obliga a teclear la cantidad al
    registrar la multa en vez de aplicar un importe inventado. */
-const CATALOG_VERSION = 3;
+const CATALOG_VERSION = 4;
 const CAT_ORDER = ['puntualidad','asistencia','comportamiento','equipamiento','otros'];
 const CAT_LABEL = {puntualidad:'Puntualidad', asistencia:'Asistencia',
   comportamiento:'Comportamiento', equipamiento:'Equipamiento', otros:'Otros', otro:'Otros'};
@@ -827,6 +827,9 @@ const DEFAULT_FINE_TYPES = [
   {id:'rm12',order:12,name:'Balonazo',         amount:5,   cat:'comportamiento', desc:'Doble o nada desde mitad de campo.'},
   {id:'rm13',order:13,name:'Wellness & RPE',   amount:5,   cat:'otros',          desc:'Rellenar diariamente.'},
   {id:'rm14',order:14,name:'Doble Área',       amount:5,   cat:'otros',          desc:'No completar la tarea asignada en la app Doble Área.'},
+  {id:'rm16',order:16,name:'Retraso +5 min · Día de Partido',  amount:20, cat:'puntualidad', desc:'Retraso en día de partido: el doble que en entrenamiento.'},
+  {id:'rm17',order:17,name:'Retraso +10 min · Día de Partido', amount:40, cat:'puntualidad', desc:'Retraso en día de partido: el doble que en entrenamiento.'},
+  {id:'rm18',order:18,name:'Retraso +15 min · Día de Partido', amount:60, cat:'puntualidad', desc:'Retraso en día de partido: el doble que en entrenamiento.'},
   {id:'rm15',order:15,name:'Otro',             amount:null,cat:'otros',          desc:'Cualquier concepto no recogido arriba. Importe a definir.'},
 ];
 const IDS_SEMILLA_ANTIGUA = ['ft1','ft2','ft3','ft4','ft5','ft6'];
