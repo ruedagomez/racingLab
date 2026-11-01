@@ -23,7 +23,7 @@ const lab = require("./lab-tools");
 const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
 
 const MODELO = process.env.CHAT_MODEL || "claude-sonnet-5-5";
-const LIMITE_DIARIO = Number(process.env.CHAT_LIMITE_DIARIO) || 300;
+const LIMITE_DIARIO = Number(process.env.CHAT_LIMITE_DIARIO) || 50;
 const MAX_RONDAS = 7;
 
 const RESPONDER = {
