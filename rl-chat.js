@@ -211,6 +211,10 @@
     return fetch(ENDPOINT, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data: data })
+    }).catch(function () {
+      /* Sin respuesta legible: sin conexión, o la función no existe aún (el navegador no
+         distingue ambos casos porque un 404 de Google no lleva cabeceras CORS). */
+      var e = new Error('red'); e.status = 'RED'; throw e;
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
         if (r.ok && j.result) return j.result;
@@ -349,8 +353,10 @@
       var txt = e.status === 'PERMISSION_DENIED' ? 'El asistente solo funciona desde la web del Lab.'
         : e.status === 'RESOURCE_EXHAUSTED' ? 'Se ha alcanzado el límite diario de preguntas. Mañana volverá a funcionar; mientras, puedes enviar la pregunta al analista.'
         : e.status === 'NOT_FOUND' ? 'El asistente todavía no está activado en el servidor.'
+        : e.status === 'RED' ? (navigator.onLine === false ? 'No hay conexión a internet.'
+            : 'No he podido conectar con el servidor del asistente. Si es la primera vez que se usa, es probable que todavía no esté activado en Firebase.')
         : 'No he podido consultar los datos ahora mismo. Inténtalo de nuevo en un momento.';
-      mensajes.push({ role: 'assistant', text: txt, pregunta: texto, data: { estado: 'sin_dato', pendienteSugerido: e.status !== 'NOT_FOUND' } });
+      mensajes.push({ role: 'assistant', text: txt, pregunta: texto, data: { estado: 'sin_dato', pendienteSugerido: e.status !== 'NOT_FOUND' && e.status !== 'RED' } });
     }).then(function () {
       ocupado = false; bSend.disabled = false; guardarHist(); pintar();
       ta.focus();
