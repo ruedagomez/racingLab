@@ -265,3 +265,6 @@ exports.cargarDesdeLapreferente = onCall(
     return { ...payload, cached: false };
   }
 );
+
+/* ── Asistente del Lab (chat.js + lab-tools.js) ── */
+exports.preguntarLab = require("./chat").preguntarLab;
