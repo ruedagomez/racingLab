@@ -4173,10 +4173,12 @@ async function iniciarVistaCompartida(token){
    ══════════════════════════════════════════════════════════════════════ */
 const EDP_AREAS = ['Juego de pies','Inicio de juego','Blocaje','Rechaces',
                           'Juego aéreo','1x1','Trayectoria y experiencia'];
-const COL_1 = 98;
-const COL_2 = 262;
-const CONC_1 = 190;
-const CONC_2 = 390;
+/* Plantilla vieja (1 página): columnas a 98/262 y conclusiones en 3 columnas.
+   Plantilla nueva (3 páginas, nov-2026): tabla de áreas que salta de página,
+   conclusiones en 3 BLOQUES apilados («CONCLUSIÓN 1/2/3») y sin nombre del
+   portero. Las columnas ya no son fijas: se leen de la propia cabecera. */
+const COL_DEF = { fort:164, deb:366 };      // respaldo si no se encuentra la cabecera
+const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
 
 function agruparFilas(items){
   const filas = new Map();
@@ -4195,37 +4197,69 @@ function agruparFilas(items){
 
 const unir = arr => arr.map(w=>w.t).join(' ').replace(/\s+/g,' ').trim();
 const limpiar = s => (s||'').replace(/^[–—-]\s*$/,'').replace(/\s+/g,' ').trim();
+const esPie = t => /^FB[\s-]?Goalkeeper\b/i.test(t);
+const xDe = (fila, ini) => { const w = fila.find(w => norm(w.t).startsWith(norm(ini))); return w ? w.x : null; };
 
-function parsearInformeEDP(items){
-  const filas = agruparFilas(items);
+/* El nombre no viene en el PDF nuevo: se saca del nombre del archivo
+   (rival_gk_AITOR_GARCIA.pdf → «Aitor Garcia»). Sin tildes ni orden fiable. */
+function nombreDesdeArchivo(f){
+  let n = String(f||'').replace(/\.pdf$/i,'');
+  const m = n.match(/gk[_\- ](.+)$/i);
+  n = (m ? m[1] : n).replace(/[_\-]+/g,' ').replace(/\s+/g,' ').trim();
+  return n.toLowerCase().split(' ').map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' ');
+}
+
+/* paginas: array de arrays de items de pdf.js (una por página) */
+function parsearInformeEDP(paginas, nombreArchivo){
+  if(paginas.length && paginas[0] && paginas[0].transform) paginas = [paginas];   // compat: una sola página
+  const filas = paginas.flatMap(agruparFilas).filter(f => !esPie(unir(f)));
   const plano = filas.map(unir);
 
   const out = {
     nombre:'', dorsal:'', edad:'', altura:'', pie:'', mano:'', club:'',
     areas:[], fortalezasClave:[], debilidadesClave:[], comoAtacarle:[],
-    observaciones:'', analista:'', avisos:[],
+    observaciones:'', analista:'', contexto:'', jornada:'', rival:'', fechaPartido:'', avisos:[],
   };
-
-  const arriba = items
-    .map(it => ({x: it.transform[4], y: it.transform[5],
-                 alto: it.height || 0, t: (it.str||'').trim()}))
-    .filter(w => w.t && w.y > 660);
-
-  const derecha = arriba.filter(w => w.x > 200 && w.y < 760).sort((a,b) => b.y - a.y);
-  if(derecha.length >= 1) out.nombre = derecha[0].t;
-  if(derecha.length >= 2 && derecha[1].alto < derecha[0].alto) out.club = derecha[1].t;
-
-  const dor = arriba.find(w => w.x < 200 && /^\d{1,2}$/.test(w.t));
-  if(dor) out.dorsal = dor.t;
   const todo = plano.join('\n');
   let m;
+
+  /* ── Cabecera ── */
+  // Plantilla nueva: «CADIZ MIRANDILLA CF · Dorsal 26»
+  if((m = todo.match(/^(.+?)\s*·\s*Dorsal\s*(\d{1,2})\s*$/mi))){ out.club = m[1].trim(); out.dorsal = m[2]; }
+  else {
+    // Plantilla vieja: nombre y club a la derecha, dorsal a la izquierda
+    const p0 = paginas[0] || [];
+    const arriba = p0.map(it => ({x: it.transform[4], y: it.transform[5], alto: it.height||0, t:(it.str||'').trim()}))
+                     .filter(w => w.t && w.y > 660);
+    const derecha = arriba.filter(w => w.x > 200 && w.y < 760).sort((a,b) => b.y - a.y);
+    if(derecha.length >= 1) out.nombre = derecha[0].t;
+    if(derecha.length >= 2 && derecha[1].alto < derecha[0].alto) out.club = derecha[1].t;
+    const dor = arriba.find(w => w.x < 200 && /^\d{1,2}$/.test(w.t));
+    if(dor) out.dorsal = dor.t;
+  }
   if((m = todo.match(/(\d{1,2})\s*años/)))        out.edad   = m[1];
   if((m = todo.match(/([\d]+[,.][\d]+)\s*m\b/)))  out.altura = m[1].replace('.',',')+' m';
   if((m = todo.match(/Pie\s+(\w+)/i)))            out.pie    = m[1].toLowerCase();
   if((m = todo.match(/Mano\s+(\w+)/i)))           out.mano   = m[1].toLowerCase();
   if((m = todo.match(/Analista:\s*(.+?)\s+FB-Goalkeeper/i))) out.analista = m[1].trim();
 
-  let enTabla = false, actual = null;
+  /* ── Datos del partido (plantilla nueva): etiqueta y, justo debajo, su valor ── */
+  const todos = paginas.flat().map(it => ({x:it.transform[4], y:it.transform[5], t:(it.str||'').trim()})).filter(w=>w.t);
+  const valorDebajo = etiqueta => {
+    const L = todos.find(w => norm(w.t) === norm(etiqueta));
+    if(!L) return '';
+    const cand = todos.filter(w => Math.abs(w.x - L.x) < 4 && w.y < L.y && L.y - w.y < 30)
+                      .sort((a,b) => b.y - a.y)[0];
+    return cand ? cand.t : '';
+  };
+  out.jornada      = valorDebajo('JORNADA').replace(/\D/g,'');
+  out.rival        = valorDebajo('EQUIPO RIVAL');
+  out.fechaPartido = valorDebajo('FECHA DEL PARTIDO');
+  const eqTemp = valorDebajo('EQUIPO ESA TEMPORADA'), pa = valorDebajo('PARTIDOS ANALIZADOS');
+  out.contexto = [eqTemp && `Equipo esa temporada: ${eqTemp}`, pa && `Partidos analizados por el EDP: ${pa}`].filter(Boolean).join(' · ');
+
+  /* ── Tabla de áreas (puede continuar en la página siguiente) ── */
+  let enTabla = false, actual = null, colF = COL_DEF.fort, colD = COL_DEF.deb;
   const cerrar = () => {
     if(actual && actual.area){
       actual.fortaleza = limpiar(actual.fortaleza);
@@ -4234,23 +4268,22 @@ function parsearInformeEDP(items){
     }
     actual = null;
   };
-
   for(const fila of filas){
     const texto = unir(fila);
-    if(/ÁREA\s+FORTALEZAS/i.test(texto)){ enTabla = true; continue; }
+    if(/ÁREA\s+FORTALEZAS/i.test(texto) && !/CLAVE/i.test(texto)){
+      enTabla = true;
+      const f = xDe(fila,'FORTALEZAS'), d = xDe(fila,'DEBILIDADES');
+      if(f != null) colF = f - 2;
+      if(d != null) colD = d - 2;
+      continue;
+    }
     if(/^CONCLUSIONES/i.test(texto)){ cerrar(); enTabla = false; continue; }
     if(!enTabla) continue;
-
-    const izq = unir(fila.filter(w => w.x <  COL_1));
-    const cen = unir(fila.filter(w => w.x >= COL_1 && w.x < COL_2));
-    const der = unir(fila.filter(w => w.x >= COL_2));
-
-    const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+    const izq = unir(fila.filter(w => w.x < colF));
+    const cen = unir(fila.filter(w => w.x >= colF && w.x < colD));
+    const der = unir(fila.filter(w => w.x >= colD));
     const area = EDP_AREAS.find(a => izq && norm(izq).startsWith(norm(a).slice(0,7)));
-    if(area){
-      cerrar();
-      actual = {area, fortaleza:'', debilidad:''};
-    }
+    if(area){ cerrar(); actual = {area, fortaleza:'', debilidad:''}; }
     if(actual){
       if(cen) actual.fortaleza += (actual.fortaleza?' ':'') + cen;
       if(der) actual.debilidad += (actual.debilidad?' ':'') + der;
@@ -4258,42 +4291,76 @@ function parsearInformeEDP(items){
   }
   cerrar();
 
-  let enConc = false;
-  const conc = {f:[], d:[], a:[]};
-  for(const fila of filas){
-    const texto = unir(fila);
-    if(/FORTALEZAS\s+CLAVE/i.test(texto)){ enConc = true; continue; }
-    if(/^OBSERVACIONES/i.test(texto)){ enConc = false; continue; }
-    if(!enConc) continue;
-
-    const c = [
-      unir(fila.filter(w => w.x <  CONC_1)),
-      unir(fila.filter(w => w.x >= CONC_1 && w.x < CONC_2)),
-      unir(fila.filter(w => w.x >= CONC_2)),
-    ];
-    const llenas = c.filter(Boolean).length;
-    ['f','d','a'].forEach((k,i)=>{
-      if(!c[i]) return;
-      if(llenas === 1 && conc[k].length) conc[k][conc[k].length-1] += ' ' + c[i];
-      else conc[k].push(c[i]);
-    });
+  /* ── Conclusiones ── */
+  const bloques = plano.filter(l => /^CONCLUSI[ÓO]N\s+\d/i.test(l)).length;
+  if(bloques){
+    // Plantilla nueva: N bloques; cada uno con su cabecera FORTALEZA | DEBILIDAD | CÓMO ATACARLE
+    let en = false, c1 = 216 - 2, c2 = 393 - 2, cur = null;
+    const cierra = () => { if(cur){
+      const f = limpiar(cur.f), d = limpiar(cur.d), a = limpiar(cur.a);
+      if(f) out.fortalezasClave.push(f); if(d) out.debilidadesClave.push(d); if(a) out.comoAtacarle.push(a);
+    } cur = null; };
+    for(const fila of filas){
+      const texto = unir(fila);
+      if(/^CONCLUSI[ÓO]N\s+\d/i.test(texto)){ cierra(); cur = {f:'',d:'',a:''}; en = false; continue; }
+      if(/^OBSERVACIONES/i.test(texto) || /^Analista/i.test(texto)){ cierra(); break; }
+      if(!cur) continue;
+      if(/^FORTALEZA\s+DEBILIDAD/i.test(texto)){
+        en = true;
+        const d = xDe(fila,'DEBILIDAD'), c = xDe(fila,'CÓMO');
+        if(d != null) c1 = d - 2; if(c != null) c2 = c - 2;
+        continue;
+      }
+      if(!en) continue;
+      const add = (k, t) => { if(t) cur[k] += (cur[k]?' ':'') + t; };
+      add('f', unir(fila.filter(w => w.x < c1)));
+      add('d', unir(fila.filter(w => w.x >= c1 && w.x < c2)));
+      add('a', unir(fila.filter(w => w.x >= c2)));
+    }
+    cierra();
+  } else {
+    // Plantilla vieja: una sola tabla de 3 columnas
+    const CONC_1 = 190, CONC_2 = 390;
+    let enConc = false;
+    const conc = {f:[], d:[], a:[]};
+    for(const fila of filas){
+      const texto = unir(fila);
+      if(/FORTALEZAS\s+CLAVE/i.test(texto)){ enConc = true; continue; }
+      if(/^OBSERVACIONES/i.test(texto)){ enConc = false; continue; }
+      if(!enConc) continue;
+      const c = [ unir(fila.filter(w => w.x < CONC_1)),
+                  unir(fila.filter(w => w.x >= CONC_1 && w.x < CONC_2)),
+                  unir(fila.filter(w => w.x >= CONC_2)) ];
+      const llenas = c.filter(Boolean).length;
+      ['f','d','a'].forEach((k,i)=>{
+        if(!c[i]) return;
+        if(llenas === 1 && conc[k].length) conc[k][conc[k].length-1] += ' ' + c[i];
+        else conc[k].push(c[i]);
+      });
+    }
+    out.fortalezasClave  = conc.f.map(limpiar).filter(Boolean);
+    out.debilidadesClave = conc.d.map(limpiar).filter(Boolean);
+    out.comoAtacarle     = conc.a.map(limpiar).filter(Boolean);
   }
-  out.fortalezasClave  = conc.f.map(limpiar).filter(Boolean);
-  out.debilidadesClave = conc.d.map(limpiar).filter(Boolean);
-  out.comoAtacarle     = conc.a.map(limpiar).filter(Boolean);
 
+  /* ── Observaciones (hasta la línea del analista o el final) ── */
   const iObs = plano.findIndex(l => /^OBSERVACIONES DEL RIVAL/i.test(l));
   if(iObs >= 0){
-    const fin = plano.findIndex((l,i) => i > iObs && /^Analista:/i.test(l));
-    out.observaciones = plano.slice(iObs+1, fin > 0 ? fin : iObs+4)
+    const fin = plano.findIndex((l,i) => i > iObs && /^Analista/i.test(l));
+    out.observaciones = plano.slice(iObs+1, fin > 0 ? fin : plano.length)
       .join(' ').replace(/\s+/g,' ').trim();
   }
 
+  /* ── Nombre y avisos ── */
+  if(!out.nombre && nombreArchivo){
+    out.nombre = nombreDesdeArchivo(nombreArchivo);
+    if(out.nombre) out.avisos.push(`El PDF no trae el nombre del portero: lo he sacado del nombre del archivo («${out.nombre}»). Revisa tildes y el orden nombre/apellido.`);
+  }
   if(!out.nombre) out.avisos.push('No se ha encontrado el nombre del portero');
   if(!out.areas.length) out.avisos.push('No se ha encontrado la tabla de análisis por áreas');
-  else if(out.areas.length < 5) out.avisos.push(`Solo se han leído ${out.areas.length} áreas de las 7 habituales`);
-  if(!out.comoAtacarle.length) out.avisos.push('No se ha encontrado la columna "¿Cómo podemos atacarle?"');
-
+  else if(out.areas.length < EDP_AREAS.length) out.avisos.push(`Solo se han leído ${out.areas.length} áreas de las ${EDP_AREAS.length} habituales`);
+  if(!out.comoAtacarle.length) out.avisos.push('No se ha encontrado la columna «Cómo atacarle»');
+  if(bloques && out.comoAtacarle.length !== bloques) out.avisos.push(`El PDF tiene ${bloques} conclusiones pero se han leído ${out.comoAtacarle.length} «Cómo atacarle»`);
   return out;
 }
 
@@ -4320,8 +4387,16 @@ window.importarInformeEDP = async function(input){
     const pdfjs = await cargarPdfJs();
     const buf = await file.arrayBuffer();
     const doc = await pdfjs.getDocument({data:new Uint8Array(buf)}).promise;
-    const tc = await (await doc.getPage(1)).getTextContent();
-    _edpLeido = parsearInformeEDP(tc.items);
+    const paginas = [];
+    for(let i=1;i<=doc.numPages;i++) paginas.push((await (await doc.getPage(i)).getTextContent()).items);
+    _edpLeido = parsearInformeEDP(paginas, file.name);
+    const inf = currentInforme;
+    if(inf){
+      if(_edpLeido.jornada && String(inf.jornada) !== _edpLeido.jornada)
+        _edpLeido.avisos.unshift(`ATENCIÓN: el PDF es de la jornada ${_edpLeido.jornada} y este informe es de la J${inf.jornada}.`);
+      if(_edpLeido.rival && normNombre(_edpLeido.rival) !== normNombre(inf.rivalName) && !normNombre(inf.rivalName).includes(normNombre(_edpLeido.rival).split(' ')[0]))
+        _edpLeido.avisos.unshift(`ATENCIÓN: el PDF habla de «${_edpLeido.rival}» y este informe es de ${inf.rivalName}.`);
+    }
     mostrarRevisionEDP(_edpLeido, file.name);
   }catch(e){
     console.error('[importarInformeEDP]', e);
@@ -4348,6 +4423,7 @@ function mostrarRevisionEDP(d, nombreArchivo){
     ${fila('Nombre', d.nombre)}${fila('Dorsal', d.dorsal)}${fila('Club', d.club)}
     ${fila('Edad', d.edad ? d.edad+' años' : '')}${fila('Altura', d.altura)}
     ${fila('Pie', d.pie)}${fila('Mano', d.mano)}${fila('Analista', d.analista)}
+    ${fila('Jornada', d.jornada)}${fila('Rival', d.rival)}${fila('Fecha partido', d.fechaPartido)}
     <div class="edp-rev-sec">Análisis por áreas (${d.areas.length})</div>
     ${d.areas.length ? `<table class="edp-rev-tabla">
       <thead><tr><th>Área</th><th>Fortaleza</th><th>Debilidad</th></tr></thead>
@@ -4379,7 +4455,8 @@ window.aplicarInformeEDP = function(){
 
   if(d.fortalezasClave.length)  p.puntosFuertes = d.fortalezasClave;
   if(d.debilidadesClave.length) p.puntosDebiles = d.debilidadesClave;
-  if(d.observaciones)           p.notas = [d.observaciones];
+  const notas = [d.observaciones, d.contexto].filter(Boolean);
+  if(notas.length)              p.notas = notas;
 
   closeModal('edpRevModal');
   renderEditor();
