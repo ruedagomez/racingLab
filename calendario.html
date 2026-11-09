@@ -814,6 +814,26 @@ const LIGA_2627 = [
   {j:34,d:'2027-05-02',r:'Real Betis C',c:0}
 ];
 
+/* Estado de los partidos de liga ya cargados frente al calendario oficial:
+   - faltan: fechas oficiales sin evento 'liga'
+   - mal:    evento 'liga' en fecha oficial pero con OTRO rival en el título
+             (calendarios provisionales antiguos, p. ej. Puente Genil)
+   - sobran: eventos 'liga' en una fecha que no es de ningún partido oficial */
+function estadoLiga(){
+  const ligas = EVENTS.filter(e=>e.type==='liga');
+  const porFecha = new Map(); ligas.forEach(e=>{ if(!porFecha.has(e.date)) porFecha.set(e.date,[]); porFecha.get(e.date).push(e); });
+  const fechasOf = new Set(LIGA_2627.map(p=>p.d));
+  const faltan = LIGA_2627.filter(p=>!porFecha.has(p.d));
+  const mal = [];
+  LIGA_2627.forEach(p=>{
+    (porFecha.get(p.d)||[]).forEach(e=>{
+      if(!String(e.title||'').toLowerCase().includes(p.r.toLowerCase())) mal.push({e,p});
+    });
+  });
+  const sobran = ligas.filter(e=>!fechasOf.has(e.date));
+  return {faltan, mal, sobran};
+}
+
 /* ══════════ ESTADO ══════════ */
 let EVENTS        = [];
 let currentView   = 'month';
@@ -1348,7 +1368,8 @@ window.openLiga = function(){
      título puede haberse editado a mano; lo que no debe duplicarse es
      el partido en sí. */
   const ya = new Set(EVENTS.filter(e=>e.type==='liga').map(e=>e.date));
-  const faltan = LIGA_2627.filter(p=>!ya.has(p.d));
+  const {faltan, mal, sobran} = estadoLiga();
+  const malPorFecha = new Map(mal.map(x=>[x.p.d, x.e]));
 
   document.getElementById('liga-list').innerHTML = LIGA_2627.map(p=>{
     const esta = ya.has(p.d);
@@ -1358,26 +1379,34 @@ window.openLiga = function(){
       <span class="liga-fecha">${DOW_SHORT[d.getDay()===0?6:d.getDay()-1]} ${d.getDate()}/${pad(d.getMonth()+1)}</span>
       <span class="liga-rival">${p.c?'vs ':'en '}${esc(p.r)}</span>
       <span class="liga-cond ${p.c?'cond-casa':'cond-fuera'}">${p.c?'CASA':'FUERA'}</span>
-      ${esta?'<span class="liga-ya">✓ ya está</span>':''}
+      ${esta?(malPorFecha.has(p.d)?`<span class="liga-ya" style="color:var(--r)">⚠ tiene «${esc(malPorFecha.get(p.d).title)}»</span>`:'<span class="liga-ya">✓ ya está</span>'):''}
     </div>`;
   }).join('');
 
   const btn = document.getElementById('liga-save');
-  btn.disabled = faltan.length === 0;
-  btn.textContent = faltan.length
-    ? `Añadir ${faltan.length} partido${faltan.length===1?'':'s'}`
+  const partes = [];
+  if(faltan.length) partes.push(`añadir ${faltan.length}`);
+  if(mal.length)    partes.push(`corregir ${mal.length}`);
+  if(sobran.length) partes.push(`borrar ${sobran.length} sobrante${sobran.length===1?'':'s'}`);
+  btn.disabled = partes.length === 0;
+  btn.textContent = partes.length
+    ? partes[0].charAt(0).toUpperCase()+partes.join(' · ').slice(1)
     : 'Ya están todos';
   openModal('modal-liga');
 };
 
 window.saveLiga = async function(){
-  const ya = new Set(EVENTS.filter(e=>e.type==='liga').map(e=>e.date));
-  const faltan = LIGA_2627.filter(p=>!ya.has(p.d));
-  if(!faltan.length) return;
-  if(!confirm(`Se añadirán ${faltan.length} partidos al calendario. ¿Continuar?`)) return;
+  const {faltan, mal, sobran} = estadoLiga();
+  if(!faltan.length && !mal.length && !sobran.length) return;
+  const resumen = [
+    faltan.length && `Añadir ${faltan.length} partido(s) que faltan`,
+    mal.length    && `Corregir ${mal.length} con rival equivocado:\n` + mal.map(x=>`   «${x.e.title}» → J${x.p.j} · ${x.p.c?'vs ':'en '}${x.p.r}`).join('\n'),
+    sobran.length && `BORRAR ${sobran.length} evento(s) de liga en fechas que no son oficiales:\n` + sobran.map(e=>`   ${e.date} «${e.title}»`).join('\n'),
+  ].filter(Boolean).join('\n\n');
+  if(!confirm(resumen + '\n\n¿Continuar?')) return;
 
   const btn = document.getElementById('liga-save');
-  btn.disabled = true; btn.textContent = 'Añadiendo…';
+  btn.disabled = true; btn.textContent = 'Aplicando…';
   try{
     for(const p of faltan){
       await addDoc(collection(db,'calEvents'), {
@@ -1392,11 +1421,21 @@ window.saveLiga = async function(){
         createdAt: serverTimestamp(),
       });
     }
+    /* La hora (time) y endDate no se tocan: pueden haberse fijado a mano. */
+    for(const {e,p} of mal){
+      await updateDoc(doc(db,'calEvents',e.id), {
+        title: `J${p.j} · ${p.c?'vs ':'en '}${p.r}`,
+        location: p.c ? 'José del Cuvillo' : null,
+        notes: `Jornada ${p.j} · ${p.c?'Local':'Visitante'}`,
+        updatedAt: serverTimestamp(),
+      });
+    }
+    for(const e of sobran) await deleteDoc(doc(db,'calEvents',e.id));
     closeModal('modal-liga');
-    showToast(`${faltan.length} partidos añadidos`,'ok');
+    showToast('Calendario de liga actualizado','ok');
   }catch(e){
     console.error('[saveLiga]', e);
-    showToast('No se pudieron añadir todos','err');
+    showToast('No se pudo aplicar todo','err');
   }
   btn.disabled = false;
 };
