@@ -2423,6 +2423,11 @@ function renderEditor(){
     </div>
   </div>`;
   html += taBlock('ta-contexto','Contexto / Situación del rival','Dinámica, necesidad, bajas, entorno. Una idea por línea.',arrToLines(inf.contexto));
+  html += `<div class="ed-block" id="dp-block">
+    <div class="ed-block-title">🔒 Día de partido · alineación del rival</div>
+    <div class="ed-hint">Solo analista con contraseña. No forma parte del informe publicado ni del enlace compartido.</div>
+    <div id="dp-panel"></div>
+  </div>`;
   html += taBlock('ta-clasificacion','Clasificación','⚙ Se rellena solo desde las actas. Edítalo únicamente para corregir (R7: sanciones administrativas). Formato: <b>pos | equipo | pj | pts</b>',tableToLines(d.clasificacion,['pos','equipo','pj','pts']),true);
   html += taBlock('ta-racha','Racha · últimos 5 partidos','⚙ Se rellena solo desde las actas. Formato: <b>jornada | C/F | V/E/D | marcador | rival</b>',tableToLines(d.racha,['jornada','cond','res','marcador','rival']),true);
   html += taBlock('ta-goleadores','Goleadores','⚙ Se rellena solo desde las actas (propias puertas excluidas, R3). El dorsal es el habitual del jugador en las alineaciones (el acta no lo publica en la tabla de goles). Formato: <b>dorsal | nombre | goles | penaltis</b>. En el informe se muestran los 6 primeros.',tableToLines(d.goleadores,COLS_GOL),true);
@@ -2565,6 +2570,7 @@ function renderEditor(){
 
   document.getElementById('edBody').innerHTML = html;
   renderShares();
+  dpIniciar();
 }
 const CAMPOS_AUTO = {
   clasificacion:'Clasificación', racha:'Racha', goleadores:'Goleadores',
@@ -4460,6 +4466,213 @@ window.aplicarInformeEDP = function(){
   closeModal('edpRevModal');
   renderEditor();
   toast('Informe del EDP aplicado — recuerda guardar');
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   DÍA DE PARTIDO · alineación del rival
+   ══════════════════════════════════════════════════════════════════════
+   Se pega (o escribe) el once + suplentes que nos pasan antes del partido.
+   Cada fila se cruza con la plantilla del rival (fichas de las actas):
+   el DORSAL manda sobre el nombre. Se confirma a mano y se guardan las
+   conclusiones en una colección aparte (analisisDiaPartido), fuera del
+   informe, para que el enlace compartido nunca lo lleve.
+   Umbral de sanción: la 5ª amarilla suspende (ciclo de 5 → con 4 está
+   «al límite»). Es una suposición sobre el reglamento: verificar. */
+const DP_LIM = 5;
+let dpFilas = [], dpTexto = '', dpGuardado = null;
+const dpDesbloqueado = () => sessionStorage.getItem('rl_dp') === '1';
+const keyN = s => normNombre(String(s||'').replace(/[,.]/g,' ')).split(' ').filter(x=>x.length>1).sort().join(' ');
+const tokN = s => normNombre(String(s||'').replace(/[,.]/g,' ')).split(' ').filter(x=>x.length>2);
+
+async function dpIniciar(){
+  dpFilas = []; dpTexto = ''; dpGuardado = null;
+  if(dpDesbloqueado()){
+    try{
+      const snap = await getDoc(doc(db,'analisisDiaPartido',currentInformeId));
+      if(snap.exists()){ dpGuardado = snap.data(); dpFilas = dpGuardado.filas || []; dpTexto = dpGuardado.texto || ''; }
+    }catch(e){ console.error('[dp load]', e); }
+  }
+  dpRender();
+}
+window.dpDesbloquear = async function(){
+  const v = prompt('Contraseña de Día de partido');
+  if(v == null) return;
+  if(await sha256(v) !== PASS_HASH){ toast('Contraseña incorrecta'); return; }
+  sessionStorage.setItem('rl_dp','1');
+  dpIniciar();
+};
+window.dpBloquear = function(){ sessionStorage.removeItem('rl_dp'); dpRender(); };
+
+function dpParsear(txt){
+  const out = []; let t = 'T';
+  String(txt||'').split('\n').map(l=>l.trim()).filter(Boolean).forEach(l=>{
+    if(/^-{2,}$|^suplentes?:?$/i.test(l)){ t = 'S'; return; }
+    if(/^titulares?:?$/i.test(l)) return;
+    const m = l.match(/^(\d{1,2})\s*[.\-–:)]?\s*(.*)$/);
+    out.push({ t, dorsal: m ? m[1] : '', nombre: (m ? m[2] : l).trim(), ov:'' });
+  });
+  return out;
+}
+window.dpAnalizar = function(){
+  dpTexto = document.getElementById('dp-texto').value;
+  dpFilas = dpParsear(dpTexto);
+  if(!dpFilas.length){ toast('No he leído ninguna línea'); return; }
+  dpRender();
+};
+window.dpAnadirFila = function(t){ dpFilas.push({t, dorsal:'', nombre:'', ov:''}); dpRender(); };
+window.dpEditar = function(i, campo, v){ dpFilas[i][campo] = v; dpRender(); };
+window.dpQuitar = function(i){ dpFilas.splice(i,1); dpRender(); };
+
+/* Contexto con lo que sabemos del rival (todo de las actas) */
+function dpCtx(){
+  const inf = currentInforme, d = inf.datos || {};
+  const plant = (d.plantillaMinutos||[]).map(p=>({ ...p, k: keyN(p.nombre) }));
+  const convs = [...(inf.convocatorias||[])].filter(c=>(c.titulares||[]).length)
+    .map(c=>({ c, n: parseJornadaNum(c.jornada) }))
+    .sort((a,b)=>(a.n??0)-(b.n??0)).map(x=>x.c);
+  const tarj = new Map((d.tarjetasJugadores||[]).map(t=>[keyN(t.nombre), t]));
+  return { plant, convs, tarj };
+}
+/* Identifica una fila. El dorsal prevalece; el nombre solo avisa. */
+function dpResolver(f, ctx){
+  if(f.ov === '__nuevo') return { k: keyN(f.nombre)||('#'+f.dorsal), p:null, estado:'nuevo', aviso:'marcado como nuevo / sin ficha' };
+  if(f.ov){ const p = ctx.plant.find(x=>x.k===f.ov); if(p) return { k:p.k, p, estado:'manual', aviso:'asignado a mano' }; }
+  const toks = tokN(f.nombre);
+  const solapa = p => toks.length && tokN(p.nombre).some(x=>toks.includes(x));
+  let cand = [];
+  if(f.dorsal){
+    // primero quien llevó ese dorsal más recientemente en las alineaciones, luego el dorsal habitual
+    for(const c of [...ctx.convs].reverse()){
+      [...c.titulares, ...c.suplentes].forEach(p=>{
+        if(String(p.dorsal)===String(f.dorsal)){ const k = keyN(p.nombre); if(k && !cand.includes(k)) cand.push(k); }
+      });
+    }
+    ctx.plant.forEach(p=>{ if(String(p.dorsalHabitual)===String(f.dorsal) && !cand.includes(p.k)) cand.push(p.k); });
+  }
+  if(cand.length){
+    const p = ctx.plant.find(x=>x.k===cand[0]) || null;
+    const nom = p ? p.nombre : cand[0];
+    const choca = toks.length && !(p ? solapa(p) : tokN(nom).some(x=>toks.includes(x)));
+    return { k:cand[0], p, estado: choca?'revisar':'ok',
+      aviso: choca ? `el dorsal ${f.dorsal} es de ${fmtNombre(nom)}; el nombre escrito no coincide (¿apodo?). Manda el dorsal` : (cand.length>1?`el dorsal ${f.dorsal} lo han llevado varios: se toma ${fmtNombre(nom)}`:'') };
+  }
+  const porNombre = ctx.plant.filter(solapa);
+  if(porNombre.length===1){
+    const p = porNombre[0];
+    return { k:p.k, p, estado:'revisar', aviso: f.dorsal ? `dorsal ${f.dorsal} nuevo para ${fmtNombre(p.nombre)} (habitual ${p.dorsalHabitual||'—'})` : `identificado solo por nombre: ${fmtNombre(p.nombre)}` };
+  }
+  return { k: keyN(f.nombre)||('#'+f.dorsal), p:null, estado:'nuevo', aviso:'sin ficha: jugador nuevo o apodo no reconocido' };
+}
+
+function dpConclusiones(){
+  const inf = currentInforme, ctx = dpCtx(), out = [];
+  const T = dpFilas.filter(f=>f.t==='T'), S = dpFilas.filter(f=>f.t==='S');
+  const rT = T.map(f=>({f, r:dpResolver(f,ctx)})), rS = S.map(f=>({f, r:dpResolver(f,ctx)}));
+  const nom = x => fmtNombre(x.r.p ? x.r.p.nombre : (x.f.nombre||('dorsal '+x.f.dorsal)));
+  const nomK = k => { const p = ctx.plant.find(x=>x.k===k); return p ? fmtNombre(p.nombre) : k; };
+  const push = (i,t) => out.push({i,t});
+  if(!T.length) return out;
+  if(T.length !== 11) push('❗', `Hay ${T.length} titulares en la lista (deberían ser 11): revisa la alineación.`);
+  const hoy = new Set(rT.map(x=>x.r.k));
+
+  // 1 · Comparación con el once anterior
+  const ult = ctx.convs[ctx.convs.length-1];
+  if(ult){
+    const prev = new Set(ult.titulares.map(p=>keyN(p.nombre)));
+    const rep = [...hoy].filter(k=>prev.has(k)).length;
+    const entran = [...hoy].filter(k=>!prev.has(k)).map(k=>{ const x = rT.find(y=>y.r.k===k); return nom(x); });
+    const salen = [...prev].filter(k=>!hoy.has(k)).map(nomK);
+    if(T.length===11 && !entran.length) push('🔒', `Repite el once completo de ${ult.jornada} (${ult.marcador} vs ${nombreEquipo(ult.rival)}).`);
+    else push('🔄', `Repite ${rep} de ${prev.size} titulares de ${ult.jornada}. ${entran.length?'Entran: '+entran.join(', ')+'. ':''}${salen.length?'Salen: '+salen.join(', ')+'.':''}`);
+    // contra los últimos 3 onces
+    const ult3 = ctx.convs.slice(-3);
+    if(ult3.length>=2){
+      const iguales = ult3.filter(c=>{ const s=new Set(c.titulares.map(p=>keyN(p.nombre))); return [...hoy].every(k=>s.has(k)) && s.size===hoy.size; }).length;
+      if(iguales) push('📌', `Este once ya lo ha usado ${iguales} de los últimos ${ult3.length} partidos.`);
+    }
+  } else push('ℹ️', 'No hay convocatorias anteriores cargadas: no se puede comparar con el once previo.');
+
+  // 2 · Titulares habituales
+  const habit = [...ctx.plant].filter(p=>(parseInt(p.titularidades)||0)>0)
+    .sort((a,b)=>(parseInt(b.titularidades)||0)-(parseInt(a.titularidades)||0) || (parseInt(b.minutos)||0)-(parseInt(a.minutos)||0)).slice(0,11);
+  if(habit.length){
+    const hab = habit.filter(p=>hoy.has(p.k)).length;
+    push('⭐', `${hab} de los 11 jugadores más utilizados esta temporada están en el once de hoy.`);
+    const fuera = habit.filter(p=>!hoy.has(p.k)).map(p=>{
+      const sup = rS.some(x=>x.r.k===p.k);
+      const baja = ctx.tarj.get(p.k)?.sancionado;
+      return `${fmtNombre(p.nombre)} (${p.titularidades} tit.) — ${sup?'en el banquillo':baja?'sancionado':'ni siquiera convocado'}`;
+    });
+    if(fuera.length) push('🪑', `Habituales fuera del once: ${fuera.join(' · ')}.`);
+  }
+
+  // 3 · Novedades
+  const vistos = new Set(); ctx.convs.forEach(c=>[...c.titulares,...c.suplentes].forEach(p=>vistos.add(keyN(p.nombre))));
+  const nuevosT = rT.filter(x=>!x.r.p || ((parseInt(x.r.p.titularidades)||0)<=1 && !ctx.convs.some(c=>c.titulares.some(p=>keyN(p.nombre)===x.r.k))));
+  if(nuevosT.length) push('🆕', `Novedad en el once: ${nuevosT.map(x=>`${nom(x)}${x.r.p?` (${x.r.p.titularidades||0} tit. hasta ahora)`:' (sin ficha)'}`).join(', ')}.`);
+  const nuevosS = rS.filter(x=>!x.r.p || (!vistos.has(x.r.k) && (parseInt(x.r.p.convocatorias)||0)===0));
+  if(nuevosS.length) push('🆕', `Nuevo en la convocatoria: ${nuevosS.map(nom).join(', ')}.`);
+  const reaparece = rT.concat(rS).filter(x=>x.r.p && (parseInt(x.r.p.convocatorias)||0)>0 && !vistos.has(x.r.k) && ctx.convs.length>=3);
+  if(reaparece.length) push('↩️', `Reaparece tras no estar en las últimas ${ctx.convs.length} convocatorias: ${reaparece.map(nom).join(', ')}.`);
+
+  // 4 · Tarjetas
+  const lista = rT.map(x=>({...x,tipo:'titular'})).concat(rS.map(x=>({...x,tipo:'suplente'})));
+  lista.forEach(x=>{
+    const t = ctx.tarj.get(x.r.k); if(!t) return;
+    const am = parseInt(t.amarillas)||0;
+    if(am % DP_LIM === DP_LIM-1 && am>0)
+      push('🟨', `${nom(x)} (${x.tipo}) tiene ${am} amarillas: puede jugar, pero otra amarilla contra nosotros = suspensión. Irá con precaución: buscar el duelo y la falta.`);
+    if(t.sancionado) push('⛔', `${nom(x)} consta como sancionado por expulsión en su último partido y aparece en la lista: revisar si de verdad cumple sanción.`);
+  });
+  return out;
+}
+
+function dpRender(){
+  const el = document.getElementById('dp-panel'); if(!el) return;
+  const ta0 = document.getElementById('dp-texto'); if(ta0) dpTexto = ta0.value;
+  if(!dpDesbloqueado()){
+    el.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="dpDesbloquear()">🔒 Abrir Día de partido</button>`;
+    return;
+  }
+  const ctx = dpCtx();
+  const opciones = (sel) => `<option value=""${!sel?' selected':''}>automático (por dorsal)</option><option value="__nuevo"${sel==='__nuevo'?' selected':''}>Nuevo / sin ficha</option>` +
+    [...ctx.plant].sort((a,b)=>(parseInt(a.dorsalHabitual)||99)-(parseInt(b.dorsalHabitual)||99)).map(p=>`<option value="${esc(p.k)}"${sel===p.k?' selected':''}>${esc(p.dorsalHabitual||'·')} ${esc(fmtNombre(p.nombre))}</option>`).join('');
+  const ICO = {ok:'✅', revisar:'⚠️', nuevo:'🆕', manual:'✋'};
+  const filaHtml = (f,i) => { const r = dpResolver(f,ctx); return `<tr>
+    <td><input value="${esc(f.dorsal)}" inputmode="numeric" style="width:46px" onchange="dpEditar(${i},'dorsal',this.value.trim())"/></td>
+    <td><input value="${esc(f.nombre)}" style="width:100%" onchange="dpEditar(${i},'nombre',this.value)"/></td>
+    <td style="white-space:nowrap">${ICO[r.estado]} ${r.p?esc(fmtNombre(r.p.nombre)):'<i>sin ficha</i>'}${r.aviso?`<div style="font-size:11px;color:var(--warn)">${esc(r.aviso)}</div>`:''}</td>
+    <td><select onchange="dpEditar(${i},'ov',this.value)" style="max-width:170px">${opciones(f.ov)}</select></td>
+    <td><button class="cl-del" onclick="dpQuitar(${i})">✕</button></td></tr>`; };
+  const tabla = (t,tit) => { const fs = dpFilas.map((f,i)=>({f,i})).filter(x=>x.f.t===t);
+    return `<div class="edp-rev-sec">${tit} (${fs.length})</div>
+    <table class="edp-tabla"><thead><tr><th>Dorsal</th><th>Escrito</th><th>Identificado como</th><th>Corregir</th><th></th></tr></thead>
+    <tbody>${fs.map(x=>filaHtml(x.f,x.i)).join('') || '<tr><td colspan="5" class="edp-rev-vacio">—</td></tr>'}</tbody></table>
+    <button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="dpAnadirFila('${t}')">+ ${t==='T'?'Titular':'Suplente'}</button>`; };
+  const concl = dpFilas.length ? dpConclusiones() : [];
+  el.innerHTML = `
+    <div class="ed-hint">Pega la alineación: una línea por jugador, <b>dorsal nombre</b> (ej. <b>9 Ruiz</b>). Una línea con <b>--</b> separa titulares de suplentes. El dorsal prevalece sobre el nombre.</div>
+    <textarea id="dp-texto" class="ta-mono" placeholder="1 Pérez&#10;4 Gómez&#10;…&#10;--&#10;13 López">${esc(dpTexto)}</textarea>
+    <div class="edp-btn-row" style="margin-top:8px">
+      <button class="btn btn-primary btn-sm" onclick="dpAnalizar()">Analizar</button>
+      <button class="btn btn-ghost btn-sm" onclick="dpGuardar()" ${dpFilas.length?'':'disabled'}>💾 Guardar</button>
+      <button class="btn btn-ghost btn-sm" onclick="dpBloquear()">🔒 Cerrar</button>
+      ${dpGuardado?.updatedAt?`<span class="edp-fuente">Guardado ${fmtHora(Date.parse(dpGuardado.updatedAt)||Date.now())}</span>`:''}
+    </div>
+    ${dpFilas.length ? `<div style="margin-top:14px">${tabla('T','Titulares')}${tabla('S','Suplentes')}</div>
+    <div class="edp-rev-sec">Conclusiones</div>
+    ${concl.length ? `<div class="insights">${concl.map(x=>`<div class="ins"><span class="ins-i">${x.i}</span><span>${esc(x.t)}</span></div>`).join('')}</div>` : '<div class="edp-rev-vacio">Sin conclusiones todavía.</div>'}
+    <div class="ed-hint" style="margin-top:8px">Cruce hecho con las fichas de las actas del rival (hasta J${esc(String(currentInforme.datosMeta?.hastaJornada ?? '—'))}). Con 4 amarillas aún puede jugar; la 5ª suspende (supuesto de reglamento: confírmalo).</div>` : ''}`;
+}
+window.dpGuardar = async function(){
+  if(!dpDesbloqueado() || !currentInformeId) return;
+  dpTexto = document.getElementById('dp-texto')?.value ?? dpTexto;
+  try{
+    const data = { informeId: currentInformeId, jornada: currentInforme.jornada, filas: dpFilas, texto: dpTexto,
+                   conclusiones: dpConclusiones().map(x=>x.t), updatedAt: new Date().toISOString(), updatedBy: ANALISTA };
+    await setDoc(doc(db,'analisisDiaPartido',currentInformeId), data);
+    dpGuardado = data; dpRender(); toast('Día de partido guardado');
+  }catch(e){ console.error('[dp save]', e); toast('No se pudo guardar (¿reglas de Firestore?)'); }
 };
 
 /* ══════════ VÍDEO MODAL ══════════ */
