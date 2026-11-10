@@ -2026,14 +2026,14 @@ function convocatoriasToText(arr){
 const PITCH_BG = `<rect width="300" height="420" rx="6" fill="#1a6b34"/><rect x="10" y="10" width="280" height="400" rx="2" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><line x1="10" y1="210" x2="290" y2="210" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><circle cx="150" cy="210" r="40" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><circle cx="150" cy="210" r="2.5" fill="rgba(255,255,255,.75)"/><rect x="70" y="10" width="160" height="60" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><rect x="110" y="10" width="80" height="22" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1"/><path d="M 103 70 A 40 40 0 0 0 197 70" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><rect x="70" y="350" width="160" height="60" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><rect x="110" y="388" width="80" height="22" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1"/><path d="M 103 350 A 40 40 0 0 1 197 350" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/>`;
 const POSICIONES = {
   POR:{x:150,y:390,label:'Portero'},
-  LI :{x:45, y:330,label:'Lateral izquierdo'},        CI :{x:115,y:330,label:'Central izquierdo'},
-  CD :{x:185,y:330,label:'Central derecho'},          LD :{x:255,y:330,label:'Lateral derecho'},
+  LI :{x:45, y:312,label:'Lateral izquierdo'},        CI :{x:115,y:330,label:'Central izquierdo'},
+  CD :{x:185,y:330,label:'Central derecho'},          LD :{x:255,y:312,label:'Lateral derecho'},
   CDI:{x:90, y:330,label:'Central izq. (línea de 3)'},LIB:{x:150,y:330,label:'Central eje (línea de 3)'},CDD:{x:210,y:330,label:'Central der. (línea de 3)'},
   CAI:{x:30, y:265,label:'Carrilero izquierdo'},      CAD:{x:270,y:265,label:'Carrilero derecho'},
   PIV:{x:150,y:265,label:'Pivote único'},
   PIVI:{x:110,y:265,label:'Pivote izquierdo'},        PIVD:{x:190,y:265,label:'Pivote derecho'},
-  MI :{x:100,y:195,label:'Interior izquierdo'},       MC :{x:150,y:195,label:'Mediocentro'},         MD :{x:200,y:195,label:'Interior derecho'},
-  BI :{x:65, y:195,label:'Banda izquierda'},          BD :{x:235,y:195,label:'Banda derecha'},
+  MI :{x:112,y:195,label:'Interior izquierdo'},       MC :{x:150,y:195,label:'Mediocentro'},         MD :{x:188,y:195,label:'Interior derecho'},
+  BI :{x:42, y:195,label:'Banda izquierda'},          BD :{x:258,y:195,label:'Banda derecha'},
   MP :{x:150,y:150,label:'Mediapunta / enganche'},
   EI :{x:40, y:110,label:'Extremo izquierdo'},        ED :{x:260,y:110,label:'Extremo derecho'},
   DC :{x:150,y:70, label:'Delantero centro'},
@@ -2054,6 +2054,14 @@ function textColorFor(hex){
   const lum = (0.299*r + 0.587*g + 0.114*b)/255;
   return lum > 0.62 ? '#111' : '#fff';
 }
+/* Etiqueta de posición tolerante: ignora llaves de eventos pegadas ({G23}),
+   espacios y puntuación, y admite alias habituales. Si no se reconoce, se
+   devuelve tal cual para poder avisar con el texto exacto. */
+const POS_ALIAS = { DI:'DCI', DD:'DCD', DCL:'DCI', DEI:'DCI', DED:'DCD', GK:'POR', P:'POR' };
+function posNorm(raw){
+  const p = String(raw||'').toUpperCase().replace(/\{[^}]*\}/g,'').replace(/[^A-ZÑ]/g,'');
+  return POSICIONES[p] ? p : (POS_ALIAS[p] || p);
+}
 function pitchSvg(conv, rivalColor){
   const tit = conv.titulares || [];
   if(tit.length !== 11 || !conv.sistema) return '';
@@ -2061,15 +2069,19 @@ function pitchSvg(conv, rivalColor){
   const fieldText = textColorFor(fieldColor);
   const dot = (x,y,d,gk) => `<circle cx="${x}" cy="${y}" r="16" fill="${gk?'#0fd68a':fieldColor}" stroke="rgba(255,255,255,.6)" stroke-width="1.5"/><text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Bricolage Grotesque,sans-serif" font-size="14" font-weight="800" fill="${gk?'#fff':fieldText}">${esc(d)}</text>`;
   let dots = '';
-  const tieneEtiquetas = tit.some(p => p.pos && POSICIONES[p.pos]);
+  const tieneEtiquetas = tit.some(p => p.pos && POSICIONES[posNorm(p.pos)]);
+  const noReconocidas = [];
   if(tieneEtiquetas){
-    const gk = tit.find(p=>p.pos==='POR') || tit[0];
+    const gk = tit.find(p=>posNorm(p.pos)==='POR') || tit[0];
     dots += dot(POSICIONES.POR.x, POSICIONES.POR.y, gk.dorsal, true);
     tit.forEach(p=>{
       if(p===gk) return;
-      const slot = POSICIONES[p.pos];
-      dots += slot ? dot(slot.x, slot.y, p.dorsal, false)
-                   : dot(150, 405, p.dorsal, false);
+      const slot = POSICIONES[posNorm(p.pos)];
+      if(slot){ dots += dot(slot.x, slot.y, p.dorsal, false); return; }
+      // Sin posición válida: se dibuja en el centro del campo (nunca encima del portero) y se avisa.
+      noReconocidas.push(`${p.dorsal}${p.pos?` («${p.pos}»)`:' (sin posición)'}`);
+      const n = noReconocidas.length - 1;
+      dots += dot(150 + (n%2?1:-1)*Math.ceil(n/2)*34, 232, p.dorsal, false).replace('stroke="rgba(255,255,255,.6)"','stroke="#ffd84d" stroke-dasharray="4 3"');
     });
   } else {
     const lines = conv.sistema.replace(/^1-/,'').split('-').map(Number).filter(n=>n>0);
@@ -2086,7 +2098,8 @@ function pitchSvg(conv, rivalColor){
       }
     });
   }
-  return `<svg viewBox="0 0 300 420" class="pitch-svg">${PITCH_BG}${dots}</svg>`;
+  return `<svg viewBox="0 0 300 420" class="pitch-svg">${PITCH_BG}${dots}</svg>` +
+    (noReconocidas.length ? `<div style="font-size:11px;color:var(--i-amber);margin-top:6px;line-height:1.4;">⚠ Posición no reconocida: ${esc(noReconocidas.join(', '))}. Revisa la etiqueta tras «|» en el editor.</div>` : '');
 }
 
 /* ══════════ EDITOR ══════════ */
