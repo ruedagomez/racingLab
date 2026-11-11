@@ -3154,7 +3154,7 @@ function heroHtml(inf, d, club, shield){
   }
 
   // 5 · Forma (racha llega con la más reciente primero → se invierte)
-  const racha = [...(d.racha||[])].reverse();
+  const racha = (d.racha||[]).slice(0,5).reverse();   // cabecera: siempre los 5 más recientes (la tarjeta de Racha muestra más)
   let kForma = `<div class="kpi"><div class="kpi-l">Forma</div><div class="kpi-v">—</div></div>`;
   if(racha.length){
     const pts = racha.reduce((a,x)=>a+(x.res==='V'?3:x.res==='E'?1:0),0);
