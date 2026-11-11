@@ -1765,7 +1765,9 @@ function snapshotStats(st, condicionPartido){
   const condRival = condicionPartido === 'casa' ? 'fuera' : 'casa';
   const tabla = st.clasificacion?.tabla || [];
   const pos = tabla.findIndex(r => r.equipo === st.clubId);
-  const ventana = pos >= 0 ? tabla.slice(Math.max(0,pos-3), pos+4) : tabla.slice(0,7);
+  const N_CLASIF = 6;   // filas de la tarjeta Clasificación (rival con 3 por encima y 2 por debajo; se desplaza en los extremos)
+  const ini = pos >= 0 ? Math.min(Math.max(0,pos-3), Math.max(0,tabla.length-N_CLASIF)) : 0;
+  const ventana = tabla.slice(ini, ini+N_CLASIF);
   return {
     datos: {
       fuente: 'actas',
@@ -2442,7 +2444,7 @@ function renderEditor(){
     <div id="dp-panel"></div>
   </div>`;
   html += taBlock('ta-clasificacion','Clasificación','⚙ Se rellena solo desde las actas. Edítalo únicamente para corregir (R7: sanciones administrativas). Formato: <b>pos | equipo | pj | pts</b>',tableToLines(d.clasificacion,['pos','equipo','pj','pts']),true);
-  html += taBlock('ta-racha','Racha · últimos 5 partidos','⚙ Se rellena solo desde las actas. Formato: <b>jornada | C/F | V/E/D | marcador | rival</b>',tableToLines(d.racha,['jornada','cond','res','marcador','rival']),true);
+  html += taBlock('ta-racha','Racha · Partidos recientes','⚙ Se rellena solo desde las actas. Formato: <b>jornada | C/F | V/E/D | marcador | rival</b>',tableToLines(d.racha,['jornada','cond','res','marcador','rival']),true);
   html += taBlock('ta-goleadores','Goleadores','⚙ Se rellena solo desde las actas (propias puertas excluidas, R3). El dorsal es el habitual del jugador en las alineaciones (el acta no lo publica en la tabla de goles). Formato: <b>dorsal | nombre | goles | penaltis</b>. En el informe se muestran los 6 primeros.',tableToLines(d.goleadores,COLS_GOL),true);
   html += taBlock('ta-tarjJug','Tarjetas · Jugadores','⚙ Se rellena solo desde las actas. Formato: <b>dorsal | nombre | amarillas | dobles amarillas | rojas directas</b>. Las dos amarillas de una doble NO suman a la columna de amarillas. En el informe se muestran 8 filas ordenadas por amarillas, con 🟥 = roja directa + doble amarilla; un expulsado en el último partido sale siempre como baja aunque quede fuera de las 8. Con 4 amarillas se marca «al límite».',tableToLines(d.tarjetasJugadores,COLS_TARJ_JUG),true);
   html += taBlock('ta-tarjStaff','Tarjetas · Cuerpo técnico','⚙ Se rellena solo desde las actas. R2: el staff nunca se mezcla con jugadores. Formato: <b>nombre | cargo | amarillas | dobles amarillas | rojas directas</b>',tableToLines(d.tarjetasStaff,COLS_TARJ_STAFF),true);
@@ -3032,6 +3034,12 @@ function convCardHtml(c){
 }
 function clasifTableHtml(rows, rivalId){
   if(!rows.length) return bulletsHtml([]);
+  /* Informes ya guardados traen 7 filas: se recortan a 6 alrededor del rival al pintar. */
+  if(rows.length > 6){
+    const i = rows.findIndex(r=>r.equipo === rivalId);
+    const ini = i >= 0 ? Math.min(Math.max(0,i-3), rows.length-6) : 0;
+    rows = rows.slice(ini, ini+6);
+  }
   return `<table class="tbl"><thead><tr><th>Pos</th><th>Equipo</th><th class="num">PJ</th><th class="num">Pts</th></tr></thead><tbody>` +
     rows.map(r=>{
       const isRacing = r.equipo === 'racing';
@@ -3503,7 +3511,7 @@ window.openInforme = async function(iid){
     </div>
     <div class="ig2" style="margin-bottom:14px;">
       <div class="icard"><div class="subsection-title">Clasificación</div>${clasifTableHtml(d.clasificacion, inf.clubId)}</div>
-      <div class="icard"><div class="subsection-title">Racha · últimos 5</div>
+      <div class="icard"><div class="subsection-title">Racha · Partidos recientes</div>
         ${d.racha.length ? d.racha.map(r=>`
           <div class="form-row"><span class="form-j">${esc(r.jornada)}</span>
             <span class="form-badge ${esc(r.res)}">${esc(r.res)}</span>
