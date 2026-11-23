@@ -1661,6 +1661,16 @@ window.calConfirmOficial = async function(){
 
 const informeId = n => `${TEMPORADA}_J${String(n).padStart(2,'0')}`;
 
+/* El CALENDARIO manda: si un informe (creado antes de que el calendario fuese
+   oficial, o tras editarlo) tiene otro rival o condición que la jornada del
+   calendario, se avisa y se ofrece corregirlo (bug 23/11/2026: la J13 se generó
+   en julio con el calendario provisional → Utrera, y el calendario oficial
+   dice Ceuta B; al abrir el informe de Ceuta B salía Utrera). */
+function desalineado(inf){
+  const j = calendario?.jornadas?.find(x=>x.n===Number(inf?.jornada));
+  return (j && inf && (j.clubId!==inf.clubId || j.condicion!==inf.condicion)) ? j : null;
+}
+
 function renderCalendario(){
   const grid = document.getElementById('jgrid');
   if(!calendario){ grid.innerHTML=''; return; }
@@ -1676,10 +1686,15 @@ function renderCalendario(){
       ? `<img class="jc-shield" src="${SHIELDS[club.lpId]}" alt=""/>`
       : `<div class="jc-shield-ph">${club?club.short:'—'}</div>`;
     const estadoBadge = est
-      ? `<span class="jc-estado ${est}">${est==='publicado'?'Publicado':'Borrador'}</span>`
+      ? `<span class="jc-estado ${est}">${est==='publicado'?'Publicado':'Borrador'}</span>` +
+        (desal ? `<span class="jc-estado borrador" title="El informe guardado es de ${String(clubById(ix.clubId)?.name||ix.clubId).replace(/"/g,'')} (${ix.condicion}) y el calendario dice ${String(club?club.name:j.clubId).replace(/"/g,'')} (${j.condicion}). Ábrelo con Editar para corregirlo.">⚠ Rival distinto</span>` : '')
       : `<span class="jc-estado none">Sin informe</span>`;
+    const ix = informesIdx[iid];
+    const desal = !!(ix && (ix.clubId!==j.clubId || ix.condicion!==j.condicion));
     let actions = '';
-    if(est){
+    if(est && desal && !admin){
+      actions += `<span style="font-size:11px;color:var(--faint);">En revisión</span>`;
+    } else if(est){
       actions += `<button class="btn btn-ghost btn-sm" onclick="openInforme('${iid}')">Ver</button>`;
       if(admin) actions += `<button class="btn btn-ghost btn-sm" onclick="openEditor('${iid}')" title="${cerrado?'Informe cerrado: hace falta la contraseña de propietario para editarlo':''}">${cerrado?'🔒 Editar':'Editar'}</button>`;
     } else if(admin){
@@ -2382,6 +2397,13 @@ function renderEditor(){
   const condLabel = inf.condicion==='casa' ? 'fuera de casa (visitan El Puerto)' : 'en casa (les visitamos)';
   const cerrado = informeCerrado(inf);
   let html = '';
+  const desal = desalineado(inf);
+  if(desal){
+    const cn = clubById(desal.clubId);
+    html += `<div class="banner" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+      <span>⚠ Este informe es de <b>${esc(inf.rivalName||inf.clubId)}</b> (${esc(inf.condicion)}), pero el calendario dice que la J${inf.jornada} es <b>${esc(cn?cn.name:desal.clubId)}</b> (${esc(desal.condicion)}).</span>
+      <button class="btn btn-primary btn-sm" onclick="corregirRival()">Corregir según calendario</button></div>`;
+  }
   if(cerrado){
     html += `<div class="banner" style="display:flex">🔒 Este informe quedó cerrado el día del partido (${fmtDate(inf.fecha)}). Ya lo has desbloqueado con la contraseña de propietario para esta sesión, así que puedes seguir editando con normalidad.</div>`;
   }
@@ -2677,6 +2699,31 @@ window.cargarArbitro = async function(){
   const ta = document.getElementById('ta-arbnotas');
   ta.value = (ta.value.trim() ? ta.value.trim()+'\n' : '') + notas.join('\n');
   toast(`Perfil de ${a.nombre} cargado · ${a.partidos} partidos`);
+};
+
+window.corregirRival = async function(){
+  if(!requireAnalista() || !currentInforme) return;
+  if(!requierePropietarioSiCerrado(currentInforme)) return;
+  const inf = currentInforme, j = desalineado(inf);
+  if(!j){ toast('Ya coincide con el calendario'); return; }
+  const nuevo = clubById(j.clubId);
+  const st = await fetchRivalStats(j.clubId);
+  const ok = confirm(
+    `Se va a cambiar este informe de «${inf.rivalName||inf.clubId}» (${inf.condicion}) a «${nuevo?nuevo.name:j.clubId}» (${j.condicion}).\n\n`+
+    `· Se sustituyen rival, condición, fecha y color.\n`+
+    `· Los datos de actas (clasificación, racha, goleadores, tarjetas, tramos, rankings, convocatorias…) se vuelven a traer del NUEVO rival${st?` (hasta J${st.hastaJornada})`:' — todavía no tiene datos de actas'}; se descartan las ediciones manuales de esos bloques.\n`+
+    `· Los textos (contexto, visionado, momentos, ABP, plan, fortalezas…) NO se tocan: revísalos, por si eran del rival anterior.\n\n¿Continuar?`);
+  if(!ok) return;
+  const snap2 = snapshotStats(st, j.condicion);
+  inf.clubId = j.clubId; inf.rivalName = nuevo ? nuevo.name : '';
+  inf.condicion = j.condicion; inf.fecha = JORNADA_DATES[inf.jornada-1];
+  inf.colorRival = (nuevo && nuevo.color) || '';
+  inf.datos = snap2.datos; inf.convocatorias = snap2.convocatorias;
+  inf.datosMeta = { ...snap2.meta, camposEditados: [] };
+  rivalPlayers = await loadRivalPlayers(inf.clubId);
+  document.getElementById('edTitle').textContent = `J${inf.jornada} · ${inf.rivalName}`;
+  renderEditor();
+  await window.saveInforme();
 };
 
 window.saveInforme = async function(){
@@ -3459,6 +3506,11 @@ window.openInforme = async function(iid){
     inf = hydrate(snap.data());
   }catch(e){ console.error('[Informe]', e); toast('Error cargando el informe'); return; }
   if(inf.estado!=='publicado' && !isAnalista()){ toast('Informe en borrador — solo visible para el analista'); return; }
+  const _desal = desalineado(inf);
+  if(_desal){
+    if(!isAnalista()){ toast('Informe en revisión'); return; }
+    toast(`⚠ Este informe es de ${inf.rivalName} y el calendario dice ${clubById(_desal.clubId)?.name||_desal.clubId} — ábrelo con Editar para corregirlo`);
+  }
 
   rivalPlayers = await loadRivalPlayers(inf.clubId);
   const d = inf.datos;
@@ -4743,7 +4795,7 @@ function watchInformes(){
       informesIdx = {};
       snap.docs.forEach(d=>{
         const x = d.data();
-        if(x.temporada===TEMPORADA) informesIdx[d.id] = { estado:x.estado };
+        if(x.temporada===TEMPORADA) informesIdx[d.id] = { estado:x.estado, clubId:x.clubId, condicion:x.condicion };
       });
       renderCalendario();
     },
