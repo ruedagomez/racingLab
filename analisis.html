@@ -1685,12 +1685,12 @@ function renderCalendario(){
     const shield = club && SHIELDS[club.lpId]
       ? `<img class="jc-shield" src="${SHIELDS[club.lpId]}" alt=""/>`
       : `<div class="jc-shield-ph">${club?club.short:'—'}</div>`;
+    const ix = informesIdx[iid];
+    const desal = !!(ix && (ix.clubId!==j.clubId || ix.condicion!==j.condicion));
     const estadoBadge = est
       ? `<span class="jc-estado ${est}">${est==='publicado'?'Publicado':'Borrador'}</span>` +
         (desal ? `<span class="jc-estado borrador" title="El informe guardado es de ${String(clubById(ix.clubId)?.name||ix.clubId).replace(/"/g,'')} (${ix.condicion}) y el calendario dice ${String(club?club.name:j.clubId).replace(/"/g,'')} (${j.condicion}). Ábrelo con Editar para corregirlo.">⚠ Rival distinto</span>` : '')
       : `<span class="jc-estado none">Sin informe</span>`;
-    const ix = informesIdx[iid];
-    const desal = !!(ix && (ix.clubId!==j.clubId || ix.condicion!==j.condicion));
     let actions = '';
     if(est && desal && !admin){
       actions += `<span style="font-size:11px;color:var(--faint);">En revisión</span>`;
