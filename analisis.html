@@ -3508,7 +3508,11 @@ window.openInforme = async function(iid){
   if(inf.estado!=='publicado' && !isAnalista()){ toast('Informe en borrador — solo visible para el analista'); return; }
   const _desal = desalineado(inf);
   if(_desal){
-    if(!isAnalista()){ toast('Informe en revisión'); return; }
+    if(!isAnalista()){
+      if(document.body.classList.contains('modo-compartido')) pantallaEnlaceNoDisponible('Este informe está en revisión. Vuelve a intentarlo en un rato.');
+      else toast('Informe en revisión');
+      return;
+    }
     toast(`⚠ Este informe es de ${inf.rivalName} y el calendario dice ${clubById(_desal.clubId)?.name||_desal.clubId} — ábrelo con Editar para corregirlo`);
   }
 
@@ -4173,6 +4177,10 @@ async function iniciarVistaCompartida(token){
   document.getElementById('view-calendario').style.display = 'none';
   document.body.classList.add('modo-compartido');
   await loadShields();
+  // Calendario en SOLO LECTURA: openInforme lo usa para no enseñar a nadie un informe
+  // de otro rival que el del calendario (loadCalendario escribe, aquí no se usa).
+  try{ const cs = await getDoc(doc(db,'analisisCalendario',TEMPORADA)); if(cs.exists()) calendario = cs.data(); }
+  catch(e){ console.error('[Compartido] calendario', e); }
   let s = null;
   try{
     const snap = await getDoc(doc(db,'analisisShares',token));
